@@ -28,11 +28,13 @@ import java.util.stream.IntStream;
 class Processor {
 
     private final HttpClient httpClient;
+    private final PomProcessor pomProcessor;
 
-    Processor() {
+    Processor() throws ParserConfigurationException {
         this.httpClient = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .build();
+        this.pomProcessor = new PomProcessor(httpClient);
     }
 
     void process(String group, String artifact) throws IOException, InterruptedException, XPathExpressionException, ParserConfigurationException, SAXException {
@@ -43,8 +45,8 @@ class Processor {
         JarInfo jarInfo = fetchJarInfo(cord);
         System.out.println(jarInfo);
 
-        List<ArtifactDependency> deps = fetchPomDependencies(cord);
-        System.out.println(deps);
+        PomInfo pomInfo = pomProcessor.processPom(cord);
+        System.out.println(pomInfo);
     }
 
     private String fetchLatestVersion(String group, String artifact) throws IOException, InterruptedException {
@@ -96,44 +98,7 @@ class Processor {
         int major = 0xFFFF & dis.readShort();
         return new JarInfo(jarSize, major + "." + minor);
     }
-
-    private List<ArtifactDependency> fetchPomDependencies(ArtifactCoordinate cord) throws ParserConfigurationException, IOException, SAXException, XPathExpressionException, InterruptedException {
-        String groupPath = cord.group().replace('.', '/');
-        String fileName = "%s-%s.pom".formatted(cord.id(), cord.version());
-        String query = "?filepath=%s/%s/%s/%s".formatted(groupPath, cord.id(), cord.version(), fileName);
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://search.maven.org/remotecontent" + query))
-                .GET()
-                .build();
-        HttpResponse<InputStream> inputResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
-
-        DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = builderFactory.newDocumentBuilder();
-        Document xmlDocument = builder.parse(new BufferedInputStream(inputResponse.body()));
-        XPath xPath = XPathFactory.newInstance().newXPath();
-        NodeList nodeList = (NodeList) xPath.compile("//project/dependencies/dependency").evaluate(xmlDocument, XPathConstants.NODESET);
-        List<ArtifactDependency> deps = IntStream.range(0, nodeList.getLength())
-                .mapToObj(nodeList::item)
-                .map(this::toDep)
-                .toList();
-        return deps;
-    }
-
-    private ArtifactDependency toDep(Node node) {
-        try {
-            XPath xPath = XPathFactory.newInstance().newXPath();
-            String groupId = xPath.compile("groupId").evaluate(node);
-            String artifactId = xPath.compile("artifactId").evaluate(node);
-            String version = xPath.compile("version").evaluate(node);
-            String scope = xPath.compile("scope").evaluate(node);
-            String optional = xPath.compile("optional").evaluate(node);
-            return new ArtifactDependency(new ArtifactCoordinate(groupId, artifactId, version), scope, Boolean.parseBoolean(optional));
-        } catch (XPathExpressionException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
 }
 
 record ArtifactCoordinate(String group, String id, String version) {}
-record ArtifactDependency(ArtifactCoordinate cord, String scope, boolean optional) {}
 record JarInfo(long size, String bytecodeVersion) {}
