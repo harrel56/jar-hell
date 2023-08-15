@@ -15,9 +15,7 @@ repositories {
 }
 
 dependencies {
-//    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
     implementation 'io.nats:jparse:1.2.3'
-    implementation 'org.dom4j:dom4j:2.1.4'
 
     testImplementation platform('org.junit:junit-bom:5.9.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
