@@ -23,6 +23,11 @@ dependencies {
 
     implementation 'io.nats:jparse:1.2.3'
 
+    implementation 'org.apache.maven:maven-resolver-provider:3.9.4'
+    implementation 'org.apache.maven.resolver:maven-resolver-transport-http:1.9.15'
+    implementation 'org.apache.maven.resolver:maven-resolver-transport-file:1.9.15'
+    implementation 'org.apache.maven.resolver:maven-resolver-connector-basic:1.9.15'
+
     testImplementation platform('org.junit:junit-bom:5.9.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }

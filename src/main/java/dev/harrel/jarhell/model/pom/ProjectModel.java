@@ -9,5 +9,6 @@ import java.util.Map;
 public record ProjectModel(Gav parent,
                            String packaging,
                            Map<String, String> properties,
-                           List<Dependency> dependencies) {
+                           List<Dependency> dependencies,
+                           DependencyManagement dependencyManagement) {
 }

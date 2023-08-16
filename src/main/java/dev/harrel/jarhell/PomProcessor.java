@@ -8,16 +8,14 @@ import dev.harrel.jarhell.model.PomInfo;
 import dev.harrel.jarhell.model.pom.ProjectModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Map;
 
 public class PomProcessor {
     private static final Logger logger = LoggerFactory.getLogger(PomProcessor.class);
@@ -30,7 +28,17 @@ public class PomProcessor {
         this.mapper = new XmlMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
-    PomInfo processPom(Gav gav) throws IOException, InterruptedException {
+    PomInfo computePomInfo(Gav gav) throws IOException, InterruptedException {
+        ProjectModel projectModel = fetchProjectModel(gav);
+
+        if (projectModel.parent() != null) {
+
+        }
+
+        return new PomInfo(projectModel.packaging(), projectModel.dependencies());
+    }
+
+    private ProjectModel fetchProjectModel(Gav gav) throws IOException, InterruptedException {
         String groupPath = gav.groupId().replace('.', '/');
         String fileName = "%s-%s.pom".formatted(gav.artifactId(), gav.version());
         String query = "?filepath=%s/%s/%s/%s".formatted(groupPath, gav.artifactId(), gav.version(), fileName);
@@ -38,10 +46,37 @@ public class PomProcessor {
                 .uri(URI.create("https://search.maven.org/remotecontent" + query))
                 .GET()
                 .build();
-        HttpResponse<InputStream> inputResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        String response = httpClient.send(request, HttpResponse.BodyHandlers.ofString()).body();
 
-        ProjectModel projectModel = mapper.readValue(inputResponse.body(), ProjectModel.class);
-        return new PomInfo(projectModel.packaging(), projectModel.dependencies());
+//        String response = """
+//                <project>
+//                    <properties>
+//                        <what.elo>1.1.1</what.elo>
+//                    </properties>
+//                    <dependencies>
+//                        <dependency>
+//                            <groupId>org.jetbrains</groupId>
+//                            <artifactId>annotations</artifactId>
+//                            <version>${what.elo}</version>
+//                        </dependency>
+//                    </dependencies>
+//                </project>
+//                """;
+        ProjectModel rawModel = mapper.readValue(response, ProjectModel.class);
+        if (rawModel.properties() == null) {
+            return rawModel;
+        } else {
+            String pomWithProps = injectProperties(response, rawModel.properties());
+            return mapper.readValue(pomWithProps, ProjectModel.class);
+        }
+    }
+
+    // todo: this is very naive
+    private String injectProperties(String rawPom, Map<String, String> props) {
+        for (Map.Entry<String, String> prop : props.entrySet()) {
+            rawPom = rawPom.replace("${%s}".formatted(prop.getKey()), prop.getValue());
+        }
+        return rawPom;
     }
 }
 

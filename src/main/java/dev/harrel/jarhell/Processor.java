@@ -41,7 +41,7 @@ class Processor {
 
         JarInfo jarInfo = fetchJarInfo(gav);
 
-        PomInfo pomInfo = pomProcessor.processPom(gav);
+        PomInfo pomInfo = pomProcessor.computePomInfo(gav);
 
         return new ArtifactInfo(gav, jarInfo, pomInfo);
     }
