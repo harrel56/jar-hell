@@ -1,13 +1,19 @@
 package dev.harrel.jarhell;
 
+import dev.harrel.jarhell.model.ArtifactInfo;
+import dev.harrel.jarhell.model.Gav;
+import dev.harrel.jarhell.model.JarInfo;
+import dev.harrel.jarhell.model.PomInfo;
 import io.nats.jparse.Json;
 import io.nats.jparse.Path;
 import io.nats.jparse.node.RootNode;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.*;
-import java.io.*;
+import javax.xml.xpath.XPathExpressionException;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -22,7 +28,7 @@ class Processor {
     private final HttpClient httpClient;
     private final PomProcessor pomProcessor;
 
-    Processor() throws ParserConfigurationException {
+    Processor() {
         this.httpClient = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .build();
@@ -52,13 +58,13 @@ class Processor {
         return Path.atPath("response.docs[0].latestVersion", rootNode).toJsonString();
     }
 
-    private JarInfo fetchJarInfo(Gav cord) throws IOException, InterruptedException {
-        String groupPath = cord.group().replace('.', '/');
-        String fileName = "%s-%s.jar".formatted(cord.id(), cord.version());
-        String query = "?filepath=%s/%s/%s/%s".formatted(groupPath, cord.id(), cord.version(), fileName);
+    private JarInfo fetchJarInfo(Gav gav) throws IOException, InterruptedException {
+        String groupPath = gav.groupId().replace('.', '/');
+        String fileName = "%s-%s.jar".formatted(gav.artifactId(), gav.version());
+        String query = "?filepath=%s/%s/%s/%s".formatted(groupPath, gav.artifactId(), gav.version(), fileName);
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://search.maven.org/remotecontent" + query))
-                .header("Range", "bytes=0-1024")
+                .header("Range", "bytes=0-2048")
                 .GET()
                 .build();
         HttpResponse<InputStream> inputResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
@@ -71,7 +77,6 @@ class Processor {
                 .map(Matcher::group)
                 .map(Long::valueOf)
                 .orElseThrow();
-        System.out.println("jar size: " + jarSize);
         InputStream is = inputResponse.body();
         JarInputStream jis = new JarInputStream(is);
         JarEntry entry = jis.getNextJarEntry();
@@ -91,6 +96,3 @@ class Processor {
     }
 }
 
-record ArtifactInfo(Gav gav, JarInfo jarInfo, PomInfo pomInfo) {}
-record Gav(String group, String id, String version) {}
-record JarInfo(long size, String bytecodeVersion) {}

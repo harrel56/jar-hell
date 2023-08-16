@@ -1,15 +1,23 @@
 package dev.harrel.jarhell;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.javalin.Javalin;
+import io.javalin.config.JavalinConfig;
+import io.javalin.json.JavalinJackson;
 
-import javax.xml.parsers.ParserConfigurationException;
+import java.util.function.Consumer;
 
 public class Main {
 
-    public static void main(String[] arg) throws ParserConfigurationException {
+    public static void main(String[] arg) {
         Processor processor = new Processor();
 
-        Javalin.create()
+        Consumer<JavalinConfig> configConsumer = config -> {
+            config.jsonMapper(new JavalinJackson().updateMapper(mapper ->
+                    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL)));
+        };
+
+        Javalin.create(configConsumer)
                 .get("/analyze", new AnalyzeHandler(processor))
                 .start(8060);
     }
