@@ -19,10 +19,7 @@ import org.eclipse.aether.supplier.ConsoleTransferListener;
 import org.eclipse.aether.supplier.RepositorySystemSupplier;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class AnalyzeHandler implements Handler {
     private final Processor processor;
@@ -46,6 +43,7 @@ public class AnalyzeHandler implements Handler {
         session.setLocalRepositoryManager(system.newLocalRepositoryManager(session, localRepo));
         session.setTransferListener(new ConsoleTransferListener());
         session.setRepositoryListener(new ConsoleRepositoryListener());
+        session.setSystemProperties(Map.of("java.version", "17"));
 
         Artifact artifact = new DefaultArtifact("%s:%s:%s".formatted(groupId, artifactId, artifactInfo.gav().version()));
         CollectRequest collectRequest = new CollectRequest();
