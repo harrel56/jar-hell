@@ -39,7 +39,7 @@ public class PomProcessor {
         this.xPathFactory = XPathFactory.newInstance();
     }
 
-    PomInfo processPom(ArtifactCoordinate cord) throws IOException, InterruptedException, ParserConfigurationException, SAXException, XPathExpressionException {
+    PomInfo processPom(Gav cord) throws IOException, InterruptedException, ParserConfigurationException, SAXException, XPathExpressionException {
         String groupPath = cord.group().replace('.', '/');
         String fileName = "%s-%s.pom".formatted(cord.id(), cord.version());
         String query = "?filepath=%s/%s/%s/%s".formatted(groupPath, cord.id(), cord.version(), fileName);
@@ -70,7 +70,7 @@ public class PomProcessor {
         boolean optional = xPathString(xPath, node, "optional")
                 .map(res -> res.trim().equals("true"))
                 .orElse(false);
-        return new ArtifactDependency(new ArtifactCoordinate(groupId, artifactId, version), scope, optional);
+        return new ArtifactDependency(new Gav(groupId, artifactId, version), scope, optional);
     }
 
     private Optional<String> xPathString(XPath xPath, Node node, String query) {
@@ -84,6 +84,6 @@ public class PomProcessor {
     }
 }
 
-record ArtifactDependency(ArtifactCoordinate cord, String scope, boolean optional) {}
+record ArtifactDependency(Gav cord, String scope, boolean optional) {}
 
 record PomInfo(String packaging, List<ArtifactDependency> dependencies) {}

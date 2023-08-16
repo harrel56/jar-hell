@@ -3,13 +3,8 @@ package dev.harrel.jarhell;
 import io.nats.jparse.Json;
 import io.nats.jparse.Path;
 import io.nats.jparse.node.RootNode;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.*;
 import java.io.*;
@@ -17,13 +12,10 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 class Processor {
 
@@ -37,16 +29,15 @@ class Processor {
         this.pomProcessor = new PomProcessor(httpClient);
     }
 
-    void process(String group, String artifact) throws IOException, InterruptedException, XPathExpressionException, ParserConfigurationException, SAXException {
+    ArtifactInfo process(String group, String artifact) throws IOException, InterruptedException, XPathExpressionException, ParserConfigurationException, SAXException {
         String version = fetchLatestVersion(group, artifact);
-        ArtifactCoordinate cord = new ArtifactCoordinate(group, artifact, version);
-        System.out.println(version);
+        Gav gav = new Gav(group, artifact, version);
 
-        JarInfo jarInfo = fetchJarInfo(cord);
-        System.out.println(jarInfo);
+        JarInfo jarInfo = fetchJarInfo(gav);
 
-        PomInfo pomInfo = pomProcessor.processPom(cord);
-        System.out.println(pomInfo);
+        PomInfo pomInfo = pomProcessor.processPom(gav);
+
+        return new ArtifactInfo(gav, jarInfo, pomInfo);
     }
 
     private String fetchLatestVersion(String group, String artifact) throws IOException, InterruptedException {
@@ -61,7 +52,7 @@ class Processor {
         return Path.atPath("response.docs[0].latestVersion", rootNode).toJsonString();
     }
 
-    private JarInfo fetchJarInfo(ArtifactCoordinate cord) throws IOException, InterruptedException {
+    private JarInfo fetchJarInfo(Gav cord) throws IOException, InterruptedException {
         String groupPath = cord.group().replace('.', '/');
         String fileName = "%s-%s.jar".formatted(cord.id(), cord.version());
         String query = "?filepath=%s/%s/%s/%s".formatted(groupPath, cord.id(), cord.version(), fileName);
@@ -100,5 +91,6 @@ class Processor {
     }
 }
 
-record ArtifactCoordinate(String group, String id, String version) {}
+record ArtifactInfo(Gav gav, JarInfo jarInfo, PomInfo pomInfo) {}
+record Gav(String group, String id, String version) {}
 record JarInfo(long size, String bytecodeVersion) {}
