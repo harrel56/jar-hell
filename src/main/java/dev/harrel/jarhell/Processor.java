@@ -23,25 +23,25 @@ import java.util.jar.JarInputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-class Processor {
-
+public class Processor {
     private final HttpClient httpClient;
     private final PomProcessor pomProcessor;
+    private final DependencyResolver dependencyResolver;
 
     Processor() {
         this.httpClient = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .build();
         this.pomProcessor = new PomProcessor(httpClient);
+        this.dependencyResolver = new DependencyResolver();
     }
 
     ArtifactInfo process(String group, String artifact) throws IOException, InterruptedException, XPathExpressionException, ParserConfigurationException, SAXException {
         String version = fetchLatestVersion(group, artifact);
         Gav gav = new Gav(group, artifact, version);
-
         JarInfo jarInfo = fetchJarInfo(gav);
-
         PomInfo pomInfo = pomProcessor.computePomInfo(gav);
+        dependencyResolver.resolveDependencies(gav);
 
         return new ArtifactInfo(gav, jarInfo, pomInfo);
     }
