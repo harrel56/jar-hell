@@ -1,5 +1,7 @@
 package dev.harrel.jarhell;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.harrel.jarhell.model.ArtifactInfo;
 import io.javalin.http.Context;
 import io.javalin.http.Handler;
@@ -11,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.neo4j.driver.Values.parameters;
@@ -33,18 +36,19 @@ public class AnalyzeHandler implements Handler {
                 .orElseThrow(() -> new IllegalArgumentException("Argument 'artifactId' is required"));
         ArtifactInfo artifactInfo = processor.process(groupId, artifactId);
 
-        Driver driver = ctx.appAttribute("neo4jDriver");
+        ObjectMapper mapper = ctx.appAttribute(Attributes.OBJECT_MAPPER);
+        Map<String, Object> dataMap = mapper.convertValue(artifactInfo, new TypeReference<>() {});
+        Driver driver = ctx.appAttribute(Attributes.NEO4J_DRIVER);
         try (var session = driver.session()) {
-            session.executeWrite(tx -> {
-                var query = new Query("CREATE (a:Greeting) SET a.message = $message RETURN a.message + ', from node ' + id(a)", parameters("message", artifactId));
-                var result = tx.run(query);
-                return result.single().get(0).asString();
-            });
+            session.executeWriteWithoutResult(tx -> tx.run(new Query("CREATE (a:Artifact $map) RETURN id(a)",
+                    parameters("map", dataMap))
+                )
+            );
         }
 
         ctx.json(artifactInfo);
 
         long timeElapsed = Duration.between(start, Instant.now()).toMillis();
-        logger.info("Analysis of [{}] completed in {}ms", artifactInfo.gav(), timeElapsed);
+        logger.info("Analysis of [{}] completed in {}ms", artifactInfo.toGav(), timeElapsed);
     }
 }

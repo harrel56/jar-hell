@@ -36,14 +36,14 @@ public class Processor {
         this.dependencyResolver = new DependencyResolver();
     }
 
-    ArtifactInfo process(String group, String artifact) throws IOException, InterruptedException, XPathExpressionException, ParserConfigurationException, SAXException {
+    ArtifactInfo process(String group, String artifact) throws IOException, InterruptedException {
         String version = fetchLatestVersion(group, artifact);
         Gav gav = new Gav(group, artifact, version);
         JarInfo jarInfo = fetchJarInfo(gav);
         PomInfo pomInfo = pomProcessor.computePomInfo(gav);
         dependencyResolver.resolveDependencies(gav);
 
-        return new ArtifactInfo(gav, jarInfo, pomInfo);
+        return ArtifactInfo.create(gav, jarInfo, pomInfo);
     }
 
     private String fetchLatestVersion(String group, String artifact) throws IOException, InterruptedException {
