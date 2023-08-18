@@ -1,54 +1,58 @@
 package dev.harrel.jarhell;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.harrel.jarhell.model.ArtifactInfo;
+import dev.harrel.jarhell.model.Gav;
 import io.javalin.http.Context;
 import io.javalin.http.Handler;
 import org.jetbrains.annotations.NotNull;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Map;
 import java.util.Optional;
-
-import static org.neo4j.driver.Values.parameters;
 
 public class AnalyzeHandler implements Handler {
     private static final Logger logger = LoggerFactory.getLogger(AnalyzeHandler.class);
 
+    private final ArtifactRepository artifactRepository;
     private final Processor processor;
 
-    public AnalyzeHandler(Processor processor) {
+    public AnalyzeHandler(ArtifactRepository artifactRepository, Processor processor) {
+        this.artifactRepository = artifactRepository;
         this.processor = processor;
     }
 
     @Override
-    public void handle(@NotNull Context ctx) throws Exception {
-        Instant start = Instant.now();
+    public void handle(@NotNull Context ctx) {
         String groupId = Optional.ofNullable(ctx.queryParam("groupId"))
                 .orElseThrow(() -> new IllegalArgumentException("Argument 'groupId' is required"));
         String artifactId = Optional.ofNullable(ctx.queryParam("artifactId"))
                 .orElseThrow(() -> new IllegalArgumentException("Argument 'artifactId' is required"));
-        ArtifactInfo artifactInfo = processor.process(groupId, artifactId);
-
-        ObjectMapper mapper = ctx.appAttribute(Attributes.OBJECT_MAPPER);
-        Map<String, Object> dataMap = mapper.convertValue(artifactInfo, new TypeReference<>() {});
-        Driver driver = ctx.appAttribute(Attributes.NEO4J_DRIVER);
-        try (var session = driver.session()) {
-            session.executeWriteWithoutResult(tx -> tx.run(new Query("CREATE (a:Artifact $map) RETURN id(a)",
-                    parameters("map", dataMap))
-                )
-            );
-        }
-
+        String version = Optional.ofNullable(ctx.queryParam("version"))
+                .orElseThrow(() -> new IllegalArgumentException("Argument 'version' is required"));
+        Gav gav = new Gav(groupId, artifactId, version);
+        Optional<ArtifactInfo> storedInfo = artifactRepository.find(gav);
+        ArtifactInfo artifactInfo = storedInfo.orElseGet(() -> computeArtifactInfo(gav));
         ctx.json(artifactInfo);
+    }
 
-        long timeElapsed = Duration.between(start, Instant.now()).toMillis();
-        logger.info("Analysis of [{}] completed in {}ms", artifactInfo.toGav(), timeElapsed);
+    private ArtifactInfo computeArtifactInfo(Gav gav) {
+        try {
+            Instant start = Instant.now();
+            logger.info("Starting analysis of [{}]", gav);
+            ArtifactInfo artifactInfo = processor.process(gav);
+            artifactRepository.save(artifactInfo);
+            long timeElapsed = Duration.between(start, Instant.now()).toMillis();
+            logger.info("Analysis of [{}] completed in {}ms", gav, timeElapsed);
+            return artifactInfo;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalArgumentException(e);
+        }
     }
 }

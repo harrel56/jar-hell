@@ -2,6 +2,7 @@ package dev.harrel.jarhell;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.harrel.jarhell.model.Gav;
 import io.javalin.Javalin;
 import io.javalin.config.JavalinConfig;
 import io.javalin.json.JavalinJackson;
@@ -14,19 +15,17 @@ import java.util.function.Consumer;
 public class Main {
 
     public static void main(String[] arg) {
+        Driver driver = createNeo4jDriver();
         ObjectMapper objectMapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        ArtifactRepository artifactRepository = new ArtifactRepository(driver, objectMapper);
         Processor processor = new Processor();
+        AnalyzeHandler analyzeHandler = new AnalyzeHandler(artifactRepository, processor);
 
         Consumer<JavalinConfig> configConsumer = config -> {
             config.jsonMapper(new JavalinJackson(objectMapper));
         };
-
-        Driver driver = createNeo4jDriver();
         Javalin server = Javalin.create(configConsumer)
-                .attribute(Attributes.OBJECT_MAPPER, objectMapper)
-                .attribute(Attributes.NEO4J_DRIVER, driver)
-                .attribute("neo4jDriver", driver)
-                .get("/analyze", new AnalyzeHandler(processor))
+                .get("/analyze", analyzeHandler)
                 .start(8060);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {

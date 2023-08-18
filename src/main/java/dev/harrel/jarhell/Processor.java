@@ -36,9 +36,12 @@ public class Processor {
         this.dependencyResolver = new DependencyResolver();
     }
 
-    ArtifactInfo process(String group, String artifact) throws IOException, InterruptedException {
-        String version = fetchLatestVersion(group, artifact);
-        Gav gav = new Gav(group, artifact, version);
+    public ArtifactInfo process(String groupId, String artifactId) throws IOException, InterruptedException {
+        String version = fetchLatestVersion(groupId, artifactId);
+        return process(new Gav(groupId, artifactId, version));
+    }
+
+    public ArtifactInfo process(Gav gav) throws IOException, InterruptedException {
         JarInfo jarInfo = fetchJarInfo(gav);
         PomInfo pomInfo = pomProcessor.computePomInfo(gav);
         dependencyResolver.resolveDependencies(gav);
