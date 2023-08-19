@@ -2,10 +2,11 @@ package dev.harrel.jarhell;
 
 import dev.harrel.jarhell.model.ArtifactInfo;
 import dev.harrel.jarhell.model.ArtifactTree;
+import dev.harrel.jarhell.model.DependencyInfo;
 import dev.harrel.jarhell.model.Gav;
 import io.javalin.http.Context;
 import io.javalin.http.Handler;
-import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.DependencyNode;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -55,10 +56,13 @@ public class AnalyzeHandler implements Handler {
             logger.info("Starting analysis of [{}]", gav);
             ArtifactInfo artifactInfo = processor.process(gav);
             DependencyNode dependencyNode = dependencyResolver.resolveDependencies(gav);
-            List<ArtifactTree> deps = dependencyNode.getChildren().stream()
+            List<DependencyInfo> deps = dependencyNode.getChildren().stream()
                     .map(DependencyNode::getDependency)
-                    .map(Dependency::getArtifact)
-                    .map(a -> getArtifactTree(new Gav(a.getGroupId(), a.getArtifactId(), a.getVersion())))
+                    .map(dep -> {
+                        Artifact artifact = dep.getArtifact();
+                        Gav depGav = new Gav(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion());
+                        return new DependencyInfo(getArtifactTree(depGav), dep.getOptional());
+                    })
                     .toList();
 
             ArtifactTree artifactTree = new ArtifactTree(artifactInfo, deps);

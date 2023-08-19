@@ -40,6 +40,7 @@ public class DependencyResolver {
         session.setSystemProperties(Map.of("java.version", "17"));
     }
 
+    // todo: this resolves all deps when only first level of deps is needed
     public DependencyNode resolveDependencies(Gav gav) {
         CollectRequest request = createCollectRequest(gav);
         try {

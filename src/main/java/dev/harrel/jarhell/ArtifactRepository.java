@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.harrel.jarhell.model.ArtifactInfo;
 import dev.harrel.jarhell.model.ArtifactTree;
+import dev.harrel.jarhell.model.DependencyInfo;
 import dev.harrel.jarhell.model.Gav;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Query;
@@ -67,12 +68,13 @@ public class ArtifactRepository {
 
             Map<String, Object> parentGav = toGavMap(artifactTree.artifactInfo());
             artifactTree.dependencies().forEach(dep -> {
-                        Map<String, Object> depGav = toGavMap(dep.artifactInfo());
+                Map<String, Boolean> depProps = Map.of("optional", dep.optional());
+                Map<String, Object> depGav = toGavMap(dep.artifact().artifactInfo());
                         session.executeWriteWithoutResult(tx -> tx.run(new Query("""
                                 MATCH (a:Artifact {groupId: $parentGav.groupId, artifactId: $parentGav.artifactId, version: $parentGav.version}),
                                       (d:Artifact {groupId: $depGav.groupId, artifactId: $depGav.artifactId, version: $depGav.version})
-                                CREATE (a)-[:DEPENDS_ON]->(d)""",
-                                parameters("parentGav", parentGav, "depGav", depGav))));
+                                CREATE (a)-[:DEPENDS_ON $depProps]->(d)""",
+                                parameters("parentGav", parentGav, "depGav", depGav, "depProps", depProps))));
                     }
             );
         }
@@ -104,8 +106,9 @@ public class ArtifactRepository {
         }
 
         ArtifactTree toArtifactTree() {
-            List<ArtifactTree> depsList = deps.values().stream()
+            List<DependencyInfo> depsList = deps.values().stream()
                     .map(AggregateTree::toArtifactTree)
+                    .map(at -> new DependencyInfo(at, null))
                     .toList();
             return new ArtifactTree(artifactInfo, depsList);
         }
