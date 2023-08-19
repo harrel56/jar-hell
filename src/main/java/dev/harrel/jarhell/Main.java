@@ -16,6 +16,7 @@ public class Main {
 
     public static void main(String[] arg) {
         Driver driver = createNeo4jDriver();
+        DatabaseInitializer.initialize(driver);
         ObjectMapper objectMapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
         ArtifactRepository artifactRepository = new ArtifactRepository(driver, objectMapper);
         Processor processor = new Processor();

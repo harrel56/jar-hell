@@ -7,10 +7,11 @@ import dev.harrel.jarhell.model.ArtifactTree;
 import dev.harrel.jarhell.model.Gav;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Query;
+import org.neo4j.driver.types.Node;
+import org.neo4j.driver.types.Path;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.StreamSupport;
 
 import static org.neo4j.driver.Values.parameters;
 
@@ -23,24 +24,35 @@ public class ArtifactRepository {
         this.objectMapper = objectMapper;
     }
 
-    public Optional<ArtifactInfo> find(Gav gav) {
+    public Optional<ArtifactTree> find(Gav gav) {
         Map<String, Object> gavData = objectMapper.convertValue(gav, new TypeReference<>() {});
         try (var session = driver.session()) {
-            List<ArtifactInfo> artifactInfos = session.executeRead(tx -> tx.run(new Query("""
-                            MATCH (a:Artifact {groupId: $props.groupId, artifactId: $props.artifactId, version: $props.version})-[rel:DEPENDS_ON*..]->(d:Artifact)
-                            RETURN a,rel,d""",
+            Map<Gav, AggregateTree> result = new LinkedHashMap<>();
+            List<Path> relations = session.executeRead(tx -> tx.run(new Query("""
+                            MATCH x = (:Artifact {groupId: $props.groupId, artifactId: $props.artifactId, version: $props.version})-[DEPENDS_ON*0..]->(d:Artifact)
+                            RETURN x
+                            ORDER BY d.groupId, d.artifactId, d.version""",
                             parameters("props", gavData))
-                    ).list(r -> {
-                        Map<String, Object> dataMap = r.get("a").asNode().asMap();
-                        return objectMapper.convertValue(dataMap, ArtifactInfo.class);
-                    })
+                    ).list(r -> r.get("x").asPath())
             );
-            if (artifactInfos.size() > 1) {
+
+            for (Path path : relations) {
+                Map<Gav, AggregateTree> currentLevel = result;
+                List<Node> nodes = StreamSupport.stream(path.nodes().spliterator(), false).toList();
+                for (Node node : nodes) {
+                    ArtifactInfo data = toArtifactInfo(node);
+                    Gav dataGav = toGav(data);
+                    currentLevel.computeIfAbsent(dataGav, k -> new AggregateTree(data));
+                    currentLevel = currentLevel.get(dataGav).deps;
+                }
+            }
+
+            if (result.size() > 1) {
                 throw new IllegalArgumentException("Too many results");
-            } else if (artifactInfos.isEmpty()) {
-                return Optional.empty();
-            } else {
-                return Optional.of(artifactInfos.get(0));
+            }  else {
+                return result.values().stream()
+                        .map(AggregateTree::toArtifactTree)
+                        .findFirst();
             }
         }
     }
@@ -66,11 +78,36 @@ public class ArtifactRepository {
         }
     }
 
+    private Gav toGav(ArtifactInfo info) {
+        return new Gav(info.groupId(), info.artifactId(), info.version());
+    }
+
     private Map<String, Object> toGavMap(ArtifactInfo info) {
         return Map.of(
                 "groupId", info.groupId(),
                 "artifactId", info.artifactId(),
                 "version", info.version()
         );
+    }
+
+    private ArtifactInfo toArtifactInfo(Node node) {
+        return objectMapper.convertValue(node.asMap(), ArtifactInfo.class);
+    }
+
+    private static class AggregateTree {
+        private final ArtifactInfo artifactInfo;
+        private final Map<Gav, AggregateTree> deps;
+
+        AggregateTree(ArtifactInfo artifactInfo) {
+            this.artifactInfo = artifactInfo;
+            this.deps = new LinkedHashMap<>();
+        }
+
+        ArtifactTree toArtifactTree() {
+            List<ArtifactTree> depsList = deps.values().stream()
+                    .map(AggregateTree::toArtifactTree)
+                    .toList();
+            return new ArtifactTree(artifactInfo, depsList);
+        }
     }
 }

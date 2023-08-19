@@ -46,9 +46,7 @@ public class AnalyzeHandler implements Handler {
     }
 
     private ArtifactTree getArtifactTree(Gav gav) {
-        return artifactRepository.find(gav)
-                .map(a -> new ArtifactTree(a, List.of()))
-                .orElseGet(() -> computeArtifactTree(gav));
+        return artifactRepository.find(gav).orElseGet(() -> computeArtifactTree(gav));
     }
 
     private ArtifactTree computeArtifactTree(Gav gav) {
