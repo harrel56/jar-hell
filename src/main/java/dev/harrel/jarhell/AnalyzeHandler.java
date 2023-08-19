@@ -23,12 +23,12 @@ public class AnalyzeHandler implements Handler {
     private static final Logger logger = LoggerFactory.getLogger(AnalyzeHandler.class);
 
     private final ArtifactRepository artifactRepository;
-    private final Processor processor;
+    private final Analyzer analyzer;
     private final DependencyResolver dependencyResolver;
 
-    public AnalyzeHandler(ArtifactRepository artifactRepository, Processor processor) {
+    public AnalyzeHandler(ArtifactRepository artifactRepository, Analyzer analyzer) {
         this.artifactRepository = artifactRepository;
-        this.processor = processor;
+        this.analyzer = analyzer;
         this.dependencyResolver = new DependencyResolver();
     }
 
@@ -54,14 +54,16 @@ public class AnalyzeHandler implements Handler {
         try {
             Instant start = Instant.now();
             logger.info("Starting analysis of [{}]", gav);
-            ArtifactInfo artifactInfo = processor.process(gav);
+            // todo: process concurrently
+            ArtifactInfo artifactInfo = analyzer.analyze(gav);
             DependencyNode dependencyNode = dependencyResolver.resolveDependencies(gav);
-            List<DependencyInfo> deps = dependencyNode.getChildren().stream()
+            List<DependencyInfo> deps = dependencyNode.getChildren().parallelStream()
                     .map(DependencyNode::getDependency)
                     .map(dep -> {
                         Artifact artifact = dep.getArtifact();
                         Gav depGav = new Gav(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion());
-                        return new DependencyInfo(getArtifactTree(depGav), dep.getOptional());
+                        String scope = dep.getScope().isBlank() ? "compile" : dep.getScope();
+                        return new DependencyInfo(getArtifactTree(depGav), dep.getOptional(), scope);
                     })
                     .toList();
 

@@ -2,7 +2,6 @@ package dev.harrel.jarhell;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.harrel.jarhell.model.Gav;
 import io.javalin.Javalin;
 import io.javalin.config.JavalinConfig;
 import io.javalin.json.JavalinJackson;
@@ -19,8 +18,8 @@ public class Main {
         DatabaseInitializer.initialize(driver);
         ObjectMapper objectMapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
         ArtifactRepository artifactRepository = new ArtifactRepository(driver, objectMapper);
-        Processor processor = new Processor();
-        AnalyzeHandler analyzeHandler = new AnalyzeHandler(artifactRepository, processor);
+        Analyzer analyzer = new Analyzer();
+        AnalyzeHandler analyzeHandler = new AnalyzeHandler(artifactRepository, analyzer);
 
         Consumer<JavalinConfig> configConsumer = config -> {
             config.jsonMapper(new JavalinJackson(objectMapper));

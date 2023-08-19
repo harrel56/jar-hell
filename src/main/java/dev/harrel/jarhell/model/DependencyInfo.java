@@ -1,3 +1,3 @@
 package dev.harrel.jarhell.model;
 
-public record DependencyInfo(ArtifactTree artifact, Boolean optional) {}
+public record DependencyInfo(ArtifactTree artifact, Boolean optional, String scope) {}

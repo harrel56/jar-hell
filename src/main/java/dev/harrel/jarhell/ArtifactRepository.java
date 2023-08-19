@@ -10,6 +10,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
+import org.neo4j.driver.types.Relationship;
 
 import java.util.*;
 import java.util.stream.StreamSupport;
@@ -40,10 +41,13 @@ public class ArtifactRepository {
             for (Path path : relations) {
                 Map<Gav, AggregateTree> currentLevel = result;
                 List<Node> nodes = StreamSupport.stream(path.nodes().spliterator(), false).toList();
-                for (Node node : nodes) {
+                List<Relationship> relationships = StreamSupport.stream(path.relationships().spliterator(), false).toList();
+                for (int i = 0; i < nodes.size(); i++) {
+                    Node node = nodes.get(i);
+                    RelationProps relationProps = i < 1 ? null : objectMapper.convertValue(relationships.get(i - 1).asMap(), RelationProps.class);
                     ArtifactInfo data = toArtifactInfo(node);
                     Gav dataGav = toGav(data);
-                    currentLevel.computeIfAbsent(dataGav, k -> new AggregateTree(data));
+                    currentLevel.computeIfAbsent(dataGav, k -> new AggregateTree(data, relationProps));
                     currentLevel = currentLevel.get(dataGav).deps;
                 }
             }
@@ -98,19 +102,22 @@ public class ArtifactRepository {
 
     private static class AggregateTree {
         private final ArtifactInfo artifactInfo;
+        private final RelationProps relationProps;
         private final Map<Gav, AggregateTree> deps;
 
-        AggregateTree(ArtifactInfo artifactInfo) {
+        AggregateTree(ArtifactInfo artifactInfo, RelationProps relationProps) {
             this.artifactInfo = artifactInfo;
+            this.relationProps = relationProps;
             this.deps = new LinkedHashMap<>();
         }
 
         ArtifactTree toArtifactTree() {
             List<DependencyInfo> depsList = deps.values().stream()
-                    .map(AggregateTree::toArtifactTree)
-                    .map(at -> new DependencyInfo(at, null))
+                    .map(data -> new DependencyInfo(data.toArtifactTree(), data.relationProps.optional(), data.relationProps.scope()))
                     .toList();
             return new ArtifactTree(artifactInfo, depsList);
         }
     }
+
+    private record RelationProps(Boolean optional, String scope) {}
 }
