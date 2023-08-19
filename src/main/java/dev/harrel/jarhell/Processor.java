@@ -67,7 +67,8 @@ public class Processor {
         String query = "?filepath=%s/%s/%s/%s".formatted(groupPath, gav.artifactId(), gav.version(), fileName);
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://search.maven.org/remotecontent" + query))
-                .header("Range", "bytes=0-2048")
+                // todo: this range can always be too small - need to retry with bigger range if it fails
+                .header("Range", "bytes=0-16384")
                 .GET()
                 .build();
         HttpResponse<InputStream> inputResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
@@ -78,13 +79,13 @@ public class Processor {
                 .map(rangeRegex::matcher)
                 .filter(Matcher::find)
                 .map(Matcher::group)
+                .or(() -> inputResponse.headers().firstValue("Content-Length"))
                 .map(Long::valueOf)
                 .orElseThrow();
         InputStream is = inputResponse.body();
         JarInputStream jis = new JarInputStream(is);
         JarEntry entry = jis.getNextJarEntry();
         while (entry != null && !entry.getName().endsWith(".class")) {
-            jis.skip(entry.getSize());
             entry = jis.getNextJarEntry();
         }
 

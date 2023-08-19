@@ -12,6 +12,7 @@ import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.supplier.RepositorySystemSupplier;
@@ -39,12 +40,13 @@ public class DependencyResolver {
         session.setSystemProperties(Map.of("java.version", "17"));
     }
 
-    public void resolveDependencies(Gav gav) {
+    public DependencyNode resolveDependencies(Gav gav) {
         CollectRequest request = createCollectRequest(gav);
         try {
             CollectResult collectResult = repoSystem.collectDependencies(session, request);
+            return collectResult.getRoot();
         } catch (DependencyCollectionException e) {
-
+            throw new IllegalArgumentException(e);
         }
     }
 

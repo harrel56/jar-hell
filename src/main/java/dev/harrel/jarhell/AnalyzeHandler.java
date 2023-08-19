@@ -1,9 +1,12 @@
 package dev.harrel.jarhell;
 
 import dev.harrel.jarhell.model.ArtifactInfo;
+import dev.harrel.jarhell.model.ArtifactTree;
 import dev.harrel.jarhell.model.Gav;
 import io.javalin.http.Context;
 import io.javalin.http.Handler;
+import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.DependencyNode;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +15,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 public class AnalyzeHandler implements Handler {
@@ -19,10 +23,12 @@ public class AnalyzeHandler implements Handler {
 
     private final ArtifactRepository artifactRepository;
     private final Processor processor;
+    private final DependencyResolver dependencyResolver;
 
     public AnalyzeHandler(ArtifactRepository artifactRepository, Processor processor) {
         this.artifactRepository = artifactRepository;
         this.processor = processor;
+        this.dependencyResolver = new DependencyResolver();
     }
 
     @Override
@@ -34,20 +40,33 @@ public class AnalyzeHandler implements Handler {
         String version = Optional.ofNullable(ctx.queryParam("version"))
                 .orElseThrow(() -> new IllegalArgumentException("Argument 'version' is required"));
         Gav gav = new Gav(groupId, artifactId, version);
-        Optional<ArtifactInfo> storedInfo = artifactRepository.find(gav);
-        ArtifactInfo artifactInfo = storedInfo.orElseGet(() -> computeArtifactInfo(gav));
-        ctx.json(artifactInfo);
+
+        ArtifactTree artifactTree = getArtifactTree(gav);
+        ctx.json(artifactTree);
     }
 
-    private ArtifactInfo computeArtifactInfo(Gav gav) {
+    private ArtifactTree getArtifactTree(Gav gav) {
+        return artifactRepository.find(gav)
+                .map(a -> new ArtifactTree(a, List.of()))
+                .orElseGet(() -> computeArtifactTree(gav));
+    }
+
+    private ArtifactTree computeArtifactTree(Gav gav) {
         try {
             Instant start = Instant.now();
             logger.info("Starting analysis of [{}]", gav);
             ArtifactInfo artifactInfo = processor.process(gav);
+            DependencyNode dependencyNode = dependencyResolver.resolveDependencies(gav);
+            List<ArtifactTree> deps = dependencyNode.getChildren().stream()
+                    .map(DependencyNode::getDependency)
+                    .map(Dependency::getArtifact)
+                    .map(a -> getArtifactTree(new Gav(a.getGroupId(), a.getArtifactId(), a.getVersion())))
+                    .toList();
+
             artifactRepository.save(artifactInfo);
             long timeElapsed = Duration.between(start, Instant.now()).toMillis();
             logger.info("Analysis of [{}] completed in {}ms", gav, timeElapsed);
-            return artifactInfo;
+            return new ArtifactTree(artifactInfo, deps);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } catch (InterruptedException e) {
