@@ -63,10 +63,11 @@ public class AnalyzeHandler implements Handler {
                     .map(a -> getArtifactTree(new Gav(a.getGroupId(), a.getArtifactId(), a.getVersion())))
                     .toList();
 
-            artifactRepository.save(artifactInfo);
+            ArtifactTree artifactTree = new ArtifactTree(artifactInfo, deps);
+            artifactRepository.save(artifactTree);
             long timeElapsed = Duration.between(start, Instant.now()).toMillis();
             logger.info("Analysis of [{}] completed in {}ms", gav, timeElapsed);
-            return new ArtifactTree(artifactInfo, deps);
+            return artifactTree;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } catch (InterruptedException e) {
