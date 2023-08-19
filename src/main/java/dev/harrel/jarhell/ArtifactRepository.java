@@ -30,6 +30,11 @@ public class ArtifactRepository {
         Map<String, Object> gavData = objectMapper.convertValue(gav, new TypeReference<>() {});
         try (var session = driver.session()) {
             Map<Gav, AggregateTree> result = new LinkedHashMap<>();
+            /* todo: this seems awfully unoptimal - lots of duplicated data. Maybe something like this could be used:
+                MATCH (n)
+                OPTIONAL MATCH (n)-[r]-(m)
+                RETURN COLLECT(DISTINCT n) AS nodes, COLLECT(DISTINCT r) AS relationships
+             */
             List<Path> relations = session.executeRead(tx -> tx.run(new Query("""
                             MATCH x = (:Artifact {groupId: $props.groupId, artifactId: $props.artifactId, version: $props.version})-[DEPENDS_ON*0..]->(d:Artifact)
                             RETURN x

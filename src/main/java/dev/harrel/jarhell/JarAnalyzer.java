@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 
 public class JarAnalyzer {
     private static final Logger logger = LoggerFactory.getLogger(JarAnalyzer.class);
-    private static final List<String> RANGE_STEPS = List.of("2048", "16384", "131072", "*");
+    private static final List<String> RANGE_STEPS = List.of("8096", "16384", "131072", "524288");
 
     private final HttpClient httpClient;
 
@@ -33,7 +33,7 @@ public class JarAnalyzer {
         String fileName = "%s-%s.jar".formatted(gav.artifactId(), gav.version());
         String query = "?filepath=%s/%s/%s/%s".formatted(groupPath, gav.artifactId(), gav.version(), fileName);
 
-        Long jarSize = -1L;
+        long jarSize = -1L;
         for (String rangeStep : RANGE_STEPS) {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("https://search.maven.org/remotecontent" + query))

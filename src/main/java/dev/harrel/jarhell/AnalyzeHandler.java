@@ -57,7 +57,7 @@ public class AnalyzeHandler implements Handler {
             // todo: process concurrently
             ArtifactInfo artifactInfo = analyzer.analyze(gav);
             DependencyNode dependencyNode = dependencyResolver.resolveDependencies(gav);
-            List<DependencyInfo> deps = dependencyNode.getChildren().parallelStream()
+            List<DependencyInfo> deps = dependencyNode.getChildren().stream()
                     .map(DependencyNode::getDependency)
                     .map(dep -> {
                         Artifact artifact = dep.getArtifact();
