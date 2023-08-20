@@ -8,7 +8,6 @@ import dev.harrel.jarhell.model.DependencyInfo;
 import dev.harrel.jarhell.model.Gav;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.Record;
 import org.neo4j.driver.types.Entity;
 import org.neo4j.driver.types.MapAccessor;
 import org.neo4j.driver.types.Node;
