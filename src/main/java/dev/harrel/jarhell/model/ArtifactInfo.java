@@ -3,11 +3,11 @@ package dev.harrel.jarhell.model;
 public record ArtifactInfo(String groupId,
                            String artifactId,
                            String version,
-                           Long jarSize,
+                           Long packageSize,
                            String bytecodeVersion,
                            String packaging) {
-    public static ArtifactInfo create(Gav gav, JarInfo jarInfo, PomInfo pomInfo) {
+    public static ArtifactInfo create(Gav gav, PackageInfo packageInfo, PomInfo pomInfo) {
         return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(),
-                jarInfo.size(), jarInfo.bytecodeVersion(), pomInfo.packaging());
+                packageInfo.size(), packageInfo.bytecodeVersion(), pomInfo.packaging());
     }
 }
