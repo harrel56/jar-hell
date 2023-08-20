@@ -8,12 +8,18 @@ import dev.harrel.jarhell.model.DependencyInfo;
 import dev.harrel.jarhell.model.Gav;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Query;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.types.Entity;
+import org.neo4j.driver.types.MapAccessor;
 import org.neo4j.driver.types.Node;
-import org.neo4j.driver.types.Path;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.types.Relationship;
 
-import java.util.*;
-import java.util.stream.StreamSupport;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.neo4j.driver.Values.parameters;
 
@@ -27,48 +33,50 @@ public class ArtifactRepository {
     }
 
     public Optional<ArtifactTree> find(Gav gav) {
-        Map<String, Object> gavData = objectMapper.convertValue(gav, new TypeReference<>() {});
+        Map<String, Object> gavData = objectMapper.convertValue(gav, new TypeReference<>() {
+        });
         try (var session = driver.session()) {
-            Map<Gav, AggregateTree> result = new LinkedHashMap<>();
-            /* todo: this seems awfully unoptimal - lots of duplicated data. Maybe something like this could be used:
-                MATCH (n)
-                OPTIONAL MATCH (n)-[r]-(m)
-                RETURN COLLECT(DISTINCT n) AS nodes, COLLECT(DISTINCT r) AS relationships
-             */
-            List<Path> relations = session.executeRead(tx -> tx.run(new Query("""
-                            MATCH x = (:Artifact {groupId: $props.groupId, artifactId: $props.artifactId, version: $props.version})-[DEPENDS_ON*0..]->(d:Artifact)
-                            RETURN x
-                            ORDER BY d.groupId, d.artifactId, d.version""",
+            List<org.neo4j.driver.Record> records = session.executeRead(tx -> tx.run(new Query("""
+                            MATCH (root:Artifact {groupId: $props.groupId, artifactId: $props.artifactId, version: $props.version})-[rel:DEPENDS_ON*0..]->(dep:Artifact)
+                            UNWIND rel AS flatRel
+                            WITH root, flatRel, dep ORDER BY dep.groupId, dep.artifactId, dep.version
+                            RETURN COLLECT(DISTINCT root) AS root, COLLECT(DISTINCT flatRel) AS relations, COLLECT(DISTINCT dep) AS deps""",
                             parameters("props", gavData))
-                    ).list(r -> r.get("x").asPath())
+                    ).list()
             );
 
-            for (Path path : relations) {
-                Map<Gav, AggregateTree> currentLevel = result;
-                List<Node> nodes = StreamSupport.stream(path.nodes().spliterator(), false).toList();
-                List<Relationship> relationships = StreamSupport.stream(path.relationships().spliterator(), false).toList();
-                for (int i = 0; i < nodes.size(); i++) {
-                    Node node = nodes.get(i);
-                    RelationProps relationProps = i < 1 ? null : objectMapper.convertValue(relationships.get(i - 1).asMap(), RelationProps.class);
-                    ArtifactInfo data = toArtifactInfo(node);
-                    Gav dataGav = toGav(data);
-                    currentLevel.computeIfAbsent(dataGav, k -> new AggregateTree(data, relationProps));
-                    currentLevel = currentLevel.get(dataGav).deps;
-                }
+            if (records.size() > 1) {
+                throw new IllegalArgumentException("Too many results");
+            }
+            if (records.isEmpty()) {
+                return Optional.empty();
             }
 
-            if (result.size() > 1) {
-                throw new IllegalArgumentException("Too many results");
-            }  else {
-                return result.values().stream()
-                        .map(AggregateTree::toArtifactTree)
-                        .findFirst();
+            Record record = records.get(0);
+            Node rootNode = record.get("root").get(0).asNode();
+            Map<String, AggregateTree> nodes = record.get("deps").asList(Value::asEntity).stream()
+                    .collect(Collectors.toMap(Entity::elementId, n -> new AggregateTree(toArtifactInfo(n))));
+            AggregateTree rootTree = new AggregateTree(toArtifactInfo(rootNode));
+            nodes.put(rootNode.elementId(), rootTree);
+
+            List<Relationship> relations = record.get("relations").asList(Value::asRelationship);
+            for (Relationship relation : relations) {
+                AggregateTree start = nodes.get(relation.startNodeElementId());
+                AggregateTree end = nodes.get(relation.endNodeElementId());
+
+                end.relationProps = objectMapper.convertValue(relation.asMap(), RelationProps.class);
+
+                Gav endGav = toGav(end.artifactInfo);
+                start.deps.put(endGav, end);
             }
+
+            return Optional.of(rootTree.toArtifactTree());
         }
     }
 
     public void save(ArtifactTree artifactTree) {
-        Map<String, Object> propsMap = objectMapper.convertValue(artifactTree.artifactInfo(), new TypeReference<>() {});
+        Map<String, Object> propsMap = objectMapper.convertValue(artifactTree.artifactInfo(), new TypeReference<>() {
+        });
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(tx -> tx.run(new Query("CREATE (a:Artifact $props)",
                             parameters("props", propsMap))
@@ -77,8 +85,8 @@ public class ArtifactRepository {
 
             Map<String, Object> parentGav = toGavMap(artifactTree.artifactInfo());
             artifactTree.dependencies().forEach(dep -> {
-                Map<String, Boolean> depProps = Map.of("optional", dep.optional());
-                Map<String, Object> depGav = toGavMap(dep.artifact().artifactInfo());
+                        Map<String, Boolean> depProps = Map.of("optional", dep.optional());
+                        Map<String, Object> depGav = toGavMap(dep.artifact().artifactInfo());
                         session.executeWriteWithoutResult(tx -> tx.run(new Query("""
                                 MATCH (a:Artifact {groupId: $parentGav.groupId, artifactId: $parentGav.artifactId, version: $parentGav.version}),
                                       (d:Artifact {groupId: $depGav.groupId, artifactId: $depGav.artifactId, version: $depGav.version})
@@ -101,18 +109,17 @@ public class ArtifactRepository {
         );
     }
 
-    private ArtifactInfo toArtifactInfo(Node node) {
+    private ArtifactInfo toArtifactInfo(MapAccessor node) {
         return objectMapper.convertValue(node.asMap(), ArtifactInfo.class);
     }
 
     private static class AggregateTree {
         private final ArtifactInfo artifactInfo;
-        private final RelationProps relationProps;
         private final Map<Gav, AggregateTree> deps;
+        private RelationProps relationProps;
 
-        AggregateTree(ArtifactInfo artifactInfo, RelationProps relationProps) {
+        AggregateTree(ArtifactInfo artifactInfo) {
             this.artifactInfo = artifactInfo;
-            this.relationProps = relationProps;
             this.deps = new LinkedHashMap<>();
         }
 
@@ -124,5 +131,6 @@ public class ArtifactRepository {
         }
     }
 
-    private record RelationProps(Boolean optional, String scope) {}
+    private record RelationProps(Boolean optional, String scope) {
+    }
 }
