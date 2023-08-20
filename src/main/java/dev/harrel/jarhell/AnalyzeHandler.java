@@ -18,6 +18,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class AnalyzeHandler implements Handler {
     private static final Logger logger = LoggerFactory.getLogger(AnalyzeHandler.class);
@@ -25,6 +28,8 @@ public class AnalyzeHandler implements Handler {
     private final ArtifactRepository artifactRepository;
     private final Analyzer analyzer;
     private final DependencyResolver dependencyResolver;
+
+    private final ConcurrentHashMap<Gav, Lock> processingMap = new ConcurrentHashMap<>();
 
     public AnalyzeHandler(ArtifactRepository artifactRepository, Analyzer analyzer, DependencyResolver dependencyResolver) {
         this.artifactRepository = artifactRepository;
@@ -47,7 +52,24 @@ public class AnalyzeHandler implements Handler {
     }
 
     private ArtifactTree getArtifactTree(Gav gav) {
-        return artifactRepository.find(gav).orElseGet(() -> computeArtifactTree(gav));
+        ReentrantLock lock = new ReentrantLock();
+        lock.lock();
+        Lock currentLock = processingMap.putIfAbsent(gav, lock);
+        if (currentLock == null) {
+            try {
+                return artifactRepository.find(gav).orElseGet(() -> computeArtifactTree(gav));
+            } finally {
+                lock.unlock();
+            }
+        } else {
+            lock.unlock();
+            currentLock.lock();
+            try {
+                return artifactRepository.find(gav).orElseGet(() -> computeArtifactTree(gav));
+            } finally {
+                currentLock.unlock();
+            }
+        }
     }
 
     private ArtifactTree computeArtifactTree(Gav gav) {
@@ -57,12 +79,18 @@ public class AnalyzeHandler implements Handler {
             // todo: process concurrently
             ArtifactInfo artifactInfo = analyzer.analyze(gav);
             DependencyNode dependencyNode = dependencyResolver.resolveDependencies(gav);
-            List<DependencyInfo> deps = dependencyNode.getChildren().stream()
+            List<DependencyInfo> deps = dependencyNode.getChildren().parallelStream()
                     .map(DependencyNode::getDependency)
                     .map(dep -> {
                         Artifact artifact = dep.getArtifact();
                         Gav depGav = new Gav(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion());
                         String scope = dep.getScope().isBlank() ? "compile" : dep.getScope();
+                        // scope "system" is broken and this dep might not exist at all
+                        if (scope.equals("system")) {
+                            ArtifactInfo stubInfo = new ArtifactInfo(depGav.groupId(), depGav.artifactId(), depGav.version(),
+                                    null, null, null, null, null, null, null);
+                            return new DependencyInfo(new ArtifactTree(stubInfo, List.of()), dep.getOptional(), scope);
+                        }
                         return new DependencyInfo(getArtifactTree(depGav), dep.getOptional(), scope);
                     })
                     .toList();

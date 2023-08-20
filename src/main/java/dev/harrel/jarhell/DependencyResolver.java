@@ -45,7 +45,10 @@ public class DependencyResolver {
         session.setRepositoryListener(new LoggingRepositoryListener());
         session.setConfigProperty(ArtifactDescriptorReaderDelegate.class.getName(), new CustomDescriptorReaderDelegate());
         // for maven profiles activation which depend on jdk version - value doesn't really matter
-        session.setSystemProperties(Map.of("java.version", "17"));
+        session.setSystemProperties(Map.of(
+                "java.version", "17",
+                "java.home", System.getProperty("java.home")
+        ));
     }
 
     // todo: this resolves all deps when only first level of deps is needed
@@ -64,6 +67,10 @@ public class DependencyResolver {
         try {
             ArtifactDescriptorResult result = repoSystem.readArtifactDescriptor(session, request);
             Model model = (Model) result.getProperties().get(CustomDescriptorReaderDelegate.MODEL_KEY);
+            if (model == null) {
+                throw new IllegalArgumentException("Descriptor was not parsed into a model: " + gav);
+            }
+            // todo: url seems to be resolved incorrectly sometimes :(
             return new DescriptorInfo(model.getPackaging(), model.getName(), model.getDescription(), model.getUrl(), model.getInceptionYear());
         } catch (ArtifactDescriptorException e) {
             throw new IllegalArgumentException(e);
