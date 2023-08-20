@@ -26,10 +26,10 @@ public class AnalyzeHandler implements Handler {
     private final Analyzer analyzer;
     private final DependencyResolver dependencyResolver;
 
-    public AnalyzeHandler(ArtifactRepository artifactRepository, Analyzer analyzer) {
+    public AnalyzeHandler(ArtifactRepository artifactRepository, Analyzer analyzer, DependencyResolver dependencyResolver) {
         this.artifactRepository = artifactRepository;
         this.analyzer = analyzer;
-        this.dependencyResolver = new DependencyResolver();
+        this.dependencyResolver = dependencyResolver;
     }
 
     @Override

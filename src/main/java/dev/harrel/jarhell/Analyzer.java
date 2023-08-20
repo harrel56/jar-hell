@@ -4,19 +4,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.harrel.jarhell.model.ArtifactInfo;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.PackageInfo;
-import dev.harrel.jarhell.model.PomInfo;
+import dev.harrel.jarhell.model.descriptor.DescriptorInfo;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.util.Set;
 
 public class Analyzer {
-    private final ObjectMapper objectMapper;
+    private final DependencyResolver dependencyResolver;
     private final ApiClient apiClient;
     private final PackageAnalyzer packageAnalyzer;
 
-    public Analyzer(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public Analyzer(ObjectMapper objectMapper, DependencyResolver dependencyResolver) {
+        this.dependencyResolver = dependencyResolver;
         HttpClient httpClient = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .build();
@@ -34,10 +34,10 @@ public class Analyzer {
         if (!files.contains("pom")) {
             throw new IllegalArgumentException("Artifact is missing pom file: " + gav);
         }
-        PomInfo pomInfo = apiClient.fetchPomInfo(gav);
-        PackageInfo packageInfo = packageAnalyzer.analyzeJar(gav, files, pomInfo.packaging());
+        DescriptorInfo descriptorInfo = dependencyResolver.resolveDescriptor(gav);
+        PackageInfo packageInfo = packageAnalyzer.analyzeJar(gav, files, descriptorInfo.packaging());
 
-        return ArtifactInfo.create(gav, packageInfo, pomInfo);
+        return ArtifactInfo.create(gav, packageInfo, descriptorInfo);
     }
 }
 

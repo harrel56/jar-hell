@@ -130,6 +130,5 @@ public class ArtifactRepository {
         }
     }
 
-    private record RelationProps(Boolean optional, String scope) {
-    }
+    private record RelationProps(Boolean optional, String scope) {}
 }

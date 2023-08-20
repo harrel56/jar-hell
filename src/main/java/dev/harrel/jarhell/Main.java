@@ -21,8 +21,9 @@ public class Main {
                 .setSerializationInclusion(JsonInclude.Include.NON_NULL)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         ArtifactRepository artifactRepository = new ArtifactRepository(driver, objectMapper);
-        Analyzer analyzer = new Analyzer(objectMapper);
-        AnalyzeHandler analyzeHandler = new AnalyzeHandler(artifactRepository, analyzer);
+        DependencyResolver dependencyResolver = new DependencyResolver();
+        Analyzer analyzer = new Analyzer(objectMapper, dependencyResolver);
+        AnalyzeHandler analyzeHandler = new AnalyzeHandler(artifactRepository, analyzer, dependencyResolver);
 
         Consumer<JavalinConfig> configConsumer = config -> {
             config.jsonMapper(new JavalinJackson(objectMapper));

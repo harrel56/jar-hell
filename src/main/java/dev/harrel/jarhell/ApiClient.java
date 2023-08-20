@@ -1,15 +1,11 @@
 package dev.harrel.jarhell;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import dev.harrel.jarhell.model.Gav;
-import dev.harrel.jarhell.model.PomInfo;
 import dev.harrel.jarhell.model.central.ArtifactDoc;
 import dev.harrel.jarhell.model.central.SelectResponse;
 import dev.harrel.jarhell.model.central.VersionDoc;
-import dev.harrel.jarhell.model.pom.ProjectModel;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -25,18 +21,17 @@ public class ApiClient {
     private static final String CONTENT_URL = "https://search.maven.org/remotecontent";
 
     private final ObjectMapper objectMapper;
-    private final ObjectMapper xmlMapper;
     private final HttpClient httpClient;
 
     public ApiClient(ObjectMapper objectMapper, HttpClient httpClient) {
         this.objectMapper = objectMapper;
         this.httpClient = httpClient;
-        this.xmlMapper = new XmlMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     public String fetchLatestVersion(String groupId, String artifactId) {
         String query = "?q=g:%s+AND+a:%s".formatted(groupId, artifactId);
-        SelectResponse<ArtifactDoc> selectResponse = fetch(SELECT_URL + query, objectMapper, new TypeReference<>() {});
+        SelectResponse<ArtifactDoc> selectResponse = fetch(SELECT_URL + query, new TypeReference<>() {
+        });
         if (selectResponse.response().numFound() < 1) {
             throw new IllegalArgumentException("Artifact couldn't be found: %s:%s".formatted(groupId, artifactId));
         }
@@ -45,7 +40,8 @@ public class ApiClient {
 
     public Set<String> fetchAvailableFiles(Gav gav) {
         String query = "?q=g:%s+AND+a:%s+AND+v:%s".formatted(gav.groupId(), gav.artifactId(), gav.version());
-        SelectResponse<VersionDoc> selectResponse = fetch(SELECT_URL + query, objectMapper, new TypeReference<>() {});
+        SelectResponse<VersionDoc> selectResponse = fetch(SELECT_URL + query, new TypeReference<>() {
+        });
         if (selectResponse.response().numFound() < 1) {
             throw new IllegalArgumentException("Artifact couldn't be found: " + gav);
         }
@@ -56,12 +52,7 @@ public class ApiClient {
                 .collect(Collectors.toSet());
     }
 
-    public PomInfo fetchPomInfo(Gav gav) {
-        ProjectModel projectModel = fetch(createFileUrl(gav, "pom"), xmlMapper, new TypeReference<>() {});
-        return new PomInfo(projectModel.packaging(), projectModel.dependencies());
-    }
-
-    private <T> T fetch(String url, ObjectMapper objectMapper, TypeReference<T> type) {
+    private <T> T fetch(String url, TypeReference<T> type) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
