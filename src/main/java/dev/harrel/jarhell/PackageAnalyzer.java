@@ -76,7 +76,7 @@ public class PackageAnalyzer {
         InputStream is = streamResponse.body();
         JarInputStream jis = new JarInputStream(is);
         JarEntry entry = jis.getNextJarEntry();
-        while (entry != null && !entry.getName().endsWith(".class")) {
+        while (entry != null && !(entry.getName().endsWith(".class") && !entry.getName().equals("module-info.class"))) {
             entry = jis.getNextJarEntry();
         }
 

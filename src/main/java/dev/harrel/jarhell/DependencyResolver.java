@@ -63,8 +63,8 @@ public class DependencyResolver {
         ArtifactDescriptorRequest request = new ArtifactDescriptorRequest(new DefaultArtifact(gav.toString()), remoteRepos, null);
         try {
             ArtifactDescriptorResult result = repoSystem.readArtifactDescriptor(session, request);
-            Model projectModel = (Model) result.getProperties().get(CustomDescriptorReaderDelegate.MODEL_KEY);
-            return new DescriptorInfo(projectModel.getPackaging());
+            Model model = (Model) result.getProperties().get(CustomDescriptorReaderDelegate.MODEL_KEY);
+            return new DescriptorInfo(model.getPackaging(), model.getName(), model.getDescription(), model.getUrl(), model.getInceptionYear());
         } catch (ArtifactDescriptorException e) {
             throw new IllegalArgumentException(e);
         }

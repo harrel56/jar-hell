@@ -30,7 +30,7 @@ public class Main {
         };
         Javalin server = Javalin.create(configConsumer)
                 .get("/analyze", analyzeHandler)
-                .start(8060);
+                .start(8061);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             driver.close();
