@@ -1,6 +1,7 @@
 package dev.harrel.jarhell;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.Javalin;
 import io.javalin.config.JavalinConfig;
@@ -16,9 +17,11 @@ public class Main {
     public static void main(String[] arg) {
         Driver driver = createNeo4jDriver();
         DatabaseInitializer.initialize(driver);
-        ObjectMapper objectMapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        ObjectMapper objectMapper = new ObjectMapper()
+                .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         ArtifactRepository artifactRepository = new ArtifactRepository(driver, objectMapper);
-        Analyzer analyzer = new Analyzer();
+        Analyzer analyzer = new Analyzer(objectMapper);
         AnalyzeHandler analyzeHandler = new AnalyzeHandler(artifactRepository, analyzer);
 
         Consumer<JavalinConfig> configConsumer = config -> {

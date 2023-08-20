@@ -21,8 +21,6 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.15.2'
 
-    implementation 'io.nats:jparse:1.2.3'
-
     implementation 'org.apache.maven:maven-resolver-provider:3.9.4'
     implementation 'org.apache.maven.resolver:maven-resolver-transport-http:1.9.15'
     implementation 'org.apache.maven.resolver:maven-resolver-transport-file:1.9.15'
