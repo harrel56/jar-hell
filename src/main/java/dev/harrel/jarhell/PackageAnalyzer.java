@@ -40,7 +40,7 @@ public class PackageAnalyzer {
             return new PackageInfo(null, null);
         }
         String url = ApiClient.createFileUrl(gav, packageExtension);
-        long packageSize = -1L;
+        Long packageSize = null;
         for (String rangeStep : RANGE_STEPS) {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
@@ -66,6 +66,10 @@ public class PackageAnalyzer {
                 return new PackageInfo(packageSize, byteCodeVersion);
             } catch (IOException e) {
                 logger.warn("Parsing jar failed for [{}] and range [{}]. Retrying with bigger range...", gav, rangeStep);
+                if (packageSize < Long.parseLong(rangeStep)) {
+                    break;
+                }
+
             }
         }
         logger.warn("No class files found in jar [{}]. Assuming no bytecode", gav);
