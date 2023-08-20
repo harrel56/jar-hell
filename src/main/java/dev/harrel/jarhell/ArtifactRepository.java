@@ -36,23 +36,23 @@ public class ArtifactRepository {
         Map<String, Object> gavData = objectMapper.convertValue(gav, new TypeReference<>() {
         });
         try (var session = driver.session()) {
-            List<org.neo4j.driver.Record> records = session.executeRead(tx -> tx.run(new Query("""
+            org.neo4j.driver.Record record = session.executeRead(tx -> tx.run(new Query("""
                             MATCH (root:Artifact {groupId: $props.groupId, artifactId: $props.artifactId, version: $props.version})-[rel:DEPENDS_ON*0..]->(dep:Artifact)
-                            UNWIND rel AS flatRel
+                            UNWIND
+                                CASE
+                                    WHEN rel = [] THEN [null]
+                                    ELSE rel
+                                END AS flatRel
                             WITH root, flatRel, dep ORDER BY dep.groupId, dep.artifactId, dep.version
                             RETURN COLLECT(DISTINCT root) AS root, COLLECT(DISTINCT flatRel) AS relations, COLLECT(DISTINCT dep) AS deps""",
                             parameters("props", gavData))
-                    ).list()
+                    ).single()
             );
 
-            if (records.size() > 1) {
-                throw new IllegalArgumentException("Too many results");
-            }
-            if (records.isEmpty()) {
+            if (record.get("root").isEmpty()) {
                 return Optional.empty();
             }
 
-            Record record = records.get(0);
             Node rootNode = record.get("root").get(0).asNode();
             Map<String, AggregateTree> nodes = record.get("deps").asList(Value::asEntity).stream()
                     .collect(Collectors.toMap(Entity::elementId, n -> new AggregateTree(toArtifactInfo(n))));
