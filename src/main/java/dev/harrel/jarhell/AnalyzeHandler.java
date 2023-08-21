@@ -19,7 +19,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 
 public class AnalyzeHandler implements Handler {
@@ -48,27 +51,34 @@ public class AnalyzeHandler implements Handler {
                 .orElseThrow(() -> new IllegalArgumentException("Argument 'version' is required"));
         Gav gav = new Gav(groupId, artifactId, version);
 
-        CompletableFuture<ArtifactTree> artifactTree = getArtifactTree(gav);
+        CompletableFuture<ArtifactTree> artifactTree = guardedComputeArtifactTree(gav);
         ctx.json(artifactTree.join());
-    }
-
-    private CompletableFuture<ArtifactTree> getArtifactTree(Gav gav) {
-        return artifactRepository.find(gav)
-                .map(CompletableFuture::completedFuture)
-                .orElseGet(() -> guardedComputeArtifactTree(gav));
     }
 
     private CompletableFuture<ArtifactTree> guardedComputeArtifactTree(Gav gav) {
         CompletableFuture<ArtifactTree> future = new CompletableFuture<>();
         CompletableFuture<ArtifactTree> currentFuture = processingMap.putIfAbsent(gav, future);
         if (currentFuture == null) {
-            CompletableFuture.supplyAsync(() -> computeArtifactTree(gav), executorService)
+            CompletableFuture.supplyAsync(() -> getArtifactTree(gav), executorService)
                     .thenCompose(Function.identity()) // flatMap
-                    .thenAccept(future::complete);
+                    .whenComplete((value, ex) -> {
+                        if (ex == null) {
+                            future.complete(value);
+                        } else {
+                            future.completeExceptionally(ex);
+                        }
+                        processingMap.remove(gav, future);
+                    });
             return future;
         } else {
             return currentFuture;
         }
+    }
+
+    private CompletableFuture<ArtifactTree> getArtifactTree(Gav gav) {
+        return artifactRepository.find(gav)
+                .map(CompletableFuture::completedFuture)
+                .orElseGet(() -> computeArtifactTree(gav));
     }
 
     private CompletableFuture<ArtifactTree> computeArtifactTree(Gav gav) {
@@ -85,10 +95,10 @@ public class AnalyzeHandler implements Handler {
 
             return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
                     .thenApply(nothing ->
-                                    futures.stream()
-                                            .map(CompletableFuture::join)
-                                            .toList()
-                            )
+                            futures.stream()
+                                    .map(CompletableFuture::join)
+                                    .toList()
+                    )
                     .thenApply(deps -> {
                         ArtifactTree artifactTree = new ArtifactTree(artifactInfo, deps);
                         artifactRepository.save(artifactTree);
@@ -115,6 +125,6 @@ public class AnalyzeHandler implements Handler {
             DependencyInfo dependencyInfo = new DependencyInfo(new ArtifactTree(stubInfo, List.of()), dep.getOptional(), scope);
             return CompletableFuture.completedFuture(dependencyInfo);
         }
-        return getArtifactTree(depGav).thenApply(at -> new DependencyInfo(at, dep.getOptional(), scope));
+        return guardedComputeArtifactTree(depGav).thenApply(at -> new DependencyInfo(at, dep.getOptional(), scope));
     }
 }
