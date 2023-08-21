@@ -84,7 +84,7 @@ public class ArtifactRepository {
 
             Map<String, Object> parentGav = toGavMap(artifactTree.artifactInfo());
             artifactTree.dependencies().forEach(dep -> {
-                        Map<String, Boolean> depProps = Map.of("optional", dep.optional());
+                        Map<String, Object> depProps = Map.of("optional", dep.optional(), "scope", dep.scope());
                         Map<String, Object> depGav = toGavMap(dep.artifact().artifactInfo());
                         session.executeWriteWithoutResult(tx -> tx.run(new Query("""
                                 MATCH (a:Artifact {groupId: $parentGav.groupId, artifactId: $parentGav.artifactId, version: $parentGav.version}),
