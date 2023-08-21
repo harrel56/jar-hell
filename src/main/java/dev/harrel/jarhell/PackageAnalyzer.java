@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -29,7 +30,18 @@ public class PackageAnalyzer {
         this.httpClient = httpClient;
     }
 
-    public PackageInfo analyzeJar(Gav gav, Set<String> availableFiles, String packaging) throws InterruptedException, IOException {
+    public PackageInfo analyzePackage(Gav gav, Set<String> availableFiles, String packaging) {
+        try {
+            return fetchPackage(gav, availableFiles, packaging);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    private PackageInfo fetchPackage(Gav gav, Set<String> availableFiles, String packaging) throws InterruptedException, IOException {
         String packageExtension;
         if (availableFiles.contains("jar")) {
             packageExtension = "jar";
@@ -69,7 +81,6 @@ public class PackageAnalyzer {
                 if (packageSize < Long.parseLong(rangeStep)) {
                     break;
                 }
-
             }
         }
         logger.warn("No class files found in jar [{}]. Assuming no bytecode", gav);

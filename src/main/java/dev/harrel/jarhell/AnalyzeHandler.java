@@ -13,8 +13,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -82,36 +80,29 @@ public class AnalyzeHandler implements Handler {
     }
 
     private CompletableFuture<ArtifactTree> computeArtifactTree(Gav gav) {
-        try {
-            Instant start = Instant.now();
-            logger.info("Starting analysis of [{}]", gav);
-            ArtifactInfo artifactInfo = analyzer.analyze(gav);
-            DependencyNode dependencyNode = dependencyResolver.resolveDependencies(gav);
+        Instant start = Instant.now();
+        logger.info("Starting analysis of [{}]", gav);
+        ArtifactInfo artifactInfo = analyzer.analyze(gav);
+        DependencyNode dependencyNode = dependencyResolver.resolveDependencies(gav);
 
-            List<CompletableFuture<DependencyInfo>> futures = dependencyNode.getChildren().stream()
-                    .map(DependencyNode::getDependency)
-                    .map(this::computeDependency)
-                    .toList();
+        List<CompletableFuture<DependencyInfo>> futures = dependencyNode.getChildren().stream()
+                .map(DependencyNode::getDependency)
+                .map(this::computeDependency)
+                .toList();
 
-            return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
-                    .thenApply(nothing ->
-                            futures.stream()
-                                    .map(CompletableFuture::join)
-                                    .toList()
-                    )
-                    .thenApply(deps -> {
-                        ArtifactTree artifactTree = new ArtifactTree(artifactInfo, deps);
-                        artifactRepository.save(artifactTree);
-                        long timeElapsed = Duration.between(start, Instant.now()).toMillis();
-                        logger.info("Analysis of [{}] completed in {}ms", gav, timeElapsed);
-                        return artifactTree;
-                    });
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalArgumentException(e);
-        }
+        return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+                .thenApply(nothing ->
+                        futures.stream()
+                                .map(CompletableFuture::join)
+                                .toList()
+                )
+                .thenApply(deps -> {
+                    ArtifactTree artifactTree = new ArtifactTree(artifactInfo, deps);
+                    artifactRepository.save(artifactTree);
+                    long timeElapsed = Duration.between(start, Instant.now()).toMillis();
+                    logger.info("Analysis of [{}] completed in {}ms", gav, timeElapsed);
+                    return artifactTree;
+                });
     }
 
     private CompletableFuture<DependencyInfo> computeDependency(Dependency dep) {
