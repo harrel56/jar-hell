@@ -18,7 +18,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -29,7 +29,8 @@ public class AnalyzeHandler implements Handler {
     private final Analyzer analyzer;
     private final DependencyResolver dependencyResolver;
 
-    private final ConcurrentHashMap<Gav, Lock> processingMap = new ConcurrentHashMap<>();
+    private final ExecutorService executorService = Executors.newFixedThreadPool(32);
+    private final ConcurrentHashMap<Gav, CountDownLatch> processingMap = new ConcurrentHashMap<>();
 
     public AnalyzeHandler(ArtifactRepository artifactRepository, Analyzer analyzer, DependencyResolver dependencyResolver) {
         this.artifactRepository = artifactRepository;
@@ -38,7 +39,7 @@ public class AnalyzeHandler implements Handler {
     }
 
     @Override
-    public void handle(@NotNull Context ctx) {
+    public void handle(@NotNull Context ctx) throws ExecutionException, InterruptedException {
         String groupId = Optional.ofNullable(ctx.queryParam("groupId"))
                 .orElseThrow(() -> new IllegalArgumentException("Argument 'groupId' is required"));
         String artifactId = Optional.ofNullable(ctx.queryParam("artifactId"))
@@ -48,26 +49,33 @@ public class AnalyzeHandler implements Handler {
         Gav gav = new Gav(groupId, artifactId, version);
 
         ArtifactTree artifactTree = getArtifactTree(gav);
+//        Future<ArtifactTree> futureTree = executorService.submit(() -> getArtifactTree(gav));
         ctx.json(artifactTree);
     }
 
     private ArtifactTree getArtifactTree(Gav gav) {
-        ReentrantLock lock = new ReentrantLock();
-        lock.lock();
-        Lock currentLock = processingMap.putIfAbsent(gav, lock);
-        if (currentLock == null) {
+        return artifactRepository.find(gav).orElseGet(() -> guardedComputeArtifactTree(gav));
+    }
+
+    private ArtifactTree guardedComputeArtifactTree(Gav gav) {
+        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch currentLatch = processingMap.putIfAbsent(gav, latch);
+        if (currentLatch == null) {
             try {
-                return artifactRepository.find(gav).orElseGet(() -> computeArtifactTree(gav));
+                return computeArtifactTree(gav);
             } finally {
-                lock.unlock();
+                latch.countDown();
+                processingMap.remove(gav);
             }
         } else {
-            lock.unlock();
-            currentLock.lock();
             try {
-                return artifactRepository.find(gav).orElseGet(() -> computeArtifactTree(gav));
-            } finally {
-                currentLock.unlock();
+                System.out.println("WAITING: " + gav + " --- " + Thread.currentThread().getName());
+                currentLatch.await();
+                System.out.println("AWAKEN: " + gav + " --- " + Thread.currentThread().getName());
+                return getArtifactTree(gav);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalArgumentException(e);
             }
         }
     }
