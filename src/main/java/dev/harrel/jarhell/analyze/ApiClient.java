@@ -1,4 +1,4 @@
-package dev.harrel.jarhell;
+package dev.harrel.jarhell.analyze;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,7 +16,7 @@ import java.net.http.HttpResponse;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class ApiClient {
+class ApiClient {
     private static final String SELECT_URL = "https://search.maven.org/solrsearch/select";
     private static final String CONTENT_URL = "https://search.maven.org/remotecontent";
 

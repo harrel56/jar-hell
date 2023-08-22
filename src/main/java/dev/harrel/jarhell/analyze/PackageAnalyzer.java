@@ -1,6 +1,5 @@
 package dev.harrel.jarhell.analyze;
 
-import dev.harrel.jarhell.ApiClient;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.PackageInfo;
 import org.slf4j.Logger;
