@@ -1,5 +1,6 @@
-package dev.harrel.jarhell;
+package dev.harrel.jarhell.analyze;
 
+import dev.harrel.jarhell.ApiClient;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.PackageInfo;
 import org.slf4j.Logger;
@@ -20,7 +21,7 @@ import java.util.jar.JarInputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class PackageAnalyzer {
+class PackageAnalyzer {
     private static final Logger logger = LoggerFactory.getLogger(PackageAnalyzer.class);
     private static final List<String> RANGE_STEPS = List.of("8096", "16384", "131072", "524288");
 

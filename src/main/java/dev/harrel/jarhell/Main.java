@@ -3,6 +3,8 @@ package dev.harrel.jarhell;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.harrel.jarhell.analyze.AnalyzeEngine;
+import dev.harrel.jarhell.handler.AnalyzeHandler;
 import io.javalin.Javalin;
 import io.javalin.config.JavalinConfig;
 import io.javalin.json.JavalinJackson;
@@ -21,15 +23,14 @@ public class Main {
                 .setSerializationInclusion(JsonInclude.Include.NON_NULL)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         ArtifactRepository artifactRepository = new ArtifactRepository(driver, objectMapper);
-        DependencyResolver dependencyResolver = new DependencyResolver();
-        Analyzer analyzer = new Analyzer(objectMapper, dependencyResolver);
-        AnalyzeHandler analyzeHandler = new AnalyzeHandler(artifactRepository, analyzer, dependencyResolver);
+        AnalyzeEngine analyzeEngine = new AnalyzeEngine(objectMapper, artifactRepository);
+        AnalyzeHandler analyzeHandler = new AnalyzeHandler(analyzeEngine);
 
         Consumer<JavalinConfig> configConsumer = config -> {
             config.jsonMapper(new JavalinJackson(objectMapper));
         };
         Javalin server = Javalin.create(configConsumer)
-                .get("/analyze", analyzeHandler)
+                .post("/api/v1/analyze", analyzeHandler)
                 .start(8060);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {

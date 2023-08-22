@@ -1,4 +1,4 @@
-package dev.harrel.jarhell;
+package dev.harrel.jarhell.analyze;
 
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.descriptor.DescriptorInfo;
@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 
-public class DependencyResolver {
+class MavenRunner {
     private static final String MAVEN_CENTRAL = "https://repo.maven.apache.org/maven2/";
     private static final String LOCAL_REPO_PATH = "build/local-repo";
 
@@ -37,7 +37,7 @@ public class DependencyResolver {
     private final DefaultRepositorySystemSession session;
     private final List<RemoteRepository> remoteRepos;
 
-    public DependencyResolver() {
+    public MavenRunner() {
         this.repoSystem = new RepositorySystemSupplier().get();
         this.session = MavenRepositorySystemUtils.newSession();
         this.remoteRepos = List.of(new RemoteRepository.Builder("central", "default", MAVEN_CENTRAL).build());

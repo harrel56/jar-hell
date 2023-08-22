@@ -1,59 +1,43 @@
-package dev.harrel.jarhell;
+package dev.harrel.jarhell.analyze;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.harrel.jarhell.ArtifactRepository;
 import dev.harrel.jarhell.model.ArtifactInfo;
 import dev.harrel.jarhell.model.ArtifactTree;
 import dev.harrel.jarhell.model.DependencyInfo;
 import dev.harrel.jarhell.model.Gav;
-import io.javalin.http.Context;
-import io.javalin.http.Handler;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 
-public class AnalyzeHandler implements Handler {
-    private static final Logger logger = LoggerFactory.getLogger(AnalyzeHandler.class);
-
-    private final ArtifactRepository artifactRepository;
-    private final Analyzer analyzer;
-    private final DependencyResolver dependencyResolver;
+public class AnalyzeEngine {
+    private static final Logger logger = LoggerFactory.getLogger(AnalyzeEngine.class);
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(32);
     private final ConcurrentHashMap<Gav, CompletableFuture<ArtifactTree>> processingMap = new ConcurrentHashMap<>();
 
-    public AnalyzeHandler(ArtifactRepository artifactRepository, Analyzer analyzer, DependencyResolver dependencyResolver) {
+    private final ArtifactRepository artifactRepository;
+    private final MavenRunner mavenRunner;
+    private final Analyzer analyzer;
+
+    public AnalyzeEngine(ObjectMapper objectMapper, ArtifactRepository artifactRepository) {
         this.artifactRepository = artifactRepository;
-        this.analyzer = analyzer;
-        this.dependencyResolver = dependencyResolver;
+        this.mavenRunner = new MavenRunner();
+        this.analyzer = new Analyzer(objectMapper, mavenRunner);
     }
 
-    @Override
-    public void handle(@NotNull Context ctx) {
-        String groupId = Optional.ofNullable(ctx.queryParam("groupId"))
-                .orElseThrow(() -> new IllegalArgumentException("Argument 'groupId' is required"));
-        String artifactId = Optional.ofNullable(ctx.queryParam("artifactId"))
-                .orElseThrow(() -> new IllegalArgumentException("Argument 'artifactId' is required"));
-        String version = Optional.ofNullable(ctx.queryParam("version"))
-                .orElseThrow(() -> new IllegalArgumentException("Argument 'version' is required"));
-        Gav gav = new Gav(groupId, artifactId, version);
-
-        CompletableFuture<ArtifactTree> artifactTree = guardedComputeArtifactTree(gav);
-        ctx.json(artifactTree.join());
-    }
-
-    private CompletableFuture<ArtifactTree> guardedComputeArtifactTree(Gav gav) {
+    public CompletableFuture<ArtifactTree> analyze(Gav gav) {
         CompletableFuture<ArtifactTree> future = new CompletableFuture<>();
         CompletableFuture<ArtifactTree> currentFuture = processingMap.putIfAbsent(gav, future);
         if (currentFuture == null) {
@@ -83,11 +67,11 @@ public class AnalyzeHandler implements Handler {
         Instant start = Instant.now();
         logger.info("Starting analysis of [{}]", gav);
         ArtifactInfo artifactInfo = analyzer.analyze(gav);
-        DependencyNode dependencyNode = dependencyResolver.resolveDependencies(gav);
+        DependencyNode dependencyNode = mavenRunner.resolveDependencies(gav);
 
         List<CompletableFuture<DependencyInfo>> futures = dependencyNode.getChildren().stream()
                 .map(DependencyNode::getDependency)
-                .map(this::computeDependency)
+                .map(this::computeDependencyInfo)
                 .toList();
 
         return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
@@ -105,7 +89,7 @@ public class AnalyzeHandler implements Handler {
                 });
     }
 
-    private CompletableFuture<DependencyInfo> computeDependency(Dependency dep) {
+    private CompletableFuture<DependencyInfo> computeDependencyInfo(Dependency dep) {
         Artifact artifact = dep.getArtifact();
         Gav depGav = new Gav(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion());
         String scope = dep.getScope().isBlank() ? "compile" : dep.getScope();
@@ -116,6 +100,6 @@ public class AnalyzeHandler implements Handler {
             DependencyInfo dependencyInfo = new DependencyInfo(new ArtifactTree(stubInfo, List.of()), dep.getOptional(), scope);
             return CompletableFuture.completedFuture(dependencyInfo);
         }
-        return guardedComputeArtifactTree(depGav).thenApply(at -> new DependencyInfo(at, dep.getOptional(), scope));
+        return analyze(depGav).thenApply(at -> new DependencyInfo(at, dep.getOptional(), scope));
     }
 }
