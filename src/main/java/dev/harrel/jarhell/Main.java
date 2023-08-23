@@ -9,12 +9,15 @@ import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.error.ResourceNotFoundException;
 import dev.harrel.jarhell.handler.AnalyzeHandler;
 import dev.harrel.jarhell.handler.PackagesHandler;
+import dev.harrel.jarhell.repo.ArtifactRepository;
 import io.javalin.Javalin;
 import io.javalin.config.JavalinConfig;
 import io.javalin.http.HttpStatus;
 import io.javalin.json.JavalinJackson;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.neo4j.driver.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.Map;
@@ -23,6 +26,7 @@ import java.util.function.Consumer;
 public class Main {
 
     public static void main(String[] arg) {
+        Logger mainLogger = LoggerFactory.getLogger(Main.class);
         Driver driver = createNeo4jDriver();
         DatabaseInitializer.initialize(driver);
         ObjectMapper objectMapper = new ObjectMapper()
@@ -48,6 +52,7 @@ public class Main {
                     ctx.status(HttpStatus.BAD_REQUEST);
                 })
                 .exception(Exception.class, (e, ctx) -> {
+                    mainLogger.error("Unhandled exception occurred", e);
                     ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
                     ctx.status(HttpStatus.INTERNAL_SERVER_ERROR);
                 })

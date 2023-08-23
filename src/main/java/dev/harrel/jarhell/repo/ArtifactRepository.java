@@ -1,19 +1,22 @@
-package dev.harrel.jarhell;
+package dev.harrel.jarhell.repo;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.harrel.jarhell.model.ArtifactInfo;
 import dev.harrel.jarhell.model.ArtifactTree;
 import dev.harrel.jarhell.model.DependencyInfo;
 import dev.harrel.jarhell.model.Gav;
+import dev.harrel.jarhell.model.descriptor.Licence;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Query;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.types.Entity;
 import org.neo4j.driver.types.MapAccessor;
 import org.neo4j.driver.types.Node;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.types.Relationship;
 
+import java.io.UncheckedIOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +38,7 @@ public class ArtifactRepository {
         Map<String, Object> gavData = objectMapper.convertValue(gav, new TypeReference<>() {
         });
         try (var session = driver.session()) {
-            org.neo4j.driver.Record record = session.executeRead(tx -> tx.run(new Query("""
+            org.neo4j.driver.Record rec = session.executeRead(tx -> tx.run(new Query("""
                             MATCH (root:Artifact {groupId: $props.groupId, artifactId: $props.artifactId, version: $props.version})-[rel:DEPENDS_ON*0..]->(dep:Artifact)
                             UNWIND
                                 CASE
@@ -48,24 +51,24 @@ public class ArtifactRepository {
                     ).single()
             );
 
-            if (record.get("root").isEmpty()) {
+            if (rec.get("root").isEmpty()) {
                 return Optional.empty();
             }
 
-            Node rootNode = record.get("root").get(0).asNode();
-            Map<String, AggregateTree> nodes = record.get("deps").asList(Value::asEntity).stream()
-                    .collect(Collectors.toMap(Entity::elementId, n -> new AggregateTree(toArtifactInfo(n))));
-            AggregateTree rootTree = new AggregateTree(toArtifactInfo(rootNode));
+            Node rootNode = rec.get("root").get(0).asNode();
+            Map<String, AggregateTree> nodes = rec.get("deps").asList(Value::asEntity).stream()
+                    .collect(Collectors.toMap(Entity::elementId, n -> new AggregateTree(toArtifactProps(n))));
+            AggregateTree rootTree = new AggregateTree(toArtifactProps(rootNode));
             nodes.put(rootNode.elementId(), rootTree);
 
-            List<Relationship> relations = record.get("relations").asList(Value::asRelationship);
+            List<Relationship> relations = rec.get("relations").asList(Value::asRelationship);
             for (Relationship relation : relations) {
                 AggregateTree start = nodes.get(relation.startNodeElementId());
                 AggregateTree end = nodes.get(relation.endNodeElementId());
 
                 end.relationProps = objectMapper.convertValue(relation.asMap(), RelationProps.class);
 
-                Gav endGav = toGav(end.artifactInfo);
+                Gav endGav = toGav(end.artifactProps);
                 start.deps.put(endGav, end);
             }
 
@@ -74,8 +77,8 @@ public class ArtifactRepository {
     }
 
     public void save(ArtifactTree artifactTree) {
-        Map<String, Object> propsMap = objectMapper.convertValue(artifactTree.artifactInfo(), new TypeReference<>() {
-        });
+        ArtifactProps artifactProps = toArtifactProps(artifactTree.artifactInfo());
+        Map<String, Object> propsMap = objectMapper.convertValue(artifactProps, new TypeReference<>() {});
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(tx -> tx.run(new Query("CREATE (a:Artifact $props)",
                             parameters("props", propsMap))
@@ -96,8 +99,8 @@ public class ArtifactRepository {
         }
     }
 
-    private Gav toGav(ArtifactInfo info) {
-        return new Gav(info.groupId(), info.artifactId(), info.version());
+    private Gav toGav(ArtifactProps artifactProps) {
+        return new Gav(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version());
     }
 
     private Map<String, Object> toGavMap(ArtifactInfo info) {
@@ -108,17 +111,51 @@ public class ArtifactRepository {
         );
     }
 
-    private ArtifactInfo toArtifactInfo(MapAccessor node) {
-        return objectMapper.convertValue(node.asMap(), ArtifactInfo.class);
+    private ArtifactInfo toArtifactInfo(ArtifactProps artifactProps) {
+        try {
+            List<Licence> licences = objectMapper.readValue(artifactProps.licenses(), new TypeReference<>() {});
+            return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.packageSize(),
+                    artifactProps.bytecodeVersion(), artifactProps.packaging(), artifactProps.name(), artifactProps.description(), artifactProps.url(),
+                    artifactProps.inceptionYear(), licences);
+        } catch (JsonProcessingException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
-    private static class AggregateTree {
-        private final ArtifactInfo artifactInfo;
+    private ArtifactProps toArtifactProps(MapAccessor node) {
+        return objectMapper.convertValue(node.asMap(), ArtifactProps.class);
+    }
+
+    private ArtifactProps toArtifactProps(ArtifactInfo artifactInfo) {
+        try {
+            String licenses = objectMapper.writeValueAsString(artifactInfo.licenses());
+            return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.packageSize(),
+                    artifactInfo.bytecodeVersion(), artifactInfo.packaging(), artifactInfo.name(), artifactInfo.description(), artifactInfo.url(),
+                    artifactInfo.inceptionYear(), licenses);
+        } catch (JsonProcessingException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private record ArtifactProps(String groupId,
+                                 String artifactId,
+                                 String version,
+                                 Long packageSize,
+                                 String bytecodeVersion,
+                                 String packaging,
+                                 String name,
+                                 String description,
+                                 String url,
+                                 String inceptionYear,
+                                 String licenses) {}
+
+    private class AggregateTree {
+        private final ArtifactProps artifactProps;
         private final Map<Gav, AggregateTree> deps;
         private RelationProps relationProps;
 
-        AggregateTree(ArtifactInfo artifactInfo) {
-            this.artifactInfo = artifactInfo;
+        AggregateTree(ArtifactProps artifactProps) {
+            this.artifactProps = artifactProps;
             this.deps = new LinkedHashMap<>();
         }
 
@@ -126,7 +163,7 @@ public class ArtifactRepository {
             List<DependencyInfo> depsList = deps.values().stream()
                     .map(data -> new DependencyInfo(data.toArtifactTree(), data.relationProps.optional(), data.relationProps.scope()))
                     .toList();
-            return new ArtifactTree(artifactInfo, depsList);
+            return new ArtifactTree(toArtifactInfo(artifactProps), depsList);
         }
     }
 

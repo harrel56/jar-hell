@@ -1,6 +1,8 @@
 package dev.harrel.jarhell.model;
 
-import dev.harrel.jarhell.model.descriptor.DescriptorInfo;
+import dev.harrel.jarhell.model.descriptor.Licence;
+
+import java.util.List;
 
 public record ArtifactInfo(String groupId,
                            String artifactId,
@@ -11,10 +13,9 @@ public record ArtifactInfo(String groupId,
                            String name,
                            String description,
                            String url,
-                           String inceptionYear) {
-    public static ArtifactInfo create(Gav gav, PackageInfo packageInfo, DescriptorInfo descriptorInfo) {
-        return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(),
-                packageInfo.size(), packageInfo.bytecodeVersion(), descriptorInfo.packaging(),
-                descriptorInfo.name(), descriptorInfo.description(), descriptorInfo.url(), descriptorInfo.inceptionYear());
+                           String inceptionYear,
+                           List<Licence> licenses) {
+    public ArtifactInfo(String groupId, String artifactId, String version) {
+        this(groupId, artifactId, version, null, null, null, null, null, null, null, null);
     }
 }

@@ -1,6 +1,6 @@
 package dev.harrel.jarhell.handler;
 
-import dev.harrel.jarhell.ArtifactRepository;
+import dev.harrel.jarhell.repo.ArtifactRepository;
 import dev.harrel.jarhell.error.ResourceNotFoundException;
 import dev.harrel.jarhell.model.ArtifactTree;
 import dev.harrel.jarhell.model.Gav;

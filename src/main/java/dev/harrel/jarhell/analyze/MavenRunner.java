@@ -2,6 +2,7 @@ package dev.harrel.jarhell.analyze;
 
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.descriptor.DescriptorInfo;
+import dev.harrel.jarhell.model.descriptor.Licence;
 import org.apache.maven.model.Model;
 import org.apache.maven.repository.internal.ArtifactDescriptorReaderDelegate;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
@@ -56,6 +57,12 @@ class MavenRunner {
         CollectRequest request = createCollectRequest(gav);
         try {
             CollectResult collectResult = repoSystem.collectDependencies(session, request);
+            if (!collectResult.getCycles().isEmpty()) {
+                throw new IllegalArgumentException("Cycles found in: " + gav);
+            }
+            if (!collectResult.getExceptions().isEmpty()) {
+                throw new IllegalArgumentException("Errors found in: " + gav);
+            }
             return collectResult.getRoot();
         } catch (DependencyCollectionException e) {
             throw new IllegalArgumentException(e);
@@ -70,8 +77,11 @@ class MavenRunner {
             if (model == null) {
                 throw new IllegalArgumentException("Descriptor was not parsed into a model: " + gav);
             }
+            List<Licence> licenses = model.getLicenses().stream()
+                    .map(license -> new Licence(license.getName(), license.getUrl()))
+                    .toList();
             // todo: url seems to be resolved incorrectly sometimes :(
-            return new DescriptorInfo(model.getPackaging(), model.getName(), model.getDescription(), model.getUrl(), model.getInceptionYear());
+            return new DescriptorInfo(model.getPackaging(), model.getName(), model.getDescription(), model.getUrl(), model.getInceptionYear(), licenses);
         } catch (ArtifactDescriptorException e) {
             throw new IllegalArgumentException(e);
         }

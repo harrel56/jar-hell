@@ -36,7 +36,14 @@ class Analyzer {
         DescriptorInfo descriptorInfo = mavenRunner.resolveDescriptor(gav);
         PackageInfo packageInfo = packageAnalyzer.analyzePackage(gav, files, descriptorInfo.packaging());
 
-        return ArtifactInfo.create(gav, packageInfo, descriptorInfo);
+        return createArtifactInfo(gav, packageInfo, descriptorInfo);
+    }
+
+    private ArtifactInfo createArtifactInfo(Gav gav, PackageInfo packageInfo, DescriptorInfo descriptorInfo) {
+        return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(),
+                packageInfo.size(), packageInfo.bytecodeVersion(), descriptorInfo.packaging(),
+                descriptorInfo.name(), descriptorInfo.description(), descriptorInfo.url(), descriptorInfo.inceptionYear(),
+                descriptorInfo.licences());
     }
 }
 

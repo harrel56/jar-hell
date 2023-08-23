@@ -1,7 +1,7 @@
 package dev.harrel.jarhell.analyze;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.harrel.jarhell.ArtifactRepository;
+import dev.harrel.jarhell.repo.ArtifactRepository;
 import dev.harrel.jarhell.model.ArtifactInfo;
 import dev.harrel.jarhell.model.ArtifactTree;
 import dev.harrel.jarhell.model.DependencyInfo;
@@ -38,6 +38,14 @@ public class AnalyzeEngine {
     }
 
     public CompletableFuture<ArtifactTree> analyze(Gav gav) {
+        return analyzeInternal(gav).whenComplete((value, ex) -> {
+                    if (ex != null) {
+                        logger.error("Error occurred during analysis of [{}]", gav, ex);
+                    }
+                });
+    }
+
+    private CompletableFuture<ArtifactTree> analyzeInternal(Gav gav) {
         CompletableFuture<ArtifactTree> future = new CompletableFuture<>();
         CompletableFuture<ArtifactTree> currentFuture = processingMap.putIfAbsent(gav, future);
         if (currentFuture == null) {
@@ -95,11 +103,10 @@ public class AnalyzeEngine {
         String scope = dep.getScope().isBlank() ? "compile" : dep.getScope();
         // scope "system" is broken and this dep might not exist at all
         if (scope.equals("system")) {
-            ArtifactInfo stubInfo = new ArtifactInfo(depGav.groupId(), depGav.artifactId(), depGav.version(),
-                    null, null, null, null, null, null, null);
+            ArtifactInfo stubInfo = new ArtifactInfo(depGav.groupId(), depGav.artifactId(), depGav.version());
             DependencyInfo dependencyInfo = new DependencyInfo(new ArtifactTree(stubInfo, List.of()), dep.getOptional(), scope);
             return CompletableFuture.completedFuture(dependencyInfo);
         }
-        return analyze(depGav).thenApply(at -> new DependencyInfo(at, dep.getOptional(), scope));
+        return analyzeInternal(depGav).thenApply(at -> new DependencyInfo(at, dep.getOptional(), scope));
     }
 }
