@@ -126,7 +126,10 @@ public class ArtifactRepository {
 
     private ArtifactInfo toArtifactInfo(ArtifactProps artifactProps) {
         try {
-            List<Licence> licences = objectMapper.readValue(artifactProps.licenses(), new TypeReference<>() {});
+            List<Licence> licences = List.of();
+            if (artifactProps.licenses() != null) {
+                licences = objectMapper.readValue(artifactProps.licenses(), new TypeReference<>() {});
+            }
             return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier(), artifactProps.packageSize(),
                     artifactProps.bytecodeVersion(), artifactProps.packaging(), artifactProps.name(), artifactProps.description(), artifactProps.url(),
                     artifactProps.inceptionYear(), licences);
@@ -141,7 +144,10 @@ public class ArtifactRepository {
 
     private ArtifactProps toArtifactProps(ArtifactInfo artifactInfo) {
         try {
-            String licenses = objectMapper.writeValueAsString(artifactInfo.licenses());
+            String licenses = null;
+            if (artifactInfo.licenses() != null && !artifactInfo.licenses().isEmpty()) {
+                licenses = objectMapper.writeValueAsString(artifactInfo.licenses());
+            }
             return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(), artifactInfo.packageSize(),
                     artifactInfo.bytecodeVersion(), artifactInfo.packaging(), artifactInfo.name(), artifactInfo.description(), artifactInfo.url(),
                     artifactInfo.inceptionYear(), licenses);
