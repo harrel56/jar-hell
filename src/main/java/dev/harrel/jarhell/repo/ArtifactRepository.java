@@ -45,7 +45,7 @@ public class ArtifactRepository {
                                     WHEN rel = [] THEN [null]
                                     ELSE rel
                                 END AS flatRel
-                            WITH root, flatRel, dep ORDER BY dep.groupId, dep.artifactId, dep.version
+                            WITH root, flatRel, dep ORDER BY dep.groupId, dep.artifactId, dep.version, dep.classifier
                             RETURN COLLECT(DISTINCT root) AS root, COLLECT(DISTINCT flatRel) AS relations, COLLECT(DISTINCT dep) AS deps""",
                             parameters("props", gavData))
                     ).single()
@@ -90,8 +90,24 @@ public class ArtifactRepository {
                         Map<String, Object> depProps = Map.of("optional", dep.optional(), "scope", dep.scope());
                         Map<String, Object> depGav = toGavMap(dep.artifact().artifactInfo());
                         session.executeWriteWithoutResult(tx -> tx.run(new Query("""
-                                MATCH (a:Artifact {groupId: $parentGav.groupId, artifactId: $parentGav.artifactId, version: $parentGav.version}),
-                                      (d:Artifact {groupId: $depGav.groupId, artifactId: $depGav.artifactId, version: $depGav.version})
+                                MATCH (a:Artifact), (d:Artifact)
+                                WHERE
+                                    a.groupId = $parentGav.groupId
+                                    AND a.artifactId = $parentGav.artifactId
+                                    AND a.version = $parentGav.version
+                                    AND (
+                                            a.classifier IS NULL
+                                            AND $parentGav.classifier IS NULL
+                                            OR a.classifier = $parentGav.classifier
+                                    )
+                                    AND d.groupId = $depGav.groupId
+                                    AND d.artifactId = $depGav.artifactId
+                                    AND d.version = $depGav.version
+                                    AND (
+                                            d.classifier IS NULL
+                                            AND $depGav.classifier IS NULL
+                                            OR d.classifier = $depGav.classifier
+                                    )
                                 CREATE (a)-[:DEPENDS_ON $depProps]->(d)""",
                                 parameters("parentGav", parentGav, "depGav", depGav, "depProps", depProps))));
                     }
@@ -104,17 +120,14 @@ public class ArtifactRepository {
     }
 
     private Map<String, Object> toGavMap(ArtifactInfo info) {
-        return Map.of(
-                "groupId", info.groupId(),
-                "artifactId", info.artifactId(),
-                "version", info.version()
-        );
+        Gav gav = new Gav(info.groupId(), info.artifactId(), info.version(), info.classifier());
+        return objectMapper.convertValue(gav, new TypeReference<>() {});
     }
 
     private ArtifactInfo toArtifactInfo(ArtifactProps artifactProps) {
         try {
             List<Licence> licences = objectMapper.readValue(artifactProps.licenses(), new TypeReference<>() {});
-            return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.packageSize(),
+            return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier(), artifactProps.packageSize(),
                     artifactProps.bytecodeVersion(), artifactProps.packaging(), artifactProps.name(), artifactProps.description(), artifactProps.url(),
                     artifactProps.inceptionYear(), licences);
         } catch (JsonProcessingException e) {
@@ -129,7 +142,7 @@ public class ArtifactRepository {
     private ArtifactProps toArtifactProps(ArtifactInfo artifactInfo) {
         try {
             String licenses = objectMapper.writeValueAsString(artifactInfo.licenses());
-            return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.packageSize(),
+            return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(), artifactInfo.packageSize(),
                     artifactInfo.bytecodeVersion(), artifactInfo.packaging(), artifactInfo.name(), artifactInfo.description(), artifactInfo.url(),
                     artifactInfo.inceptionYear(), licenses);
         } catch (JsonProcessingException e) {
@@ -140,6 +153,7 @@ public class ArtifactRepository {
     private record ArtifactProps(String groupId,
                                  String artifactId,
                                  String version,
+                                 String classifier,
                                  Long packageSize,
                                  String bytecodeVersion,
                                  String packaging,

@@ -13,7 +13,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.List;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 class ApiClient {
@@ -33,23 +35,28 @@ class ApiClient {
         SelectResponse<ArtifactDoc> selectResponse = fetch(SELECT_URL + query, new TypeReference<>() {
         });
         if (selectResponse.response().numFound() < 1) {
-            throw new IllegalArgumentException("Artifact couldn't be found: %s:%s".formatted(groupId, artifactId));
+            throw new ArtifactNotFoundException("%s:%s".formatted(groupId, artifactId));
         }
         return selectResponse.response().docs().get(0).latestVersion();
     }
 
-    public Set<String> fetchAvailableFiles(Gav gav) {
+    public FilesInfo fetchFilesInfo(Gav gav) {
         String query = "?q=g:%s+AND+a:%s+AND+v:%s".formatted(gav.groupId(), gav.artifactId(), gav.version());
         SelectResponse<VersionDoc> selectResponse = fetch(SELECT_URL + query, new TypeReference<>() {
         });
         if (selectResponse.response().numFound() < 1) {
-            throw new IllegalArgumentException("Artifact couldn't be found: " + gav);
+            throw new ArtifactNotFoundException(gav.toString());
         }
-        return selectResponse.response().docs().get(0).ec().stream()
+        List<String> ec = selectResponse.response().docs().get(0).ec();
+        Set<String> extensions = ec.stream()
                 .filter(f -> f.startsWith("."))
-                .filter(f -> !f.endsWith("sha256") && !f.endsWith("sha512"))
                 .map(f -> f.substring(1))
                 .collect(Collectors.toSet());
+        Set<String> classifiers = ec.stream()
+                .filter(f -> f.startsWith("-"))
+                .map(f -> f.substring(1, f.indexOf(".")))
+                .collect(Collectors.toSet());
+        return new FilesInfo(extensions, classifiers);
     }
 
     private <T> T fetch(String url, TypeReference<T> type) {
@@ -73,7 +80,13 @@ class ApiClient {
 
     public static String createFileUrl(Gav gav, String fileExtension) {
         String groupPath = gav.groupId().replace('.', '/');
-        String fileName = "%s-%s.%s".formatted(gav.artifactId(), gav.version(), fileExtension);
+        StringJoiner joiner = new StringJoiner("-")
+                .add(gav.artifactId())
+                .add(gav.version());
+        if (gav.classifier() != null) {
+            joiner.add(gav.classifier());
+        }
+        String fileName = "%s.%s".formatted(joiner, fileExtension);
         String query = "?filepath=%s/%s/%s/%s".formatted(groupPath, gav.artifactId(), gav.version(), fileName);
         return CONTENT_URL + query;
     }

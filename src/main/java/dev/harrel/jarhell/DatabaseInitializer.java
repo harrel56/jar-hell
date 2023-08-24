@@ -13,7 +13,7 @@ public class DatabaseInitializer {
             ResultSummary summary = session.executeWrite(tx -> tx.run(new Query("""
                     CREATE CONSTRAINT unique_gav IF NOT EXISTS
                     FOR (n:Artifact)
-                    REQUIRE (n.groupId, n.artifactId, n.version) IS UNIQUE""")).consume());
+                    REQUIRE (n.groupId, n.artifactId, n.version, n.classifier) IS UNIQUE""")).consume());
             if (summary.counters().containsUpdates()) {
                 logger.info("DDL query successful: \n{}", summary.query().text());
             }

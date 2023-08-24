@@ -14,7 +14,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
-import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.regex.Matcher;
@@ -30,9 +29,9 @@ class PackageAnalyzer {
         this.httpClient = httpClient;
     }
 
-    public PackageInfo analyzePackage(Gav gav, Set<String> availableFiles, String packaging) {
+    public PackageInfo analyzePackage(Gav gav, FilesInfo filesInfo, String packaging) {
         try {
-            return fetchPackage(gav, availableFiles, packaging);
+            return fetchPackage(gav, filesInfo, packaging);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } catch (InterruptedException e) {
@@ -41,14 +40,14 @@ class PackageAnalyzer {
         }
     }
 
-    private PackageInfo fetchPackage(Gav gav, Set<String> availableFiles, String packaging) throws InterruptedException, IOException {
+    private PackageInfo fetchPackage(Gav gav, FilesInfo filesInfo, String packaging) throws InterruptedException, IOException {
         String packageExtension;
-        if (availableFiles.contains("jar")) {
+        if (filesInfo.extensions().contains("jar")) {
             packageExtension = "jar";
-        } else if (availableFiles.contains(packaging)) {
+        } else if (filesInfo.extensions().contains(packaging)) {
             packageExtension = packaging;
         } else {
-            logger.warn("Couldn't determine package extension for artifact: [{}], packaging: [{}], availableFiles: {}", gav, packaging, availableFiles);
+            logger.warn("Couldn't determine package extension for artifact: [{}], packaging: [{}], extensions: {}", gav, packaging, filesInfo.extensions());
             return new PackageInfo(null, null);
         }
         String url = ApiClient.createFileUrl(gav, packageExtension);
@@ -77,13 +76,13 @@ class PackageAnalyzer {
                 String byteCodeVersion = "jar".equals(packaging) ? parseByteCodeVersion(streamResponse) : null;
                 return new PackageInfo(packageSize, byteCodeVersion);
             } catch (IOException e) {
-                logger.warn("Parsing jar failed for [{}] and range [{}]. Retrying with bigger range...", gav, rangeStep);
+                logger.info("Parsing jar failed for [{}] and range [{}]. Retrying with bigger range...", gav, rangeStep);
                 if (packageSize < Long.parseLong(rangeStep)) {
                     break;
                 }
             }
         }
-        logger.warn("No class files found in jar [{}]. Assuming no bytecode", gav);
+        logger.info("No class files found in jar [{}]. Assuming no bytecode", gav);
         return new PackageInfo(packageSize, null);
     }
 

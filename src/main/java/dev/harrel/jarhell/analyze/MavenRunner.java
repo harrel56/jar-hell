@@ -53,12 +53,19 @@ class MavenRunner {
     }
 
     // todo: this resolves all deps when only first level of deps is needed
-    public DependencyNode resolveDependencies(Gav gav) {
+    public DependencyNode resolveDependencies(Gav gavWithClassifier) {
+        Gav gav = gavWithClassifier.stripClassifier();
         CollectRequest request = createCollectRequest(gav);
         try {
             CollectResult collectResult = repoSystem.collectDependencies(session, request);
             if (!collectResult.getCycles().isEmpty()) {
-                throw new IllegalArgumentException("Cycles found in: " + gav);
+                if (gavWithClassifier.classifier() != null) {
+                    List<DependencyNode> filteredChildren = collectResult.getRoot().getChildren().stream()
+                            .filter(child ->
+                                    !gav.equals(new Gav(child.getArtifact().getGroupId(), child.getArtifact().getArtifactId(), child.getArtifact().getVersion())))
+                            .toList();
+                    collectResult.getRoot().setChildren(filteredChildren);
+                }
             }
             if (!collectResult.getExceptions().isEmpty()) {
                 throw new IllegalArgumentException("Errors found in: " + gav);
@@ -69,7 +76,8 @@ class MavenRunner {
         }
     }
 
-    public DescriptorInfo resolveDescriptor(Gav gav) {
+    public DescriptorInfo resolveDescriptor(Gav gavWithClassifier) {
+        Gav gav = gavWithClassifier.stripClassifier();
         ArtifactDescriptorRequest request = new ArtifactDescriptorRequest(new DefaultArtifact(gav.toString()), remoteRepos, null);
         try {
             ArtifactDescriptorResult result = repoSystem.readArtifactDescriptor(session, request);

@@ -7,7 +7,6 @@ import dev.harrel.jarhell.model.PackageInfo;
 import dev.harrel.jarhell.model.descriptor.DescriptorInfo;
 
 import java.net.http.HttpClient;
-import java.util.Set;
 
 class Analyzer {
     private final MavenRunner mavenRunner;
@@ -29,18 +28,18 @@ class Analyzer {
     }
 
     public ArtifactInfo analyze(Gav gav) {
-        Set<String> files = apiClient.fetchAvailableFiles(gav);
-        if (!files.contains("pom")) {
+        FilesInfo filesInfo = apiClient.fetchFilesInfo(gav);
+        if (!filesInfo.extensions().contains("pom")) {
             throw new IllegalArgumentException("Artifact is missing pom file: " + gav);
         }
         DescriptorInfo descriptorInfo = mavenRunner.resolveDescriptor(gav);
-        PackageInfo packageInfo = packageAnalyzer.analyzePackage(gav, files, descriptorInfo.packaging());
+        PackageInfo packageInfo = packageAnalyzer.analyzePackage(gav, filesInfo, descriptorInfo.packaging());
 
         return createArtifactInfo(gav, packageInfo, descriptorInfo);
     }
 
     private ArtifactInfo createArtifactInfo(Gav gav, PackageInfo packageInfo, DescriptorInfo descriptorInfo) {
-        return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(),
+        return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(),
                 packageInfo.size(), packageInfo.bytecodeVersion(), descriptorInfo.packaging(),
                 descriptorInfo.name(), descriptorInfo.description(), descriptorInfo.url(), descriptorInfo.inceptionYear(),
                 descriptorInfo.licences());

@@ -7,6 +7,7 @@ import java.util.List;
 public record ArtifactInfo(String groupId,
                            String artifactId,
                            String version,
+                           String classifier,
                            Long packageSize,
                            String bytecodeVersion,
                            String packaging,
@@ -15,7 +16,7 @@ public record ArtifactInfo(String groupId,
                            String url,
                            String inceptionYear,
                            List<Licence> licenses) {
-    public ArtifactInfo(String groupId, String artifactId, String version) {
-        this(groupId, artifactId, version, null, null, null, null, null, null, null, null);
+    public ArtifactInfo(String groupId, String artifactId, String version, String classifier) {
+        this(groupId, artifactId, version, classifier, null, null, null, null, null, null, null, null);
     }
 }
