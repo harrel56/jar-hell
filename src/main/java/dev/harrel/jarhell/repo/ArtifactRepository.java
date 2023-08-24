@@ -130,8 +130,9 @@ public class ArtifactRepository {
             if (artifactProps.licenses() != null) {
                 licences = objectMapper.readValue(artifactProps.licenses(), new TypeReference<>() {});
             }
-            return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier(), artifactProps.packageSize(),
-                    artifactProps.bytecodeVersion(), artifactProps.packaging(), artifactProps.name(), artifactProps.description(), artifactProps.url(),
+            return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier(),
+                    artifactProps.unresolved(), artifactProps.packageSize(), artifactProps.bytecodeVersion(),
+                    artifactProps.packaging(), artifactProps.name(), artifactProps.description(), artifactProps.url(),
                     artifactProps.inceptionYear(), licences);
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
@@ -148,8 +149,9 @@ public class ArtifactRepository {
             if (artifactInfo.licenses() != null && !artifactInfo.licenses().isEmpty()) {
                 licenses = objectMapper.writeValueAsString(artifactInfo.licenses());
             }
-            return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(), artifactInfo.packageSize(),
-                    artifactInfo.bytecodeVersion(), artifactInfo.packaging(), artifactInfo.name(), artifactInfo.description(), artifactInfo.url(),
+            return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(),
+                    artifactInfo.unresolved(), artifactInfo.packageSize(), artifactInfo.bytecodeVersion(),
+                    artifactInfo.packaging(), artifactInfo.name(), artifactInfo.description(), artifactInfo.url(),
                     artifactInfo.inceptionYear(), licenses);
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
@@ -160,6 +162,7 @@ public class ArtifactRepository {
                                  String artifactId,
                                  String version,
                                  String classifier,
+                                 Boolean unresolved,
                                  Long packageSize,
                                  String bytecodeVersion,
                                  String packaging,

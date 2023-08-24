@@ -39,7 +39,7 @@ class Analyzer {
     }
 
     private ArtifactInfo createArtifactInfo(Gav gav, PackageInfo packageInfo, DescriptorInfo descriptorInfo) {
-        return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(),
+        return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), null,
                 packageInfo.size(), packageInfo.bytecodeVersion(), descriptorInfo.packaging(),
                 descriptorInfo.name(), descriptorInfo.description(), descriptorInfo.url(), descriptorInfo.inceptionYear(),
                 descriptorInfo.licences());
