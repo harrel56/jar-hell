@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 
 class MavenRunner {
+    private static final Logger logger = LoggerFactory.getLogger(MavenRunner.class);
+
     private static final String MAVEN_CENTRAL = "https://repo.maven.apache.org/maven2/";
     private static final String LOCAL_REPO_PATH = "build/local-repo";
 
@@ -59,6 +61,7 @@ class MavenRunner {
         try {
             CollectResult collectResult = repoSystem.collectDependencies(session, request);
             if (!collectResult.getCycles().isEmpty()) {
+                logger.warn("Cycles detected in artifact [{}] deps: {}", gavWithClassifier, collectResult.getCycles());
                 if (gavWithClassifier.classifier() != null) {
                     List<DependencyNode> filteredChildren = collectResult.getRoot().getChildren().stream()
                             .filter(child ->
