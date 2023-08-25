@@ -38,6 +38,16 @@ public class ArtifactRepository {
         Map<String, Object> gavData = objectMapper.convertValue(gav, new TypeReference<>() {
         });
         try (var session = driver.session()) {
+            /*
+            MATCH (root:Artifact {groupId: "org.apache.spark", artifactId: "spark-core_2.13", version: "3.4.1"})
+                        CALL apoc.path.subgraphAll(root, {
+	relationshipFilter: "DEPENDS_ON>",
+    minLevel: 0,
+    maxLevel: -1
+})
+YIELD nodes, relationships
+RETURN nodes, relationships;
+             */
             org.neo4j.driver.Record rec = session.executeRead(tx -> tx.run(new Query("""
                             MATCH (root:Artifact {groupId: $props.groupId, artifactId: $props.artifactId, version: $props.version})-[rel:DEPENDS_ON*0..]->(dep:Artifact)
                             UNWIND
