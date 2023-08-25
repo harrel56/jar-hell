@@ -74,7 +74,7 @@ public class AnalyzeEngine {
 
     private CompletableFuture<ArtifactTree> computeArtifactTree(Gav gav) {
         Instant start = Instant.now();
-        logger.info("Starting analysis of [{}]", gav);
+        logger.info("START analysis of [{}]", gav);
         AnalysisOutput analysisOutput = doAnalyze(gav);
 
         List<CompletableFuture<DependencyInfo>> futures = analysisOutput.dependencies().stream()
@@ -92,7 +92,7 @@ public class AnalyzeEngine {
                     ArtifactTree artifactTree = new ArtifactTree(analysisOutput.artifactInfo(), deps);
                     artifactRepository.save(artifactTree);
                     long timeElapsed = Duration.between(start, Instant.now()).toMillis();
-                    logger.info("Analysis of [{}] completed in {}ms", gav, timeElapsed);
+                    logger.info("END analysis of [{}] - completed in {}ms", gav, timeElapsed);
                     return artifactTree;
                 });
     }

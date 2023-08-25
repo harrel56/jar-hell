@@ -29,9 +29,6 @@ class Analyzer {
 
     public ArtifactInfo analyze(Gav gav) {
         FilesInfo filesInfo = apiClient.fetchFilesInfo(gav);
-        if (!filesInfo.extensions().contains("pom")) {
-            throw new IllegalArgumentException("Artifact is missing pom file: " + gav);
-        }
         DescriptorInfo descriptorInfo = mavenRunner.resolveDescriptor(gav);
         PackageInfo packageInfo = packageAnalyzer.analyzePackage(gav, filesInfo, descriptorInfo.packaging());
 
