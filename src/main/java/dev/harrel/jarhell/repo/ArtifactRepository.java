@@ -8,24 +8,29 @@ import dev.harrel.jarhell.model.ArtifactTree;
 import dev.harrel.jarhell.model.DependencyInfo;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.descriptor.Licence;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Query;
-import org.neo4j.driver.Value;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.*;
+import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.types.Entity;
 import org.neo4j.driver.types.MapAccessor;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Relationship;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.UncheckedIOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.neo4j.driver.Values.parameters;
 
 public class ArtifactRepository {
+    private static final Logger logger = LoggerFactory.getLogger(ArtifactRepository.class);
+
     private final Driver driver;
     private final ObjectMapper objectMapper;
 
@@ -38,32 +43,41 @@ public class ArtifactRepository {
         Map<String, Object> gavData = objectMapper.convertValue(gav, new TypeReference<>() {
         });
         try (var session = driver.session()) {
-            List<org.neo4j.driver.Record> records = session.executeRead(tx -> tx.run(new Query("""
-                            MATCH (root:Artifact)
-                            WHERE
-                                root.groupId = $props.groupId
-                                AND root.artifactId = $props.artifactId
-                                AND root.version = $props.version
-                                AND (
-                                    root.classifier IS NULL
-                                    AND $props.classifier IS NULL
-                                    OR root.classifier = $props.classifier
-                                )
-                            CALL apoc.path.subgraphAll(root, {
-                                relationshipFilter: "DEPENDS_ON>",
-                                minLevel: 0,
-                                maxLevel: -1
-                            })
-                            YIELD nodes, relationships
-                            RETURN root, nodes, relationships""",
-                            parameters("props", gavData))
-                    ).list()
-            );
+            SummarizedResult result = session.executeRead(tx -> {
+                Result res = tx.run(new Query("""
+                        MATCH (root:Artifact)
+                        WHERE
+                            root.groupId = $props.groupId
+                            AND root.artifactId = $props.artifactId
+                            AND root.version = $props.version
+                            AND (
+                                root.classifier IS NULL
+                                AND $props.classifier IS NULL
+                                OR root.classifier = $props.classifier
+                            )
+                        CALL apoc.path.subgraphAll(root, {
+                            relationshipFilter: "DEPENDS_ON>",
+                            minLevel: 0,
+                            maxLevel: -1
+                        })
+                        YIELD nodes, relationships
+                        RETURN root, nodes, relationships""",
+                        parameters("props", gavData))
+                );
+                return new SummarizedResult(res.list(), res.consume());
+            });
 
-            if (records.isEmpty()) {
+            logger.info("Querying for artifact [{}] - availableAfter: {}ms, consumedAfter: {}ms",
+                    gav,
+                    result.summary().resultAvailableAfter(TimeUnit.MILLISECONDS),
+                    result.summary().resultConsumedAfter(TimeUnit.MILLISECONDS)
+            );
+            if (result.records().isEmpty()) {
                 return Optional.empty();
+            } else if (result.records().size() > 1) {
+                throw new IllegalArgumentException("Query returned too many records");
             }
-            var rec = records.get(0);
+            var rec = result.records().get(0);
 
             Node rootNode = rec.get("root").asNode();
             Map<String, AggregateTree> nodes = rec.get("nodes").asList(Value::asEntity).stream()
@@ -167,6 +181,8 @@ public class ArtifactRepository {
             throw new UncheckedIOException(e);
         }
     }
+
+    private record SummarizedResult(List<Record> records, ResultSummary summary) {}
 
     private record ArtifactProps(String groupId,
                                  String artifactId,
