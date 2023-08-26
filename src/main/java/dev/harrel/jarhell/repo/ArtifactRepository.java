@@ -38,40 +38,40 @@ public class ArtifactRepository {
         Map<String, Object> gavData = objectMapper.convertValue(gav, new TypeReference<>() {
         });
         try (var session = driver.session()) {
-            /*
-            MATCH (root:Artifact {groupId: "org.apache.spark", artifactId: "spark-core_2.13", version: "3.4.1"})
-                        CALL apoc.path.subgraphAll(root, {
-	relationshipFilter: "DEPENDS_ON>",
-    minLevel: 0,
-    maxLevel: -1
-})
-YIELD nodes, relationships
-RETURN nodes, relationships;
-             */
-            org.neo4j.driver.Record rec = session.executeRead(tx -> tx.run(new Query("""
-                            MATCH (root:Artifact {groupId: $props.groupId, artifactId: $props.artifactId, version: $props.version})-[rel:DEPENDS_ON*0..]->(dep:Artifact)
-                            UNWIND
-                                CASE
-                                    WHEN rel = [] THEN [null]
-                                    ELSE rel
-                                END AS flatRel
-                            WITH root, flatRel, dep ORDER BY dep.groupId, dep.artifactId, dep.version, dep.classifier
-                            RETURN COLLECT(DISTINCT root) AS root, COLLECT(DISTINCT flatRel) AS relations, COLLECT(DISTINCT dep) AS deps""",
+            List<org.neo4j.driver.Record> records = session.executeRead(tx -> tx.run(new Query("""
+                            MATCH (root:Artifact)
+                            WHERE
+                                root.groupId = $props.groupId
+                                AND root.artifactId = $props.artifactId
+                                AND root.version = $props.version
+                                AND (
+                                    root.classifier IS NULL
+                                    AND $props.classifier IS NULL
+                                    OR root.classifier = $props.classifier
+                                )
+                            CALL apoc.path.subgraphAll(root, {
+                                relationshipFilter: "DEPENDS_ON>",
+                                minLevel: 0,
+                                maxLevel: -1
+                            })
+                            YIELD nodes, relationships
+                            RETURN root, nodes, relationships""",
                             parameters("props", gavData))
-                    ).single()
+                    ).list()
             );
 
-            if (rec.get("root").isEmpty()) {
+            if (records.isEmpty()) {
                 return Optional.empty();
             }
+            var rec = records.get(0);
 
-            Node rootNode = rec.get("root").get(0).asNode();
-            Map<String, AggregateTree> nodes = rec.get("deps").asList(Value::asEntity).stream()
+            Node rootNode = rec.get("root").asNode();
+            Map<String, AggregateTree> nodes = rec.get("nodes").asList(Value::asEntity).stream()
                     .collect(Collectors.toMap(Entity::elementId, n -> new AggregateTree(toArtifactProps(n))));
             AggregateTree rootTree = new AggregateTree(toArtifactProps(rootNode));
             nodes.put(rootNode.elementId(), rootTree);
 
-            List<Relationship> relations = rec.get("relations").asList(Value::asRelationship);
+            List<Relationship> relations = rec.get("relationships").asList(Value::asRelationship);
             for (Relationship relation : relations) {
                 AggregateTree start = nodes.get(relation.startNodeElementId());
                 AggregateTree end = nodes.get(relation.endNodeElementId());
