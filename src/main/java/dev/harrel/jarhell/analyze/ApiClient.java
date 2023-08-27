@@ -40,10 +40,15 @@ class ApiClient {
         return selectResponse.response().docs().get(0).latestVersion();
     }
 
+    public boolean checkIfArtifactExists(Gav gav) {
+        String query = "?q=g:%s+AND+a:%s+AND+v:%s".formatted(gav.groupId(), gav.artifactId(), gav.version());
+        SelectResponse<VersionDoc> selectResponse = fetch(SELECT_URL + query, new TypeReference<>() {});
+        return selectResponse.response().numFound() > 0;
+    }
+
     public FilesInfo fetchFilesInfo(Gav gav) {
         String query = "?q=g:%s+AND+a:%s+AND+v:%s".formatted(gav.groupId(), gav.artifactId(), gav.version());
-        SelectResponse<VersionDoc> selectResponse = fetch(SELECT_URL + query, new TypeReference<>() {
-        });
+        SelectResponse<VersionDoc> selectResponse = fetch(SELECT_URL + query, new TypeReference<>() {});
         if (selectResponse.response().numFound() < 1) {
             throw new ArtifactNotFoundException(gav.toString());
         }

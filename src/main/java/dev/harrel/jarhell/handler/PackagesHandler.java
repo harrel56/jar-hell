@@ -21,7 +21,7 @@ public class PackagesHandler implements Handler {
         Gav gav = Gav.fromCoordinate(coordinate);
 
         ArtifactTree artifactTree = artifactRepository.find(gav)
-                .orElseThrow(() -> new ResourceNotFoundException("Package with coordinates [%s] not found".formatted(gav)));
+                .orElseThrow(() -> new ResourceNotFoundException(gav));
 
         ctx.json(artifactTree);
     }

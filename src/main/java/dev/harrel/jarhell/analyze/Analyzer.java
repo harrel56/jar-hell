@@ -23,6 +23,10 @@ class Analyzer {
         this.packageAnalyzer = new PackageAnalyzer(httpClient);
     }
 
+    public boolean checkIfArtifactExists(Gav gav) {
+        return apiClient.checkIfArtifactExists(gav);
+    }
+
     public ArtifactInfo analyze(String groupId, String artifactId) {
         String version = apiClient.fetchLatestVersion(groupId, artifactId);
         return analyze(new Gav(groupId, artifactId, version));

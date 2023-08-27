@@ -1,6 +1,7 @@
 package dev.harrel.jarhell.analyze;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.harrel.jarhell.error.ResourceNotFoundException;
 import dev.harrel.jarhell.repo.ArtifactRepository;
 import dev.harrel.jarhell.model.ArtifactInfo;
 import dev.harrel.jarhell.model.ArtifactTree;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -39,6 +41,15 @@ public class AnalyzeEngine {
     }
 
     public CompletableFuture<ArtifactTree> analyze(Gav gav) {
+        Optional<ArtifactTree> artifactTree = artifactRepository.find(gav);
+        if (artifactTree.isPresent()) {
+            logger.info("Analysis of [{}] is not necessary", gav);
+            return CompletableFuture.completedFuture(artifactTree.get());
+        }
+        if (!analyzer.checkIfArtifactExists(gav)) {
+            throw new ResourceNotFoundException(gav);
+        }
+
         return analyzeInternal(gav).whenComplete((value, ex) -> {
                     if (ex != null) {
                         logger.error("Error occurred during analysis of [{}]", gav, ex);
