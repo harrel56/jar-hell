@@ -3,7 +3,9 @@ package dev.harrel.jarhell;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import dev.harrel.jarhell.analyze.AnalyzeEngine;
 import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.error.ResourceNotFoundException;
@@ -31,7 +33,9 @@ public class Main {
         DatabaseInitializer.initialize(driver);
         ObjectMapper objectMapper = new ObjectMapper()
                 .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+                .registerModule(new JavaTimeModule());
         ArtifactRepository artifactRepository = new ArtifactRepository(driver, objectMapper);
         AnalyzeEngine analyzeEngine = new AnalyzeEngine(objectMapper, artifactRepository);
         AnalyzeHandler analyzeHandler = new AnalyzeHandler(analyzeEngine);

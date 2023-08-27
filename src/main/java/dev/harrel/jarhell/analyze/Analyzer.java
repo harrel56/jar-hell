@@ -51,7 +51,7 @@ class Analyzer {
         return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), null,
                 packageInfo.size(), null, packageInfo.bytecodeVersion(), descriptorInfo.packaging(),
                 descriptorInfo.name(), descriptorInfo.description(), descriptorInfo.url(), descriptorInfo.inceptionYear(),
-                descriptorInfo.licences());
+                descriptorInfo.licences(), null);
     }
 
     private long traverseTotalSize(ArtifactTree at, Set<Gav> visited) {

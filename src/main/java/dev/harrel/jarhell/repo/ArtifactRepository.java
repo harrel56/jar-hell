@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UncheckedIOException;
+import java.time.ZonedDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -103,7 +104,7 @@ public class ArtifactRepository {
         ArtifactProps artifactProps = toArtifactProps(artifactTree.artifactInfo());
         Map<String, Object> propsMap = objectMapper.convertValue(artifactProps, new TypeReference<>() {});
         try (var session = driver.session()) {
-            session.executeWriteWithoutResult(tx -> tx.run(new Query("CREATE (a:Artifact $props)",
+            session.executeWriteWithoutResult(tx -> tx.run(new Query("CREATE (a:Artifact $props) SET a.created = datetime()",
                             parameters("props", propsMap))
                     )
             );
@@ -156,7 +157,7 @@ public class ArtifactRepository {
             return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier(),
                     artifactProps.unresolved(), artifactProps.packageSize(), artifactProps.totalSize(), artifactProps.bytecodeVersion(),
                     artifactProps.packaging(), artifactProps.name(), artifactProps.description(), artifactProps.url(),
-                    artifactProps.inceptionYear(), licences);
+                    artifactProps.inceptionYear(), licences, artifactProps.created());
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
@@ -175,7 +176,7 @@ public class ArtifactRepository {
             return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(),
                     artifactInfo.unresolved(), artifactInfo.packageSize(), artifactInfo.totalSize(), artifactInfo.bytecodeVersion(),
                     artifactInfo.packaging(), artifactInfo.name(), artifactInfo.description(), artifactInfo.url(),
-                    artifactInfo.inceptionYear(), licenses);
+                    artifactInfo.inceptionYear(), licenses, null);
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
@@ -196,7 +197,8 @@ public class ArtifactRepository {
                                  String description,
                                  String url,
                                  String inceptionYear,
-                                 String licenses) {}
+                                 String licenses,
+                                 ZonedDateTime created) {}
 
     private class AggregateTree {
         private final ArtifactProps artifactProps;
