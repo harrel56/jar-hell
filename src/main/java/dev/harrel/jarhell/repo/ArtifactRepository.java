@@ -154,7 +154,7 @@ public class ArtifactRepository {
                 licences = objectMapper.readValue(artifactProps.licenses(), new TypeReference<>() {});
             }
             return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier(),
-                    artifactProps.unresolved(), artifactProps.packageSize(), artifactProps.overallSize(), artifactProps.bytecodeVersion(),
+                    artifactProps.unresolved(), artifactProps.packageSize(), artifactProps.totalSize(), artifactProps.bytecodeVersion(),
                     artifactProps.packaging(), artifactProps.name(), artifactProps.description(), artifactProps.url(),
                     artifactProps.inceptionYear(), licences);
         } catch (JsonProcessingException e) {
@@ -173,7 +173,7 @@ public class ArtifactRepository {
                 licenses = objectMapper.writeValueAsString(artifactInfo.licenses());
             }
             return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(),
-                    artifactInfo.unresolved(), artifactInfo.packageSize(), artifactInfo.overallSize(), artifactInfo.bytecodeVersion(),
+                    artifactInfo.unresolved(), artifactInfo.packageSize(), artifactInfo.totalSize(), artifactInfo.bytecodeVersion(),
                     artifactInfo.packaging(), artifactInfo.name(), artifactInfo.description(), artifactInfo.url(),
                     artifactInfo.inceptionYear(), licenses);
         } catch (JsonProcessingException e) {
@@ -189,7 +189,7 @@ public class ArtifactRepository {
                                  String classifier,
                                  Boolean unresolved,
                                  Long packageSize,
-                                 Long overallSize,
+                                 Long totalSize,
                                  String bytecodeVersion,
                                  String packaging,
                                  String name,
