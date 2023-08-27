@@ -10,6 +10,7 @@ public record ArtifactInfo(String groupId,
                            String classifier,
                            Boolean unresolved,
                            Long packageSize,
+                           Long overallSize,
                            String bytecodeVersion,
                            String packaging,
                            String name,
@@ -18,6 +19,6 @@ public record ArtifactInfo(String groupId,
                            String inceptionYear,
                            List<Licence> licenses) {
     public ArtifactInfo(String groupId, String artifactId, String version, String classifier) {
-        this(groupId, artifactId, version, classifier, true, null, null, null, null, null, null, null, null);
+        this(groupId, artifactId, version, classifier, true, null, null, null, null, null, null, null, null, null);
     }
 }

@@ -40,8 +40,7 @@ public class ArtifactRepository {
     }
 
     public Optional<ArtifactTree> find(Gav gav) {
-        Map<String, Object> gavData = objectMapper.convertValue(gav, new TypeReference<>() {
-        });
+        Map<String, Object> gavData = objectMapper.convertValue(gav, new TypeReference<>() {});
         try (var session = driver.session()) {
             SummarizedResult result = session.executeRead(tx -> {
                 Result res = tx.run(new Query("""
@@ -155,7 +154,7 @@ public class ArtifactRepository {
                 licences = objectMapper.readValue(artifactProps.licenses(), new TypeReference<>() {});
             }
             return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier(),
-                    artifactProps.unresolved(), artifactProps.packageSize(), artifactProps.bytecodeVersion(),
+                    artifactProps.unresolved(), artifactProps.packageSize(), artifactProps.overallSize(), artifactProps.bytecodeVersion(),
                     artifactProps.packaging(), artifactProps.name(), artifactProps.description(), artifactProps.url(),
                     artifactProps.inceptionYear(), licences);
         } catch (JsonProcessingException e) {
@@ -174,7 +173,7 @@ public class ArtifactRepository {
                 licenses = objectMapper.writeValueAsString(artifactInfo.licenses());
             }
             return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(),
-                    artifactInfo.unresolved(), artifactInfo.packageSize(), artifactInfo.bytecodeVersion(),
+                    artifactInfo.unresolved(), artifactInfo.packageSize(), artifactInfo.overallSize(), artifactInfo.bytecodeVersion(),
                     artifactInfo.packaging(), artifactInfo.name(), artifactInfo.description(), artifactInfo.url(),
                     artifactInfo.inceptionYear(), licenses);
         } catch (JsonProcessingException e) {
@@ -190,6 +189,7 @@ public class ArtifactRepository {
                                  String classifier,
                                  Boolean unresolved,
                                  Long packageSize,
+                                 Long overallSize,
                                  String bytecodeVersion,
                                  String packaging,
                                  String name,

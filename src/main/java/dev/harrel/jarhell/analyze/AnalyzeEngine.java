@@ -15,7 +15,10 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -77,6 +80,13 @@ public class AnalyzeEngine {
         logger.info("START analysis of [{}]", gav);
         AnalysisOutput analysisOutput = doAnalyze(gav);
 
+        List<Gav> depsx = analysisOutput.dependencies().stream()
+                .map(DependencyNode::getDependency)
+                .map(Dependency::getArtifact)
+                .map(a -> new Gav(a.getGroupId(), a.getArtifactId(), a.getVersion(), a.getClassifier()))
+                .toList();
+        logger.info("DEPS [{}]: {}", gav, depsx);
+
         List<CompletableFuture<DependencyInfo>> futures = analysisOutput.dependencies().stream()
                 .map(DependencyNode::getDependency)
                 .map(this::computeDependencyInfo)
@@ -90,7 +100,8 @@ public class AnalyzeEngine {
                 )
                 .thenApply(deps -> {
                     ArtifactTree artifactTree = new ArtifactTree(analysisOutput.artifactInfo(), deps);
-                    artifactRepository.save(artifactTree);
+                    Long overallSize = getOverallSize(artifactTree);
+                    artifactRepository.save(artifactTree.withOverallSize(overallSize));
                     long timeElapsed = Duration.between(start, Instant.now()).toMillis();
                     logger.info("END analysis of [{}] - completed in {}ms", gav, timeElapsed);
                     return artifactTree;
@@ -103,7 +114,7 @@ public class AnalyzeEngine {
             var dependencyNodes = mavenRunner.resolveDependencies(gav).getChildren();
             return new AnalysisOutput(artifactInfo, dependencyNodes);
         } catch (ArtifactNotFoundException e) {
-            logger.warn("Artifact not found", e);
+            logger.warn("Artifact not found: {}", e.getMessage());
             var artifactInfo = new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier());
             return new AnalysisOutput(artifactInfo, List.of());
         }
@@ -114,6 +125,28 @@ public class AnalyzeEngine {
         Gav depGav = new Gav(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(), StringUtils.stripToNull(artifact.getClassifier()));
         String scope = dep.getScope().isBlank() ? "compile" : dep.getScope();
         return analyzeInternal(depGav).thenApply(at -> new DependencyInfo(at, dep.getOptional(), scope));
+    }
+
+    private Long getOverallSize(ArtifactTree at) {
+        if (at.artifactInfo().packageSize() == null) {
+            return null;
+        }
+        return traverse(at, new HashSet<>());
+    }
+
+    private long traverse(ArtifactTree at, Set<Gav> visited) {
+        ArtifactInfo info = at.artifactInfo();
+        Gav gav = new Gav(info.groupId(), info.artifactId(), info.version(), info.classifier());
+        if (visited.contains(gav)) {
+            return 0;
+        }
+
+        Long size = Optional.ofNullable(info.packageSize()).orElse(0L);
+        return size + at.dependencies().stream()
+                .filter(d -> !Boolean.TRUE.equals(d.optional()))
+                .map(DependencyInfo::artifact)
+                .mapToLong(d -> traverse(d, visited))
+                .sum();
     }
 
     private record AnalysisOutput(ArtifactInfo artifactInfo, List<DependencyNode> dependencies) {}

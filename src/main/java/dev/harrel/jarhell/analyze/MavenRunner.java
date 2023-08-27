@@ -50,7 +50,10 @@ class MavenRunner {
         // for maven profiles activation which depend on jdk version - value doesn't really matter
         session.setSystemProperties(Map.of(
                 "java.version", "17",
-                "java.home", System.getProperty("java.home")
+                "java.home", System.getProperty("java.home"),
+                "os.detected.name", "linux",
+                "os.detected.arch", "x86_64",
+                "os.detected.classifier", "linux-x86_64"
         ));
     }
 
