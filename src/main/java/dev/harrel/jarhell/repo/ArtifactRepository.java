@@ -157,7 +157,7 @@ public class ArtifactRepository {
             return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier(),
                     artifactProps.unresolved(), artifactProps.packageSize(), artifactProps.totalSize(), artifactProps.bytecodeVersion(),
                     artifactProps.packaging(), artifactProps.name(), artifactProps.description(), artifactProps.url(),
-                    artifactProps.inceptionYear(), licences, artifactProps.created());
+                    artifactProps.inceptionYear(), licences, artifactProps.classifiers(), artifactProps.created());
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
@@ -176,7 +176,7 @@ public class ArtifactRepository {
             return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(),
                     artifactInfo.unresolved(), artifactInfo.packageSize(), artifactInfo.totalSize(), artifactInfo.bytecodeVersion(),
                     artifactInfo.packaging(), artifactInfo.name(), artifactInfo.description(), artifactInfo.url(),
-                    artifactInfo.inceptionYear(), licenses, null);
+                    artifactInfo.inceptionYear(), licenses, artifactInfo.classifiers(), null);
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
@@ -198,6 +198,7 @@ public class ArtifactRepository {
                                  String url,
                                  String inceptionYear,
                                  String licenses,
+                                 List<String> classifiers,
                                  ZonedDateTime created) {}
 
     private class AggregateTree {

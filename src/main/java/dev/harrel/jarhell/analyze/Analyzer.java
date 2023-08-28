@@ -6,6 +6,7 @@ import dev.harrel.jarhell.model.descriptor.DescriptorInfo;
 
 import java.net.http.HttpClient;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -37,7 +38,7 @@ class Analyzer {
         DescriptorInfo descriptorInfo = mavenRunner.resolveDescriptor(gav);
         PackageInfo packageInfo = packageAnalyzer.analyzePackage(gav, filesInfo, descriptorInfo.packaging());
 
-        return createArtifactInfo(gav, packageInfo, descriptorInfo);
+        return createArtifactInfo(gav, filesInfo, packageInfo, descriptorInfo);
     }
 
     public Long calculateTotalSize(ArtifactTree at) {
@@ -47,11 +48,11 @@ class Analyzer {
         return traverseTotalSize(at, new HashSet<>());
     }
 
-    private ArtifactInfo createArtifactInfo(Gav gav, PackageInfo packageInfo, DescriptorInfo descriptorInfo) {
+    private ArtifactInfo createArtifactInfo(Gav gav, FilesInfo filesInfo, PackageInfo packageInfo, DescriptorInfo descriptorInfo) {
         return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), null,
                 packageInfo.size(), null, packageInfo.bytecodeVersion(), descriptorInfo.packaging(),
                 descriptorInfo.name(), descriptorInfo.description(), descriptorInfo.url(), descriptorInfo.inceptionYear(),
-                descriptorInfo.licences(), null);
+                descriptorInfo.licences(), List.copyOf(filesInfo.classifiers()), null);
     }
 
     private long traverseTotalSize(ArtifactTree at, Set<Gav> visited) {
