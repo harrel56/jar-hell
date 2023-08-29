@@ -25,10 +25,10 @@ import java.net.URI;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class Main {
+public class App {
 
     public static void main(String[] arg) {
-        Logger mainLogger = LoggerFactory.getLogger(Main.class);
+        Logger mainLogger = LoggerFactory.getLogger(App.class);
         Driver driver = createNeo4jDriver();
         DatabaseInitializer.initialize(driver);
         ObjectMapper objectMapper = new ObjectMapper()
@@ -43,6 +43,13 @@ public class Main {
 
         Consumer<JavalinConfig> configConsumer = config -> {
             config.jsonMapper(new JavalinJackson(objectMapper));
+            config.spaRoot.addFile("/", "/web/index.html");
+            config.staticFiles.add(staticFiles -> {
+                staticFiles.directory = "/web/assets";
+                staticFiles.hostedPath = "/assets";
+                staticFiles.precompress = true;
+                staticFiles.headers = Map.of("Cache-Control", "max-age=86400");
+            });
         };
         Javalin server = Javalin.create(configConsumer)
                 .post("/api/v1/analyze", analyzeHandler)

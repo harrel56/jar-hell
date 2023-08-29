@@ -1,0 +1,26 @@
+{
+  "name": "harrel-web",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "visualize": "npx vite-bundle-visualizer"
+  },
+  "dependencies": {
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-router-dom": "6.14.0",
+    "use-http": "1.0.28",
+    "react-use": "17.4.0",
+    "react-icons": "4.9.0"
+  },
+  "devDependencies": {
+    "typescript": "5.1.3",
+    "ts-loader": "9.4.3",
+    "@types/react": "18.2.10",
+    "@types/react-dom": "18.2.4",
+    "vite": "4.3.9",
+    "@vitejs/plugin-react-swc": "3.3.2"
+  }
+}

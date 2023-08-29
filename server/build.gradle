@@ -1,0 +1,68 @@
+plugins {
+    id 'application'
+}
+
+group = 'dev.harrel'
+version = '1.0.0'
+
+java {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+}
+
+configurations {
+    web
+    output
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    web project(path: ':web', configuration: 'output')
+
+    implementation 'org.tinylog:slf4j-tinylog:2.6.2'
+    implementation 'org.tinylog:tinylog-impl:2.6.2'
+    implementation 'io.javalin:javalin:5.6.2'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.15.2'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.14.2'
+
+    implementation 'org.apache.maven:maven-resolver-provider:3.9.4'
+    implementation 'org.apache.maven.resolver:maven-resolver-transport-http:1.9.15'
+    implementation 'org.apache.maven.resolver:maven-resolver-transport-file:1.9.15'
+    implementation 'org.apache.maven.resolver:maven-resolver-connector-basic:1.9.15'
+
+    implementation 'org.neo4j.driver:neo4j-java-driver:5.11.0'
+
+    testImplementation platform('org.junit:junit-bom:5.9.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+processResources {
+    inputs.files(configurations.web)
+    doLast {
+        copy {
+            from(configurations.web)
+            into("${sourceSets.main.output.resourcesDir}/web")
+        }
+    }
+}
+
+tasks.register('fatJar', Jar) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes 'Main-Class': 'dev.harrel.jarhell.App'
+    }
+    from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+
+artifacts {
+    output(fatJar)
+}
+
+test {
+    useJUnitPlatform()
+}

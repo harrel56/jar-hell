@@ -1,1 +1,3 @@
 rootProject.name = 'jar-hell'
+include 'server'
+include 'web'
