@@ -22,6 +22,10 @@ repositories {
 dependencies {
     web project(path: ':web', configuration: 'output')
 
+    implementation 'io.avaje:avaje-inject:9.5-javax'
+    implementation 'io.avaje:avaje-config:3.7'
+    annotationProcessor 'io.avaje:avaje-inject-generator:9.5-javax'
+
     implementation 'org.tinylog:slf4j-tinylog:2.6.2'
     implementation 'org.tinylog:tinylog-impl:2.6.2'
     implementation 'io.javalin:javalin:5.6.2'
