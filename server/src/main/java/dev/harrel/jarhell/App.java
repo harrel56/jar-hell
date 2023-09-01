@@ -14,11 +14,10 @@ import io.javalin.config.JavalinConfig;
 import io.javalin.http.HttpStatus;
 import io.javalin.json.JavalinJackson;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.neo4j.driver.*;
+import org.neo4j.driver.Driver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
 import java.util.Map;
 import java.util.function.Consumer;
 

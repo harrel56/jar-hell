@@ -35,7 +35,7 @@ public class AnalyzeEngine {
     private final MavenRunner mavenRunner;
     private final Analyzer analyzer;
 
-    public AnalyzeEngine(ArtifactRepository artifactRepository, MavenRunner mavenRunner, Analyzer analyzer) {
+    AnalyzeEngine(ArtifactRepository artifactRepository, MavenRunner mavenRunner, Analyzer analyzer) {
         this.artifactRepository = artifactRepository;
         this.mavenRunner = mavenRunner;
         this.analyzer = analyzer;
