@@ -4,12 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.model.descriptor.DescriptorInfo;
 
+import javax.inject.Singleton;
 import java.net.http.HttpClient;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+@Singleton
 class Analyzer {
     private final MavenRunner mavenRunner;
     private final ApiClient apiClient;

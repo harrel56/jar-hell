@@ -5,6 +5,7 @@ import dev.harrel.jarhell.model.PackageInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Singleton;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,6 +20,7 @@ import java.util.jar.JarInputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Singleton
 class PackageAnalyzer {
     private static final Logger logger = LoggerFactory.getLogger(PackageAnalyzer.class);
     private static final List<String> RANGE_STEPS = List.of("8096", "16384", "131072", "524288");

@@ -33,8 +33,8 @@ public class App {
         Driver driver = beanScope.get(Driver.class);
         DatabaseInitializer.initialize(driver);
         ObjectMapper objectMapper = beanScope.get(ObjectMapper.class);
-        ArtifactRepository artifactRepository = new ArtifactRepository(driver, objectMapper);
-        AnalyzeEngine analyzeEngine = new AnalyzeEngine(objectMapper, artifactRepository);
+        ArtifactRepository artifactRepository = beanScope.get(ArtifactRepository.class);
+        AnalyzeEngine analyzeEngine = beanScope.get(AnalyzeEngine.class);
         AnalyzeHandler analyzeHandler = new AnalyzeHandler(analyzeEngine);
         PackagesHandler packagesHandler = new PackagesHandler(artifactRepository);
 
@@ -70,13 +70,5 @@ public class App {
             driver.close();
             server.close();
         }));
-    }
-
-    private static Driver createNeo4jDriver() {
-        Map<String, String> env = System.getenv();
-        URI dbUri = URI.create(env.get("neo4j.uri"));
-        AuthToken authToken = AuthTokens.basic(env.get("neo4j.username"), env.get("neo4j.password"));
-        Config config = Config.builder().withLogging(Logging.slf4j()).build();
-        return GraphDatabase.driver(dbUri, authToken, config);
     }
 }

@@ -5,12 +5,13 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.avaje.config.Config;
 import io.avaje.inject.Bean;
 import io.avaje.inject.Factory;
 import org.neo4j.driver.*;
 
 import java.net.URI;
-import java.util.Map;
+import java.net.http.HttpClient;
 
 @Factory
 class Configuration {
@@ -26,11 +27,16 @@ class Configuration {
 
     @Bean
     Driver neo4jDriver() {
-        System.out.println(io.avaje.config.Config.getURI("neo4j.uri"));
-        Map<String, String> env = System.getenv();
-        URI dbUri = URI.create(env.get("neo4j.uri"));
-        AuthToken authToken = AuthTokens.basic(env.get("neo4j.username"), env.get("neo4j.password"));
-        Config config = Config.builder().withLogging(Logging.slf4j()).build();
+        URI dbUri = Config.getURI("neo4j.uri");
+        AuthToken authToken = AuthTokens.basic(Config.get("neo4j.username"), Config.get("neo4j.password"));
+        var config = org.neo4j.driver.Config.builder().withLogging(Logging.slf4j()).build();
         return GraphDatabase.driver(dbUri, authToken, config);
+    }
+
+    @Bean
+    HttpClient httpClient() {
+        return HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.ALWAYS)
+                .build();
     }
 }

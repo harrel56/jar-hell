@@ -1,12 +1,11 @@
 package dev.harrel.jarhell.analyze;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.harrel.jarhell.error.ResourceNotFoundException;
-import dev.harrel.jarhell.repo.ArtifactRepository;
 import dev.harrel.jarhell.model.ArtifactInfo;
 import dev.harrel.jarhell.model.ArtifactTree;
 import dev.harrel.jarhell.model.DependencyInfo;
 import dev.harrel.jarhell.model.Gav;
+import dev.harrel.jarhell.repo.ArtifactRepository;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
@@ -14,6 +13,7 @@ import org.eclipse.aether.graph.DependencyNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Singleton;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 
+@Singleton
 public class AnalyzeEngine {
     private static final Logger logger = LoggerFactory.getLogger(AnalyzeEngine.class);
 
@@ -34,10 +35,10 @@ public class AnalyzeEngine {
     private final MavenRunner mavenRunner;
     private final Analyzer analyzer;
 
-    public AnalyzeEngine(ObjectMapper objectMapper, ArtifactRepository artifactRepository) {
+    public AnalyzeEngine(ArtifactRepository artifactRepository, MavenRunner mavenRunner, Analyzer analyzer) {
         this.artifactRepository = artifactRepository;
-        this.mavenRunner = new MavenRunner();
-        this.analyzer = new Analyzer(objectMapper, mavenRunner);
+        this.mavenRunner = mavenRunner;
+        this.analyzer = analyzer;
     }
 
     public CompletableFuture<ArtifactTree> analyze(Gav gav) {
@@ -51,10 +52,10 @@ public class AnalyzeEngine {
         }
 
         return analyzeInternal(gav).whenComplete((value, ex) -> {
-                    if (ex != null) {
-                        logger.error("Error occurred during analysis of [{}]", gav, ex);
-                    }
-                });
+            if (ex != null) {
+                logger.error("Error occurred during analysis of [{}]", gav, ex);
+            }
+        });
     }
 
     private CompletableFuture<ArtifactTree> analyzeInternal(Gav gav) {

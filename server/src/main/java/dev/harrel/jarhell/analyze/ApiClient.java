@@ -10,6 +10,7 @@ import dev.harrel.jarhell.model.central.MavenMetadata;
 import dev.harrel.jarhell.model.central.SelectResponse;
 import dev.harrel.jarhell.model.central.VersionDoc;
 
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -21,6 +22,7 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
+@Singleton
 class ApiClient {
     private static final String SELECT_URL = "https://search.maven.org/solrsearch/select";
     private static final String CONTENT_URL = "https://search.maven.org/remotecontent";

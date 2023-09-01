@@ -54,6 +54,10 @@ processResources {
     }
 }
 
+tasks.withType(JavaExec).configureEach {
+    environment.putAll(project.getProperties())
+}
+
 tasks.register('fatJar', Jar) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
