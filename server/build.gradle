@@ -24,7 +24,9 @@ dependencies {
 
     implementation 'io.avaje:avaje-inject:9.5-javax'
     implementation 'io.avaje:avaje-config:3.7'
+    implementation 'io.avaje:avaje-http-api:2.0-RC6'
     annotationProcessor 'io.avaje:avaje-inject-generator:9.5-javax'
+    annotationProcessor 'io.avaje:avaje-http-javalin-generator:2.0-RC6'
 
     implementation 'org.tinylog:slf4j-tinylog:2.6.2'
     implementation 'org.tinylog:tinylog-impl:2.6.2'
