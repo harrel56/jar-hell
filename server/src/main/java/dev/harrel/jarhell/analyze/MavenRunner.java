@@ -23,7 +23,6 @@ import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
 import org.eclipse.aether.resolution.ArtifactDescriptorResult;
 import org.eclipse.aether.supplier.CustomDescriptorReaderDelegate;
-import org.eclipse.aether.supplier.RepositorySystemSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,8 +41,8 @@ class MavenRunner {
     private final DefaultRepositorySystemSession session;
     private final List<RemoteRepository> remoteRepos;
 
-    public MavenRunner() {
-        this.repoSystem = new RepositorySystemSupplier().get();
+    MavenRunner(RepositorySystem repoSystem) {
+        this.repoSystem = repoSystem;
         this.session = MavenRepositorySystemUtils.newSession();
         this.remoteRepos = List.of(new RemoteRepository.Builder("central", "default", MAVEN_CENTRAL).build());
         session.setLocalRepositoryManager(repoSystem.newLocalRepositoryManager(session, new LocalRepository(LOCAL_REPO_PATH)));
