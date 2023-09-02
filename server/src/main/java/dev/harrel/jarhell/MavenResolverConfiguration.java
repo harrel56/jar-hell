@@ -45,7 +45,6 @@ import org.eclipse.aether.transport.http.Nexus2ChecksumExtractor;
 import org.eclipse.aether.transport.http.XChecksumChecksumExtractor;
 
 import javax.inject.Named;
-import java.util.HashMap;
 import java.util.Map;
 
 @Component.Import({
@@ -67,35 +66,35 @@ class MavenResolverConfiguration {
     @Bean
     @Named("namedLockFactories")
     Map<String, NamedLockFactory> namedLockFactories() {
-        HashMap<String, NamedLockFactory> result = new HashMap<>();
-        result.put(NoopNamedLockFactory.NAME, new NoopNamedLockFactory());
-        result.put(LocalReadWriteLockNamedLockFactory.NAME, new LocalReadWriteLockNamedLockFactory());
-        result.put(LocalSemaphoreNamedLockFactory.NAME, new LocalSemaphoreNamedLockFactory());
-        result.put(FileLockNamedLockFactory.NAME, new FileLockNamedLockFactory());
-        return result;
+        return Map.of(
+                NoopNamedLockFactory.NAME, new NoopNamedLockFactory(),
+                LocalReadWriteLockNamedLockFactory.NAME, new LocalReadWriteLockNamedLockFactory(),
+                LocalSemaphoreNamedLockFactory.NAME, new LocalSemaphoreNamedLockFactory(),
+                FileLockNamedLockFactory.NAME, new FileLockNamedLockFactory()
+        );
     }
 
     @Bean
     @Named("nameMappers")
     Map<String, NameMapper> nameMappers() {
-        HashMap<String, NameMapper> result = new HashMap<>();
-        result.put(NameMappers.STATIC_NAME, NameMappers.staticNameMapper());
-        result.put(NameMappers.GAV_NAME, NameMappers.gavNameMapper());
-        result.put(NameMappers.DISCRIMINATING_NAME, NameMappers.discriminatingNameMapper());
-        result.put(NameMappers.FILE_GAV_NAME, NameMappers.fileGavNameMapper());
-        result.put(NameMappers.FILE_HGAV_NAME, NameMappers.fileHashingGavNameMapper());
-        return result;
+        return Map.of(
+                NameMappers.STATIC_NAME, NameMappers.staticNameMapper(),
+                NameMappers.GAV_NAME, NameMappers.gavNameMapper(),
+                NameMappers.DISCRIMINATING_NAME, NameMappers.discriminatingNameMapper(),
+                NameMappers.FILE_GAV_NAME, NameMappers.fileGavNameMapper(),
+                NameMappers.FILE_HGAV_NAME, NameMappers.fileHashingGavNameMapper()
+        );
     }
 
     @Bean
     @Named("checksumAlgorithmFactories")
     Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories() {
-        HashMap<String, ChecksumAlgorithmFactory> result = new HashMap<>();
-        result.put(Sha512ChecksumAlgorithmFactory.NAME, new Sha512ChecksumAlgorithmFactory());
-        result.put(Sha256ChecksumAlgorithmFactory.NAME, new Sha256ChecksumAlgorithmFactory());
-        result.put(Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory());
-        result.put(Md5ChecksumAlgorithmFactory.NAME, new Md5ChecksumAlgorithmFactory());
-        return result;
+        return Map.of(
+                Sha512ChecksumAlgorithmFactory.NAME, new Sha512ChecksumAlgorithmFactory(),
+                Sha256ChecksumAlgorithmFactory.NAME, new Sha256ChecksumAlgorithmFactory(),
+                Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory(),
+                Md5ChecksumAlgorithmFactory.NAME, new Md5ChecksumAlgorithmFactory()
+        );
     }
 
     @Bean
@@ -108,14 +107,12 @@ class MavenResolverConfiguration {
     @Named("remoteRepositoryFilterSources")
     Map<String, RemoteRepositoryFilterSource> remoteRepositoryFilterSources(RepositorySystemLifecycle repositorySystemLifecycle,
                                                                             RepositoryLayoutProvider repositoryLayoutProvider) {
-        HashMap<String, RemoteRepositoryFilterSource> result = new HashMap<>();
-        result.put(
+        return Map.of(
                 GroupIdRemoteRepositoryFilterSource.NAME,
-                new GroupIdRemoteRepositoryFilterSource(repositorySystemLifecycle));
-        result.put(
+                new GroupIdRemoteRepositoryFilterSource(repositorySystemLifecycle),
                 PrefixesRemoteRepositoryFilterSource.NAME,
-                new PrefixesRemoteRepositoryFilterSource(repositoryLayoutProvider));
-        return result;
+                new PrefixesRemoteRepositoryFilterSource(repositoryLayoutProvider)
+        );
     }
 
     @Bean
@@ -123,52 +120,42 @@ class MavenResolverConfiguration {
     Map<String, TrustedChecksumsSource> trustedChecksumsSources(FileProcessor fileProcessor,
                                                                 LocalPathComposer localPathComposer,
                                                                 RepositorySystemLifecycle repositorySystemLifecycle) {
-        HashMap<String, TrustedChecksumsSource> result = new HashMap<>();
-        result.put(
+        return Map.of(
                 SparseDirectoryTrustedChecksumsSource.NAME,
-                new SparseDirectoryTrustedChecksumsSource(fileProcessor, localPathComposer));
-        result.put(
+                new SparseDirectoryTrustedChecksumsSource(fileProcessor, localPathComposer),
                 SummaryFileTrustedChecksumsSource.NAME,
-                new SummaryFileTrustedChecksumsSource(localPathComposer, repositorySystemLifecycle));
-        return result;
+                new SummaryFileTrustedChecksumsSource(localPathComposer, repositorySystemLifecycle)
+        );
     }
 
     @Bean
     @Named("providedChecksumsSources")
-    Map<String, ProvidedChecksumsSource> providedChecksumsSources(
-            Map<String, TrustedChecksumsSource> trustedChecksumsSources) {
-        HashMap<String, ProvidedChecksumsSource> result = new HashMap<>();
-        result.put(
-                TrustedToProvidedChecksumsSourceAdapter.NAME,
-                new TrustedToProvidedChecksumsSourceAdapter(trustedChecksumsSources));
-        return result;
+    Map<String, ProvidedChecksumsSource> providedChecksumsSources(Map<String, TrustedChecksumsSource> trustedChecksumsSources) {
+        return Map.of(TrustedToProvidedChecksumsSourceAdapter.NAME, new TrustedToProvidedChecksumsSourceAdapter(trustedChecksumsSources));
     }
 
     @Bean
     @Named("checksumExtractors")
     Map<String, ChecksumExtractor> checksumExtractors() {
-        HashMap<String, ChecksumExtractor> result = new HashMap<>();
-        result.put(Nexus2ChecksumExtractor.NAME, new Nexus2ChecksumExtractor());
-        result.put(XChecksumChecksumExtractor.NAME, new XChecksumChecksumExtractor());
-        return result;
+        return Map.of(
+                Nexus2ChecksumExtractor.NAME, new Nexus2ChecksumExtractor(),
+                XChecksumChecksumExtractor.NAME, new XChecksumChecksumExtractor()
+        );
     }
 
     @Bean
     @Named("transporterFactories")
     Map<String, TransporterFactory> transporterFactories(Map<String, ChecksumExtractor> extractors) {
-        HashMap<String, TransporterFactory> result = new HashMap<>();
-        result.put("file", new FileTransporterFactory());
-        result.put("http", new HttpTransporterFactory(extractors));
-        return result;
+        return Map.of(
+                "file", new FileTransporterFactory(),
+                "http", new HttpTransporterFactory(extractors)
+        );
     }
 
     @Bean
     @Named("repositoryConnectorFactories")
-    Map<String, RepositoryConnectorFactory> repositoryConnectorFactories(
-            BasicRepositoryConnectorFactory basicRepositoryConnectorFactory) {
-        HashMap<String, RepositoryConnectorFactory> result = new HashMap<>();
-        result.put("basic", basicRepositoryConnectorFactory);
-        return result;
+    Map<String, RepositoryConnectorFactory> repositoryConnectorFactories(BasicRepositoryConnectorFactory basicRepositoryConnectorFactory) {
+        return Map.of("basic", basicRepositoryConnectorFactory);
     }
 
     @Bean
@@ -177,22 +164,18 @@ class MavenResolverConfiguration {
             RemoteRepositoryManager remoteRepositoryManager,
             ArtifactDescriptorReader artifactDescriptorReader,
             VersionRangeResolver versionRangeResolver) {
-        HashMap<String, DependencyCollectorDelegate> result = new HashMap<>();
         DfDependencyCollector collector1 = new DfDependencyCollector();
         collector1.setRemoteRepositoryManager(remoteRepositoryManager);
         collector1.setArtifactDescriptorReader(artifactDescriptorReader);
         collector1.setVersionRangeResolver(versionRangeResolver);
-        result.put(
-                DfDependencyCollector.NAME,
-                collector1);
         BfDependencyCollector collector2 = new BfDependencyCollector();
         collector2.setRemoteRepositoryManager(remoteRepositoryManager);
         collector2.setArtifactDescriptorReader(artifactDescriptorReader);
         collector2.setVersionRangeResolver(versionRangeResolver);
-        result.put(
-                BfDependencyCollector.NAME,
-                collector2);
-        return result;
+        return Map.of(
+                DfDependencyCollector.NAME, collector1,
+                BfDependencyCollector.NAME, collector2
+        );
     }
 
     @Bean
@@ -200,22 +183,18 @@ class MavenResolverConfiguration {
     Map<String, ArtifactResolverPostProcessor> artifactResolverPostProcessors(
             ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector,
             Map<String, TrustedChecksumsSource> trustedChecksumsSources) {
-        HashMap<String, ArtifactResolverPostProcessor> result = new HashMap<>();
-        result.put(
-                TrustedChecksumsArtifactResolverPostProcessor.NAME,
-                new TrustedChecksumsArtifactResolverPostProcessor(
-                        checksumAlgorithmFactorySelector, trustedChecksumsSources));
-        return result;
+        var processor = new TrustedChecksumsArtifactResolverPostProcessor(checksumAlgorithmFactorySelector, trustedChecksumsSources);
+        return Map.of(TrustedChecksumsArtifactResolverPostProcessor.NAME, processor);
     }
 
     @Bean
     @Named("metadataGeneratorFactories")
     Map<String, MetadataGeneratorFactory> metadataGeneratorFactories() {
-        HashMap<String, MetadataGeneratorFactory> result = new HashMap<>();
-        result.put("plugins", new PluginsMetadataGeneratorFactory());
-        result.put("versions", new VersionsMetadataGeneratorFactory());
-        result.put("snapshot", new SnapshotMetadataGeneratorFactory());
-        return result;
+        return Map.of(
+                "plugins", new PluginsMetadataGeneratorFactory(),
+                "versions", new VersionsMetadataGeneratorFactory(),
+                "snapshot", new SnapshotMetadataGeneratorFactory()
+        );
     }
 
     @Bean
