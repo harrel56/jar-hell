@@ -1,4 +1,4 @@
-package org.eclipse.aether.supplier;
+package dev.harrel.jarhell.maven;
 
 import org.apache.maven.model.Model;
 import org.apache.maven.repository.internal.ArtifactDescriptorReaderDelegate;

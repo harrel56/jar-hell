@@ -1,11 +1,15 @@
 package dev.harrel.jarhell;
 
+import dev.harrel.jarhell.maven.LoggingRepositoryListener;
+import io.avaje.config.Config;
 import io.avaje.inject.Bean;
 import io.avaje.inject.Component;
 import io.avaje.inject.Factory;
 import org.apache.maven.model.building.DefaultModelBuilderFactory;
 import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.repository.internal.*;
+import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.*;
 import org.eclipse.aether.internal.impl.*;
@@ -27,6 +31,7 @@ import org.eclipse.aether.named.providers.FileLockNamedLockFactory;
 import org.eclipse.aether.named.providers.LocalReadWriteLockNamedLockFactory;
 import org.eclipse.aether.named.providers.LocalSemaphoreNamedLockFactory;
 import org.eclipse.aether.named.providers.NoopNamedLockFactory;
+import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.spi.checksums.ProvidedChecksumsSource;
 import org.eclipse.aether.spi.checksums.TrustedChecksumsSource;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
@@ -38,6 +43,7 @@ import org.eclipse.aether.spi.connector.layout.RepositoryLayoutProvider;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.spi.io.FileProcessor;
 import org.eclipse.aether.spi.resolution.ArtifactResolverPostProcessor;
+import dev.harrel.jarhell.maven.CustomDescriptorReaderDelegate;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.ChecksumExtractor;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
@@ -200,5 +206,22 @@ class MavenResolverConfiguration {
     @Bean
     ModelBuilder getModelBuilder() {
         return new DefaultModelBuilderFactory().newInstance();
+    }
+
+    @Bean
+    DefaultRepositorySystemSession defaultRepositorySystemSession(RepositorySystem repositorySystem) {
+        DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
+        session.setLocalRepositoryManager(repositorySystem.newLocalRepositoryManager(session, new LocalRepository(Config.get("maven.local-repo.path"))));
+        session.setRepositoryListener(new LoggingRepositoryListener());
+        session.setConfigProperty(ArtifactDescriptorReaderDelegate.class.getName(), new CustomDescriptorReaderDelegate());
+        // for maven profiles activation which depend on jdk version - value doesn't really matter
+        session.setSystemProperties(Map.of(
+                "java.version", System.getProperty("java.version"),
+                "java.home", System.getProperty("java.home"),
+                "os.detected.name", "linux",
+                "os.detected.arch", "x86_64",
+                "os.detected.classifier", "linux-x86_64"
+        ));
+        return session;
     }
 }
