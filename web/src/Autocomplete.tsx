@@ -6,7 +6,7 @@ export const Autocomplete = () => {
   const [value, setValue] = useState<string | null>('')
   const [options, setOptions] = useState<string[]>([])
 
-  const {get, loading, error} = useFetch<any>('https://search.maven.org/solrsearch/select?q=g:io.netty', {cachePolicy: CachePolicies.NO_CACHE})
+  const {get, loading, error} = useFetch<any>('/api/v1/search', {cachePolicy: CachePolicies.NO_CACHE})
 
 
   const {
@@ -24,7 +24,7 @@ export const Autocomplete = () => {
       // if (v && !options.includes(v)) {
       //   setOptions([...options, v])
       // }
-      get().then(val => console.log(val))
+      get('?query=' + v).then(val => console.log(val))
     },
     // getOptionLabel: (option) => option.label,
     value,

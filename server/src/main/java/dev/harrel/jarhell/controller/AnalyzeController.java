@@ -8,15 +8,15 @@ import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
 
 @Controller("/api/v1/analyze")
-public class AnalyzeController {
+class AnalyzeController {
     private final AnalyzeEngine analyzeEngine;
 
-    public AnalyzeController(AnalyzeEngine analyzeEngine) {
+    AnalyzeController(AnalyzeEngine analyzeEngine) {
         this.analyzeEngine = analyzeEngine;
     }
 
     @Post
-    public void analyze2(Gav gav, Context ctx) {
+    void analyze2(Gav gav, Context ctx) {
         analyzeEngine.analyze(gav);
         ctx.status(HttpStatus.ACCEPTED);
     }

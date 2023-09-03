@@ -8,15 +8,15 @@ import io.avaje.http.api.Controller;
 import io.avaje.http.api.Get;
 
 @Controller("/api/v1/packages")
-public class PackagesController {
+class PackagesController {
     private final ArtifactRepository artifactRepository;
 
-    public PackagesController(ArtifactRepository artifactRepository) {
+    PackagesController(ArtifactRepository artifactRepository) {
         this.artifactRepository = artifactRepository;
     }
 
     @Get("/{coordinate}")
-    public ArtifactTree get(String coordinate) {
+    ArtifactTree get(String coordinate) {
         Gav gav = Gav.fromCoordinate(coordinate);
         return artifactRepository.find(gav)
                 .orElseThrow(() -> new ResourceNotFoundException(gav));
