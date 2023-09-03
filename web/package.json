@@ -14,7 +14,8 @@
     "react-router-dom": "6.14.0",
     "use-http": "1.0.28",
     "react-use": "17.4.0",
-    "react-icons": "4.9.0"
+    "react-icons": "4.9.0",
+    "@mui/base": "5.0.0-beta.13"
   },
   "devDependencies": {
     "typescript": "5.1.3",

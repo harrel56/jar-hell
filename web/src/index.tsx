@@ -1,4 +1,5 @@
 import ReactDOMClient from 'react-dom/client'
+import {Autocomplete} from './Autocomplete.tsx'
 
 const root = ReactDOMClient.createRoot(document.getElementById('root')!)
-root.render(<h2>Hello</h2>)
+root.render(<Autocomplete></Autocomplete>)
