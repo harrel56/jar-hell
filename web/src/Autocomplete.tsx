@@ -1,13 +1,27 @@
 import {useAutocomplete} from '@mui/base'
 import {useState} from 'react'
 import {CachePolicies, useFetch} from 'use-http'
+import {useDebounce} from 'react-use'
+
+interface Artifact {
+  g: string
+  a: string
+}
+
+const artifactString = (artifact: Artifact) => `${artifact.g}:${artifact.a}`
 
 export const Autocomplete = () => {
-  const [value, setValue] = useState<string | null>('')
-  const [options, setOptions] = useState<string[]>([])
+  const [value, setValue] = useState<Artifact | null>()
+  const [inputValue, setInputValue] = useState('')
+  const [options, setOptions] = useState<Artifact[]>([])
 
-  const {get, loading, error} = useFetch<any>('/api/v1/search', {cachePolicy: CachePolicies.NO_CACHE})
-
+  const {get, loading, error} = useFetch<Artifact[]>(`${import.meta.env.VITE_SERVER_URL}/api/v1/search`, {cachePolicy: CachePolicies.NO_CACHE})
+  useDebounce(() => {
+    if (inputValue !== '') {
+      get('?query=' + inputValue).then(artifacts => setOptions(artifacts))
+    }
+  }, 1000, [inputValue])
+  console.log(options)
 
   const {
     getRootProps,
@@ -20,15 +34,11 @@ export const Autocomplete = () => {
   } = useAutocomplete({
     id: 'use-autocomplete-demo',
     options: options,
-    onInputChange: (_e, v) => {
-      // if (v && !options.includes(v)) {
-      //   setOptions([...options, v])
-      // }
-      get('?query=' + v).then(val => console.log(val))
-    },
-    // getOptionLabel: (option) => option.label,
+    getOptionLabel: artifactString,
     value,
     onChange: (_event, newValue) => setValue(newValue),
+    inputValue,
+    onInputChange: (_event, newInputValue) => setInputValue(newInputValue),
   });
 
   return (
@@ -38,13 +48,13 @@ export const Autocomplete = () => {
         {...getRootProps()}
         className={focused ? 'focused' : ''}
       >
-        <input {...getInputProps()} />
+        <input {...getInputProps()} value={inputValue} />
       </div>
       {groupedOptions.length > 0 && (
         <ul {...getListboxProps()}>
-          {(groupedOptions as string[]).map((option, index) => (
+          {(groupedOptions as Artifact[]).map((option, index) => (
             <li {...getOptionProps({ option, index })}>
-              {option}
+              {artifactString(option)}
             </li>
           ))}
         </ul>
