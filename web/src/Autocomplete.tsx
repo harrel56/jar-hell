@@ -12,6 +12,7 @@ interface Artifact {
 const artifactString = (artifact: Artifact) => `${artifact.g}:${artifact.a}`
 
 const Listbox = ({ac}: {ac: UseAutocompleteReturnValue<Artifact>}) => {
+  console.log(ac.groupedOptions)
   if (ac.groupedOptions.length > 0) {
     return (
       <ul {...ac.getListboxProps()}>
@@ -23,7 +24,7 @@ const Listbox = ({ac}: {ac: UseAutocompleteReturnValue<Artifact>}) => {
       </ul>
     )
   } else {
-    return <div>popop</div>
+    return <div>No results found</div>
   }
 }
 
@@ -37,8 +38,6 @@ export const Autocomplete = () => {
       get('?query=' + inputValue)
     }
   }, 1000, [inputValue])
-  console.log('e', error)
-  console.log('d', data)
   const options = error ? [] : data ?? []
 
   const ac = useAutocomplete({
