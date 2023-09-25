@@ -1,0 +1,7 @@
+### dev.harrel:json-schema
+GET https://search.maven.org/solrsearch/select?q=dev.harrel
+
+### any
+GET https://search.maven.org/solrsearch/select?q=dev.harrel:json-schema
+
+

@@ -1,0 +1,7 @@
+### dev.harrel:json-schema
+GET https://search.maven.org/remotecontent?filepath=dev/harrel/json-schema/maven-metadata.xml
+
+### any
+GET https://search.maven.org/remotecontent?filepath=dev/harrel/json-schema/maven-metadata.xml
+
+
