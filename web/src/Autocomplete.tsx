@@ -11,33 +11,40 @@ interface Artifact {
 
 const artifactString = (artifact: Artifact) => `${artifact.g}:${artifact.a}`
 
-const Listbox = ({ac}: {ac: UseAutocompleteReturnValue<Artifact>}) => {
-  console.log(ac.groupedOptions)
-  if (ac.groupedOptions.length > 0) {
-    return (
-      <ul {...ac.getListboxProps()}>
-        {(ac.groupedOptions as Artifact[]).map((option, index) => (
-          <li {...ac.getOptionProps({option, index})}>
-            {artifactString(option)}
-          </li>
-        ))}
-      </ul>
-    )
-  } else {
-    return <div>No results found</div>
+const Listbox = ({loading, ac}: { loading: boolean, ac: UseAutocompleteReturnValue<Artifact> }) => {
+  if (!ac.popupOpen) {
+    return null
   }
+  return (
+    <ul {...ac.getListboxProps()}>
+      {loading && <div>Loading...</div>}
+      {ac.groupedOptions.length === 0 &&
+        <div>No results found</div>
+      }
+      {(ac.groupedOptions as Artifact[]).map((option, index) => (
+        <li {...ac.getOptionProps({option, index})}>
+          {artifactString(option)}
+        </li>
+      ))}
+    </ul>
+  )
 }
 
 export const Autocomplete = () => {
   const [value, setValue] = useState<Artifact | null>()
   const [inputValue, setInputValue] = useState('')
 
-  const {data, get, loading, error} = useFetch<Artifact[]>(`${import.meta.env.VITE_SERVER_URL}/api/v1/search`, {cachePolicy: CachePolicies.NO_CACHE})
+  const {
+    data,
+    get,
+    loading,
+    error
+  } = useFetch<Artifact[]>(`${import.meta.env.VITE_SERVER_URL}/api/v1/search`, {cachePolicy: CachePolicies.NO_CACHE})
   useDebounce(() => {
     if (inputValue !== '') {
       get('?query=' + inputValue)
     }
-  }, 1000, [inputValue])
+  }, 500, [inputValue])
   const options = error ? [] : data ?? []
 
   const ac = useAutocomplete({
@@ -48,16 +55,17 @@ export const Autocomplete = () => {
     value,
     onChange: (_event, newValue) => setValue(newValue),
     inputValue,
-    onInputChange: (_event, newInputValue) => setInputValue(newInputValue),
-  });
+    onInputChange: (_event, newInputValue) => setInputValue(newInputValue)
+  })
 
   return (
-    <div style={{ marginBottom: 24 }}>
+    <div style={{marginBottom: 24}}>
+      {value && <p>{artifactString(value)}</p>}
       <label {...ac.getInputLabelProps()}>Hello</label>
       <div {...ac.getRootProps()}>
-        <input {...ac.getInputProps()} value={inputValue} />
+        <input {...ac.getInputProps()} value={inputValue}/>
       </div>
-      <Listbox ac={ac} />
+      <Listbox loading={loading} ac={ac}/>
     </div>
-  );
+  )
 }
