@@ -40,7 +40,6 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactorySelecto
 import org.eclipse.aether.spi.connector.filter.RemoteRepositoryFilterSource;
 import org.eclipse.aether.spi.connector.layout.RepositoryLayoutFactory;
 import org.eclipse.aether.spi.connector.layout.RepositoryLayoutProvider;
-import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.spi.io.FileProcessor;
 import org.eclipse.aether.spi.resolution.ArtifactResolverPostProcessor;
 import dev.harrel.jarhell.maven.CustomDescriptorReaderDelegate;
@@ -105,8 +104,8 @@ class MavenResolverConfiguration {
 
     @Bean
     @Named("repositoryLayoutFactories")
-    Map<String, RepositoryLayoutFactory> repositoryLayoutFactories(ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector) {
-        return Map.of("maven2", new Maven2RepositoryLayoutFactory(checksumAlgorithmFactorySelector));
+    RepositoryLayoutFactory maven2RepositoryLayoutFactory(ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector) {
+        return new Maven2RepositoryLayoutFactory(checksumAlgorithmFactorySelector);
     }
 
     @Bean
@@ -150,12 +149,13 @@ class MavenResolverConfiguration {
     }
 
     @Bean
-    @Named("transporterFactories")
-    Map<String, TransporterFactory> transporterFactories(Map<String, ChecksumExtractor> extractors) {
-        return Map.of(
-                "file", new FileTransporterFactory(),
-                "http", new HttpTransporterFactory(extractors)
-        );
+    HttpTransporterFactory httpTransportFactory(Map<String, ChecksumExtractor> extractors) {
+        return new HttpTransporterFactory(extractors);
+    }
+
+    @Bean
+    FileTransporterFactory fileTransportFactory() {
+        return new FileTransporterFactory();
     }
 
     @Bean
