@@ -51,7 +51,7 @@ class ApiClient {
         if (selectResponse.response().numFound() < 1) {
             throw new ArtifactNotFoundException("%s:%s".formatted(groupId, artifactId));
         }
-        return selectResponse.response().docs().get(0).latestVersion();
+        return selectResponse.response().docs().getFirst().latestVersion();
     }
 
     public boolean checkIfArtifactExists(Gav gav) {
@@ -66,7 +66,7 @@ class ApiClient {
         if (selectResponse.response().numFound() < 1) {
             throw new ArtifactNotFoundException(gav.toString());
         }
-        List<String> ec = selectResponse.response().docs().get(0).ec();
+        List<String> ec = selectResponse.response().docs().getFirst().ec();
         Set<String> extensions = ec.stream()
                 .filter(f -> f.startsWith("."))
                 .map(f -> f.substring(1))
