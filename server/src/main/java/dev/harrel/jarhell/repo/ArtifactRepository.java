@@ -9,7 +9,7 @@ import dev.harrel.jarhell.model.ArtifactTree;
 import dev.harrel.jarhell.model.DependencyInfo;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.descriptor.Licence;
-import jakarta.annotation.PostConstruct;
+import io.avaje.inject.PostConstruct;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.*;
 import org.neo4j.driver.summary.ResultSummary;
@@ -86,7 +86,7 @@ public class ArtifactRepository {
             } else if (result.records().size() > 1) {
                 throw new IllegalArgumentException("Query returned too many records");
             }
-            var rec = result.records().get(0);
+            var rec = result.records().getFirst();
 
             Node rootNode = rec.get("root").asNode();
             Map<String, AggregateTree> nodes = rec.get("nodes").asList(Value::asEntity).stream()
