@@ -1,11 +1,9 @@
 package dev.harrel.jarhell.analyze;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.model.descriptor.DescriptorInfo;
 
 import javax.inject.Singleton;
-import java.net.http.HttpClient;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -17,13 +15,10 @@ class Analyzer {
     private final ApiClient apiClient;
     private final PackageAnalyzer packageAnalyzer;
 
-    public Analyzer(ObjectMapper objectMapper, MavenRunner mavenRunner) {
+    Analyzer(MavenRunner mavenRunner, ApiClient apiClient, PackageAnalyzer packageAnalyzer) {
         this.mavenRunner = mavenRunner;
-        HttpClient httpClient = HttpClient.newBuilder()
-                .followRedirects(HttpClient.Redirect.ALWAYS)
-                .build();
-        this.apiClient = new ApiClient(objectMapper, httpClient);
-        this.packageAnalyzer = new PackageAnalyzer(httpClient);
+        this.apiClient = apiClient;
+        this.packageAnalyzer = packageAnalyzer;
     }
 
     public boolean checkIfArtifactExists(Gav gav) {

@@ -27,11 +27,11 @@ class PackageAnalyzer {
 
     private final HttpClient httpClient;
 
-    public PackageAnalyzer(HttpClient httpClient) {
+    PackageAnalyzer(HttpClient httpClient) {
         this.httpClient = httpClient;
     }
 
-    public PackageInfo analyzePackage(Gav gav, FilesInfo filesInfo, String packaging) {
+    PackageInfo analyzePackage(Gav gav, FilesInfo filesInfo, String packaging) {
         try {
             return fetchPackage(gav, filesInfo, packaging);
         } catch (IOException e) {

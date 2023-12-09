@@ -31,7 +31,7 @@ class ApiClient {
     private final XmlMapper xmlMapper;
     private final HttpClient httpClient;
 
-    public ApiClient(ObjectMapper objectMapper, HttpClient httpClient) {
+    ApiClient(ObjectMapper objectMapper, HttpClient httpClient) {
         this.objectMapper = objectMapper;
         this.xmlMapper = new XmlMapper();
         this.xmlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
