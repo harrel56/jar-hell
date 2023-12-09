@@ -18,14 +18,21 @@ public abstract class Neo4jTest {
             .withLabsPlugins(Neo4jLabsPlugin.APOC)
             .withoutAuthentication();
 
-    public static Driver driver;
+    protected static Driver driver;
 
     @BeforeAll
-    static void beforeAll() {
+    protected static void beforeAll() {
         driver = GraphDatabase.driver(
                 neo4jContainer.getBoltUrl(),
                 AuthTokens.none(),
                 Config.builder().withLogging(Logging.slf4j()).build()
         );
+    }
+
+    protected void clearDatabase() {
+        try (Session session = driver.session()) {
+            session.executeWriteWithoutResult(tx -> tx.run("MATCH (n) DETACH DELETE n"));
+            session.executeWriteWithoutResult(tx -> tx.run("CALL apoc.schema.assert({},{},true) YIELD label, key RETURN *"));
+        }
     }
 }

@@ -34,7 +34,9 @@ class Configuration {
         URI dbUri = Config.getURI("neo4j.uri");
         AuthToken authToken = AuthTokens.basic(Config.get("neo4j.username"), Config.get("neo4j.password"));
         var config = org.neo4j.driver.Config.builder().withLogging(Logging.slf4j()).build();
-        return GraphDatabase.driver(dbUri, authToken, config);
+        Driver driver = GraphDatabase.driver(dbUri, authToken, config);
+        DatabaseInitializer.initialize(driver);
+        return driver;
     }
 
     @Bean

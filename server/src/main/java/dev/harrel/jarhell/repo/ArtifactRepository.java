@@ -3,13 +3,11 @@ package dev.harrel.jarhell.repo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.harrel.jarhell.DatabaseInitializer;
 import dev.harrel.jarhell.model.ArtifactInfo;
 import dev.harrel.jarhell.model.ArtifactTree;
 import dev.harrel.jarhell.model.DependencyInfo;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.descriptor.Licence;
-import io.avaje.inject.PostConstruct;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.*;
 import org.neo4j.driver.summary.ResultSummary;
@@ -42,11 +40,6 @@ public class ArtifactRepository {
     public ArtifactRepository(Driver driver, ObjectMapper objectMapper) {
         this.driver = driver;
         this.objectMapper = objectMapper;
-    }
-
-    @PostConstruct
-    void postConstruct() {
-        DatabaseInitializer.initialize(driver);
     }
 
     public Optional<ArtifactTree> find(Gav gav) {
