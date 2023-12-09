@@ -4,16 +4,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.harrel.jarhell.model.ArtifactTree;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.repo.ArtifactRepository;
+import io.avaje.config.Config;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
-class AppTest extends Neo4jTest {
+class AppTest {
 
     @Test
     void name() {
-        ArtifactRepository artifactRepository = new ArtifactRepository(driver, new ObjectMapper());
-        Optional<ArtifactTree> artifact = artifactRepository.find(new Gav("dev.harrel", "json-schema", "1.3.1"));
-        System.out.println(artifact);
+        String s = Config.get("maven.local-repo.path");
+        System.out.println(s);
     }
 }

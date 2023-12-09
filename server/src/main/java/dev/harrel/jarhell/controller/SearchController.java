@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.harrel.jarhell.error.BadRequestException;
 import dev.harrel.jarhell.model.central.SelectResponse;
+import io.avaje.config.Config;
 import io.avaje.http.api.Controller;
 import io.avaje.http.api.Get;
 import io.avaje.http.api.QueryParam;
@@ -18,6 +19,8 @@ import java.util.List;
 
 @Controller("/api/v1/search")
 class SearchController {
+    private static final String SEARCH_URL = Config.get("maven.search-url");
+
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
@@ -33,7 +36,7 @@ class SearchController {
         }
 
         try {
-            URI uri = URI.create("https://search.maven.org/solrsearch/select?q=" + createQueryString(query));
+            URI uri = URI.create(SEARCH_URL + "?q=" + createQueryString(query));
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(uri)
                     .GET()

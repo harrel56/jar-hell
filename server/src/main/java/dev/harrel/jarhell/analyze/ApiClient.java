@@ -9,6 +9,7 @@ import dev.harrel.jarhell.model.central.ArtifactDoc;
 import dev.harrel.jarhell.model.central.MavenMetadata;
 import dev.harrel.jarhell.model.central.SelectResponse;
 import dev.harrel.jarhell.model.central.VersionDoc;
+import io.avaje.config.Config;
 
 import javax.inject.Singleton;
 import java.io.IOException;
@@ -24,8 +25,8 @@ import java.util.stream.Collectors;
 
 @Singleton
 class ApiClient {
-    private static final String SELECT_URL = "https://search.maven.org/solrsearch/select";
-    private static final String CONTENT_URL = "https://search.maven.org/remotecontent";
+    private static final String SEARCH_URL = Config.get("maven.search-url");
+    private static final String CONTENT_URL = Config.get("maven.content-url");
 
     private final ObjectMapper objectMapper;
     private final XmlMapper xmlMapper;
@@ -47,7 +48,7 @@ class ApiClient {
 
     public String fetchLatestVersion(String groupId, String artifactId) {
         String query = "?q=g:%s+AND+a:%s".formatted(groupId, artifactId);
-        SelectResponse<ArtifactDoc> selectResponse = fetch(SELECT_URL + query, objectMapper, new TypeReference<>() {});
+        SelectResponse<ArtifactDoc> selectResponse = fetch(SEARCH_URL + query, objectMapper, new TypeReference<>() {});
         if (selectResponse.response().numFound() < 1) {
             throw new ArtifactNotFoundException("%s:%s".formatted(groupId, artifactId));
         }
@@ -56,13 +57,13 @@ class ApiClient {
 
     public boolean checkIfArtifactExists(Gav gav) {
         String query = "?q=g:%s+AND+a:%s+AND+v:%s".formatted(gav.groupId(), gav.artifactId(), gav.version());
-        SelectResponse<VersionDoc> selectResponse = fetch(SELECT_URL + query, objectMapper, new TypeReference<>() {});
+        SelectResponse<VersionDoc> selectResponse = fetch(SEARCH_URL + query, objectMapper, new TypeReference<>() {});
         return selectResponse.response().numFound() > 0;
     }
 
     public FilesInfo fetchFilesInfo(Gav gav) {
         String query = "?q=g:%s+AND+a:%s+AND+v:%s".formatted(gav.groupId(), gav.artifactId(), gav.version());
-        SelectResponse<VersionDoc> selectResponse = fetch(SELECT_URL + query, objectMapper, new TypeReference<>() {});
+        SelectResponse<VersionDoc> selectResponse = fetch(SEARCH_URL + query, objectMapper, new TypeReference<>() {});
         if (selectResponse.response().numFound() < 1) {
             throw new ArtifactNotFoundException(gav.toString());
         }

@@ -4,6 +4,7 @@ import dev.harrel.jarhell.maven.CustomDescriptorReaderDelegate;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.descriptor.DescriptorInfo;
 import dev.harrel.jarhell.model.descriptor.Licence;
+import io.avaje.config.Config;
 import org.apache.maven.model.Model;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
@@ -28,7 +29,7 @@ import java.util.List;
 class MavenRunner {
     private static final Logger logger = LoggerFactory.getLogger(MavenRunner.class);
 
-    private static final String MAVEN_CENTRAL = "https://repo.maven.apache.org/maven2/";
+    private static final String MAVEN_CENTRAL = Config.get("maven.repo-url");
 
     private final RepositorySystem repoSystem;
     private final DefaultRepositorySystemSession session;
