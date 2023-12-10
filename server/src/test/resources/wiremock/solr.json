@@ -1,0 +1,61 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "/solr?q=g:com.sanctionco.jmail+AND+a:jmail+AND+v:1.6.2"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "content-encoding": "gzip"
+    },
+    "jsonBody": {
+      "responseHeader": {
+        "status": 0,
+        "QTime": 104,
+        "params": {
+          "q": "g:com.sanctionco.jmail AND a:jmail AND v:1.6.2",
+          "core": "",
+          "indent": "off",
+          "fl": "id,g,a,v,p,ec,timestamp,tags",
+          "start": "",
+          "sort": "score desc,timestamp desc,g asc,a asc,v desc",
+          "rows": "20",
+          "wt": "json",
+          "version": "2.2"
+        }
+      },
+      "response": {
+        "numFound": 1,
+        "start": 0,
+        "docs": [
+          {
+            "id": "com.sanctionco.jmail:jmail:1.6.2",
+            "g": "com.sanctionco.jmail",
+            "a": "jmail",
+            "v": "1.6.2",
+            "p": "jar",
+            "timestamp": 1700980879646,
+            "ec": [
+              "-sources.jar",
+              ".pom",
+              "-javadoc.jar",
+              ".jar"
+            ],
+            "tags": [
+              "zero",
+              "emails",
+              "with",
+              "fast",
+              "library",
+              "java",
+              "modern",
+              "dependency",
+              "working"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

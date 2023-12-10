@@ -94,12 +94,7 @@ class MavenResolverConfiguration {
     @Bean
     @Named("checksumAlgorithmFactories")
     Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories() {
-        return Map.of(
-                Sha512ChecksumAlgorithmFactory.NAME, new Sha512ChecksumAlgorithmFactory(),
-                Sha256ChecksumAlgorithmFactory.NAME, new Sha256ChecksumAlgorithmFactory(),
-                Sha1ChecksumAlgorithmFactory.NAME, new Sha1ChecksumAlgorithmFactory(),
-                Md5ChecksumAlgorithmFactory.NAME, new Md5ChecksumAlgorithmFactory()
-        );
+        return Map.of();
     }
 
     @Bean

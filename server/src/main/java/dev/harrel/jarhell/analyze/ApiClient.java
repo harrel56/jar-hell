@@ -10,6 +10,8 @@ import dev.harrel.jarhell.model.central.MavenMetadata;
 import dev.harrel.jarhell.model.central.SelectResponse;
 import dev.harrel.jarhell.model.central.VersionDoc;
 import io.avaje.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
 import java.io.IOException;
@@ -27,6 +29,8 @@ import java.util.stream.Collectors;
 
 @Singleton
 class ApiClient {
+    private static final Logger logger = LoggerFactory.getLogger(ApiClient.class);
+
     private static final String SEARCH_URL = Config.get("maven.search-url");
     private static final String CONTENT_URL = Config.get("maven.repo-url");
 
@@ -94,6 +98,7 @@ class ApiClient {
             }
             return objectMapper.readValue(response.body(), type);
         } catch (IOException e) {
+            logger.error("HTTP fetch failed for url [{}]", url);
             throw new UncheckedIOException(e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

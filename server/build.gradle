@@ -45,8 +45,10 @@ dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core:3.24.2'
+    testImplementation 'org.awaitility:awaitility:4.2.0'
 
     testImplementation 'org.testcontainers:neo4j:1.19.3'
+    testImplementation 'org.wiremock.integrations.testcontainers:wiremock-testcontainers-module:1.0-alpha-13'
 }
 
 processResources {

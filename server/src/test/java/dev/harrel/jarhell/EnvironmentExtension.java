@@ -11,9 +11,12 @@ import org.testcontainers.containers.Neo4jLabsPlugin;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
+import org.wiremock.integrations.testcontainers.WireMockContainer;
 
 import java.io.Closeable;
+import java.net.URL;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import static org.junit.jupiter.api.extension.ExtensionContext.Store;
@@ -60,14 +63,22 @@ public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallba
     }
 
     private State createState() {
-        Neo4jContainer<?> neo4jContainer = startNeo4jContainer();
-        GenericContainer<?> reposiliteContainer = startReposilite();
+        CompletableFuture<Neo4jContainer<?>> neo4jContainerFuture = CompletableFuture.supplyAsync(this::startNeo4j);
+        CompletableFuture<GenericContainer<?>> reposiliteContainerFuture = CompletableFuture.supplyAsync(this::startReposilite);
+        CompletableFuture<WireMockContainer> wireMockContainerFuture = CompletableFuture.supplyAsync(this::startWireMock);
+        /* wait for all containers */
+        CompletableFuture.allOf(neo4jContainerFuture, reposiliteContainerFuture, wireMockContainerFuture).join();
 
         App app = startApp();
-        return new State(app, neo4jContainer, reposiliteContainer);
+        return new State(
+                app,
+                neo4jContainerFuture.join(),
+                reposiliteContainerFuture.join(),
+                wireMockContainerFuture.join()
+        );
     }
 
-    private Neo4jContainer<?> startNeo4jContainer() {
+    private Neo4jContainer<?> startNeo4j() {
         Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:5.11"))
                 .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger(EnvironmentExtension.class)))
                 .withLabsPlugins(Neo4jLabsPlugin.APOC)
@@ -88,6 +99,16 @@ public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallba
         return reposiliteContainer;
     }
 
+    private WireMockContainer startWireMock() {
+        /* wiremock direct resource API seems to be broken */
+        URL resource = getClass().getResource("/wiremock/solr.json");
+        WireMockContainer wireMockContainer = new WireMockContainer(DockerImageName.parse("wiremock/wiremock:3.3.1"))
+                .withMappingFromResource("solr", resource);
+        wireMockContainer.setPortBindings(List.of("8282:8080"));
+        wireMockContainer.start();
+        return wireMockContainer;
+    }
+
     private App startApp() {
         App app = new App();
         app.start();
@@ -96,12 +117,14 @@ public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallba
 
     private record State(App app,
                          Neo4jContainer<?> neo4jContainer,
-                         GenericContainer<?> reposiliteContainer) implements Closeable {
+                         GenericContainer<?> reposiliteContainer,
+                         WireMockContainer wireMockContainer) implements Closeable {
         @Override
         public void close() {
             app.close();
             neo4jContainer.stop();
             reposiliteContainer.stop();
+            wireMockContainer.stop();
         }
     }
 }

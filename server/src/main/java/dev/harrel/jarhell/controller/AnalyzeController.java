@@ -16,7 +16,7 @@ class AnalyzeController {
     }
 
     @Post
-    void analyze2(Gav gav, Context ctx) {
+    void analyze(Gav gav, Context ctx) {
         analyzeEngine.analyze(gav);
         ctx.status(HttpStatus.ACCEPTED);
     }
