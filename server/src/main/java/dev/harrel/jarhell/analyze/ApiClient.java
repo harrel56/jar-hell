@@ -15,9 +15,11 @@ import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -26,7 +28,7 @@ import java.util.stream.Collectors;
 @Singleton
 class ApiClient {
     private static final String SEARCH_URL = Config.get("maven.search-url");
-    private static final String CONTENT_URL = Config.get("maven.content-url");
+    private static final String CONTENT_URL = Config.get("maven.repo-url");
 
     private final ObjectMapper objectMapper;
     private final XmlMapper xmlMapper;
@@ -41,8 +43,9 @@ class ApiClient {
 
     public List<String> fetchArtifactVersions(String groupId, String artifactId) {
         String groupPath = groupId.replace('.', '/');
-        String query = "?filepath=%s/%s/maven-metadata.xml".formatted(groupPath, artifactId);
-        MavenMetadata metadata = fetch(CONTENT_URL + query, xmlMapper, new TypeReference<>() {});
+        String resource = "%s/%s/maven-metadata.xml".formatted(groupPath, artifactId);
+        String encodedResource = URLEncoder.encode(resource, StandardCharsets.UTF_8);
+        MavenMetadata metadata = fetch(CONTENT_URL + "/" + encodedResource, xmlMapper, new TypeReference<>() {});
         return metadata.versioning().versions();
     }
 
@@ -107,7 +110,8 @@ class ApiClient {
             joiner.add(gav.classifier());
         }
         String fileName = "%s.%s".formatted(joiner, fileExtension);
-        String query = "?filepath=%s/%s/%s/%s".formatted(groupPath, gav.artifactId(), gav.version(), fileName);
-        return CONTENT_URL + query;
+        String resource = "%s/%s/%s/%s".formatted(groupPath, gav.artifactId(), gav.version(), fileName);
+        String encodedResource = URLEncoder.encode(resource, StandardCharsets.UTF_8);
+        return CONTENT_URL + "/" + encodedResource;
     }
 }
