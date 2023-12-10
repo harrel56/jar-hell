@@ -14,21 +14,24 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 @EnvironmentTest
 class AnalyzeControllerTest {
+    private final HttpClient httpClient;
     private final Driver driver;
 
-    AnalyzeControllerTest(Driver driver) {
+    AnalyzeControllerTest(HttpClient httpClient, Driver driver) {
+        this.httpClient = httpClient;
         this.driver = driver;
     }
 
     @Test
-    void name() throws IOException, InterruptedException {
-        HttpClient httpClient = HttpClient.newHttpClient();
+    void shouldAnalyzeStandaloneLib() throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:8060/api/v1/analyze"))
                 .POST(TestUtil.jsonPublisher(
@@ -41,9 +44,24 @@ class AnalyzeControllerTest {
         assertThat(response.body()).isEmpty();
 
         await().atMost(Duration.ofSeconds(5)).until(() -> !fetchAllNodes().records().isEmpty());
+
         EagerResult eagerResult = fetchAllNodes();
-        // todo: add assertions
-        System.out.println(eagerResult);
+        Map<String, Object> properties = eagerResult.records().getFirst().get("n").asMap();
+        assertThat(properties).contains(
+                Map.entry("groupId", "com.sanctionco.jmail"),
+                Map.entry("artifactId", "jmail"),
+                Map.entry("name", "jmail"),
+                Map.entry("description", "A modern, fast, zero-dependency library for working with emails in Java"),
+                Map.entry("packaging", "jar"),
+                Map.entry("packageSize", 30629L),
+                Map.entry("version", "1.6.2"),
+                Map.entry("url", "https://github.com/RohanNagar/jmail"),
+                Map.entry("bytecodeVersion", "52.0"),
+                Map.entry("licenses", "[{\"name\":\"MIT License\",\"url\":\"https://opensource.org/licenses/mit-license.php\"}]"),
+                Map.entry("totalSize", 30629L),
+                Map.entry("bytecodeVersion", "52.0"),
+                Map.entry("classifiers", List.of("javadoc", "sources"))
+        );
     }
 
     private EagerResult fetchAllNodes() {

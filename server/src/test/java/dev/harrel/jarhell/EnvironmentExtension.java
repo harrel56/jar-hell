@@ -15,7 +15,9 @@ import org.wiremock.integrations.testcontainers.WireMockContainer;
 
 import java.io.Closeable;
 import java.net.URL;
+import java.net.http.HttpClient;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.extension.ExtensionContext.Namespace;
@@ -39,27 +41,27 @@ public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallba
 
     @Override
     public void beforeEach(ExtensionContext ec) {
-        Driver driver = getDriver(ec);
+        Driver driver = getFromBeanScope(ec, Driver.class).orElseThrow();
         clearDatabase(driver);
         DatabaseInitializer.initialize(driver);
     }
 
     @Override
     public boolean supportsParameter(ParameterContext pc, ExtensionContext ec) {
-        return Driver.class.isAssignableFrom(pc.getParameter().getType());
+        return getFromBeanScope(ec, pc.getParameter().getType()).isPresent();
     }
 
     @Override
-    public Driver resolveParameter(ParameterContext pc, ExtensionContext ec) {
-        return getDriver(ec);
+    public Object resolveParameter(ParameterContext pc, ExtensionContext ec) {
+        return getFromBeanScope(ec, pc.getParameter().getType()).orElseThrow();
     }
 
     private Store getStore(ExtensionContext context) {
         return context.getRoot().getStore(STORE_NAMESPACE);
     }
 
-    private Driver getDriver(ExtensionContext ec) {
-        return getStore(ec).get("state", State.class).app().getBeanScope().get(Driver.class);
+    private <T> Optional<T> getFromBeanScope(ExtensionContext ec, Class<T> clazz) {
+        return getStore(ec).get("state", State.class).app().getBeanScope().getOptional(clazz);
     }
 
     private State createState() {
