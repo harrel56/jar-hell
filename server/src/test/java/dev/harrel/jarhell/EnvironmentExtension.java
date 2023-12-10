@@ -15,7 +15,6 @@ import org.wiremock.integrations.testcontainers.WireMockContainer;
 
 import java.io.Closeable;
 import java.net.URL;
-import java.net.http.HttpClient;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -25,6 +24,7 @@ import static org.junit.jupiter.api.extension.ExtensionContext.Store;
 
 public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallback, ParameterResolver {
     private static final Namespace STORE_NAMESPACE = Namespace.create(EnvironmentExtension.class);
+    private static Slf4jLogConsumer logConsumer = new Slf4jLogConsumer(LoggerFactory.getLogger(EnvironmentExtension.class));
 
     public static void clearDatabase(Driver driver) {
         try (Session session = driver.session()) {
@@ -82,7 +82,7 @@ public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallba
 
     private Neo4jContainer<?> startNeo4j() {
         Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:5.11"))
-                .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger(EnvironmentExtension.class)))
+                .withLogConsumer(logConsumer)
                 .withLabsPlugins(Neo4jLabsPlugin.APOC)
                 .withRandomPassword();
         neo4jContainer.start();
@@ -95,6 +95,7 @@ public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallba
 
     private GenericContainer<?> startReposilite() {
         GenericContainer<?> reposiliteContainer = new GenericContainer<>(DockerImageName.parse("dzikoysk/reposilite:3.5.0"));
+        reposiliteContainer.withLogConsumer(logConsumer);
         reposiliteContainer.setPortBindings(List.of("8181:8080"));
         reposiliteContainer.withCopyToContainer(MountableFile.forClasspathResource("/reposilite"), "/app/data");
         reposiliteContainer.start();
@@ -105,6 +106,7 @@ public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallba
         /* wiremock direct resource API seems to be broken */
         URL resource = getClass().getResource("/wiremock/solr.json");
         WireMockContainer wireMockContainer = new WireMockContainer(DockerImageName.parse("wiremock/wiremock:3.3.1"))
+                .withLogConsumer(logConsumer)
                 .withMappingFromResource("solr", resource);
         wireMockContainer.setPortBindings(List.of("8282:8080"));
         wireMockContainer.start();

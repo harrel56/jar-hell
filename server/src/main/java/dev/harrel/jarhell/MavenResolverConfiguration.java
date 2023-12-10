@@ -50,14 +50,16 @@ import org.eclipse.aether.transport.http.Nexus2ChecksumExtractor;
 import org.eclipse.aether.transport.http.XChecksumChecksumExtractor;
 
 import javax.inject.Named;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 @Component.Import({
-        DefaultFileProcessor.class, DefaultTrackingFileManager.class, DefaultChecksumAlgorithmFactorySelector.class,
+        DefaultFileProcessor.class, DefaultTrackingFileManager.class,
         DefaultLocalPathComposer.class, DefaultLocalPathPrefixComposerFactory.class, DefaultRepositorySystemLifecycle.class,
         DefaultOfflineController.class, DefaultUpdatePolicyAnalyzer.class, DefaultChecksumPolicyProvider.class,
         DefaultUpdateCheckManager.class, NamedLockFactoryAdapterFactoryImpl.class, DefaultSyncContextFactory.class,
-        DefaultChecksumAlgorithmFactorySelector.class, DefaultRepositoryLayoutProvider.class, SimpleLocalRepositoryManagerFactory.class,
+        DefaultRepositoryLayoutProvider.class, SimpleLocalRepositoryManagerFactory.class,
         EnhancedLocalRepositoryManagerFactory.class, DefaultLocalRepositoryProvider.class, DefaultRemoteRepositoryManager.class,
         DefaultRemoteRepositoryFilterManager.class, DefaultRepositoryEventDispatcher.class, DefaultTransporterProvider.class,
         BasicRepositoryConnectorFactory.class, DefaultRepositoryConnectorProvider.class, DefaultInstaller.class,
@@ -95,6 +97,32 @@ class MavenResolverConfiguration {
     @Named("checksumAlgorithmFactories")
     Map<String, ChecksumAlgorithmFactory> checksumAlgorithmFactories() {
         return Map.of();
+    }
+
+    @Bean
+    ChecksumAlgorithmFactorySelector checksumAlgorithmFactorySelector() {
+        return new ChecksumAlgorithmFactorySelector() {
+
+            @Override
+            public ChecksumAlgorithmFactory select(String s) {
+                return null;
+            }
+
+            @Override
+            public List<ChecksumAlgorithmFactory> selectList(Collection<String> collection) {
+                return List.of();
+            }
+
+            @Override
+            public Collection<ChecksumAlgorithmFactory> getChecksumAlgorithmFactories() {
+                return List.of();
+            }
+
+            @Override
+            public boolean isChecksumExtension(String s) {
+                return false;
+            }
+        };
     }
 
     @Bean

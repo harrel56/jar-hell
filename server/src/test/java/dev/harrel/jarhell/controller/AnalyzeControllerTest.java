@@ -1,8 +1,10 @@
 package dev.harrel.jarhell.controller;
 
 import dev.harrel.jarhell.EnvironmentTest;
+import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.util.TestUtil;
+import io.javalin.http.HandlerType;
 import io.javalin.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Driver;
@@ -62,6 +64,23 @@ class AnalyzeControllerTest {
                 Map.entry("bytecodeVersion", "52.0"),
                 Map.entry("classifiers", List.of("javadoc", "sources"))
         );
+    }
+
+    @Test
+    void shouldReturnNotFound() throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:8060/api/v1/analyze"))
+                .POST(TestUtil.jsonPublisher(
+                        new Gav("org.test", "non-existent", "9.9.9")
+                ))
+                .build();
+
+        HttpResponse<ErrorResponse> response = httpClient.send(request, TestUtil.jsonHandler(ErrorResponse.class));
+        assertThat(response.statusCode()).isEqualTo(404);
+        ErrorResponse err = response.body();
+        assertThat(err.url()).isEqualTo("http://localhost:8060/api/v1/analyze");
+        assertThat(err.method()).isEqualTo(HandlerType.POST);
+        assertThat(err.message()).isEqualTo("Package with coordinates [org.test:non-existent:9.9.9] not found");
     }
 
     private EagerResult fetchAllNodes() {
