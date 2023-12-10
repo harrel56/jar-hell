@@ -5,12 +5,15 @@ import org.junit.jupiter.api.extension.*;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.containers.Neo4jLabsPlugin;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
 
 import java.io.Closeable;
+import java.util.List;
 
 import static org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import static org.junit.jupiter.api.extension.ExtensionContext.Store;
@@ -57,6 +60,14 @@ public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallba
     }
 
     private State createState() {
+        Neo4jContainer<?> neo4jContainer = startNeo4jContainer();
+        GenericContainer<?> reposiliteContainer = startReposilite();
+
+        App app = startApp();
+        return new State(app, neo4jContainer, reposiliteContainer);
+    }
+
+    private Neo4jContainer<?> startNeo4jContainer() {
         Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:5.11"))
                 .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger(EnvironmentExtension.class)))
                 .withLabsPlugins(Neo4jLabsPlugin.APOC)
@@ -66,16 +77,31 @@ public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallba
         Config.setProperty("neo4j.username", "neo4j");
         Config.setProperty("neo4j.password", neo4jContainer.getAdminPassword());
 
-        App app = new App();
-        app.start();
-        return new State(app, neo4jContainer);
+        return neo4jContainer;
     }
 
-    private record State(App app, Neo4jContainer<?> neo4jContainer) implements Closeable {
+    private GenericContainer<?> startReposilite() {
+        GenericContainer<?> reposiliteContainer = new GenericContainer<>(DockerImageName.parse("dzikoysk/reposilite:3.5.0"));
+        reposiliteContainer.setPortBindings(List.of("8181:8080"));
+        reposiliteContainer.withCopyToContainer(MountableFile.forClasspathResource("/reposilite"), "/app/data");
+        reposiliteContainer.start();
+        return reposiliteContainer;
+    }
+
+    private App startApp() {
+        App app = new App();
+        app.start();
+        return app;
+    }
+
+    private record State(App app,
+                         Neo4jContainer<?> neo4jContainer,
+                         GenericContainer<?> reposiliteContainer) implements Closeable {
         @Override
         public void close() {
             app.close();
             neo4jContainer.stop();
+            reposiliteContainer.stop();
         }
     }
 }
