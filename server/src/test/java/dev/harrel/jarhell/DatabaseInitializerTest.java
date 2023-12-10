@@ -2,6 +2,7 @@ package dev.harrel.jarhell;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Driver;
 import org.neo4j.driver.EagerResult;
 import org.neo4j.driver.Record;
 
@@ -9,11 +10,17 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class DatabaseInitializerTest extends Neo4jTest {
+@EnvironmentTest
+class DatabaseInitializerTest {
+    private final Driver driver;
+
+    DatabaseInitializerTest(Driver driver) {
+        this.driver = driver;
+    }
 
     @BeforeEach
     void setUp() {
-        clearDatabase();
+        EnvironmentExtension.clearDatabase(driver);
     }
 
     @Test

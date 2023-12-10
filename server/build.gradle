@@ -47,7 +47,6 @@ dependencies {
     testImplementation 'org.assertj:assertj-core:3.24.2'
 
     testImplementation 'org.testcontainers:neo4j:1.19.3'
-    testImplementation 'org.testcontainers:junit-jupiter:1.19.3'
 }
 
 processResources {
