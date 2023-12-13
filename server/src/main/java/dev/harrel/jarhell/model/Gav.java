@@ -1,6 +1,7 @@
 package dev.harrel.jarhell.model;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.StringJoiner;
 
 public record Gav(String groupId, String artifactId, String version, String classifier) {
@@ -14,14 +15,14 @@ public record Gav(String groupId, String artifactId, String version, String clas
         this(groupId, artifactId, version, null);
     }
 
-    public static Gav fromCoordinate(String coordinate) {
+    public static Optional<Gav> fromCoordinate(String coordinate) {
         String[] split = coordinate.split(":");
         if (split.length == 3) {
-            return new Gav(split[0], split[1], split[2]);
+            return Optional.of(new Gav(split[0], split[1], split[2]));
         } else if (split.length == 4) {
-            return new Gav(split[0], split[1], split[2], split[3]);
+            return Optional.of(new Gav(split[0], split[1], split[2], split[3]));
         } else {
-            throw new IllegalArgumentException("Invalid coordinate format");
+            return Optional.empty();
         }
     }
 

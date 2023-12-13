@@ -5,7 +5,6 @@ import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.util.TestUtil;
 import io.javalin.http.HandlerType;
-import io.javalin.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.EagerResult;
@@ -77,10 +76,11 @@ class AnalyzeControllerTest {
 
         HttpResponse<ErrorResponse> response = httpClient.send(request, TestUtil.jsonHandler(ErrorResponse.class));
         assertThat(response.statusCode()).isEqualTo(404);
-        ErrorResponse err = response.body();
-        assertThat(err.url()).isEqualTo("http://localhost:8060/api/v1/analyze");
-        assertThat(err.method()).isEqualTo(HandlerType.POST);
-        assertThat(err.message()).isEqualTo("Package with coordinates [org.test:non-existent:9.9.9] not found");
+        assertThat(response.body()).isEqualTo(
+                new ErrorResponse("http://localhost:8060/api/v1/analyze",
+                                  HandlerType.POST,
+                                  "Package with coordinates [org.test:non-existent:9.9.9] not found")
+        );
     }
 
     private EagerResult fetchAllNodes() {
