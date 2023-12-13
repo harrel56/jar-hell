@@ -77,9 +77,9 @@ class PackagesControllerTest {
     @Test
     void shouldFindByGav() throws IOException, InterruptedException {
         try (var session = driver.session()) {
-            session.executeWriteWithoutResult(tx -> {
-                tx.run("CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0'})");
-            });
+            session.executeWriteWithoutResult(tx ->
+                tx.run("CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0'})")
+            );
         }
 
         HttpRequest request = HttpRequest.newBuilder()
@@ -101,9 +101,9 @@ class PackagesControllerTest {
     @Test
     void shouldFindByGavWithClassifier() throws IOException, InterruptedException {
         try (var session = driver.session()) {
-            session.executeWriteWithoutResult(tx -> {
-                tx.run("CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0', classifier: 'doc'})");
-            });
+            session.executeWriteWithoutResult(tx ->
+                tx.run("CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0', classifier: 'doc'})")
+            );
         }
 
         HttpRequest request = HttpRequest.newBuilder()
@@ -126,9 +126,9 @@ class PackagesControllerTest {
     @Test
     void shouldFindByGavDoesNotReturnWithClassifier() throws IOException, InterruptedException {
         try (var session = driver.session()) {
-            session.executeWriteWithoutResult(tx -> {
-                tx.run("CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0', classifier: 'doc'})");
-            });
+            session.executeWriteWithoutResult(tx ->
+                tx.run("CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0', classifier: 'doc'})")
+            );
         }
 
         String uri = "http://localhost:8060/api/v1/packages/org.test:lib:1.0.0";
