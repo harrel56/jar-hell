@@ -1,5 +1,7 @@
-package dev.harrel.jarhell;
+package dev.harrel.jarhell.extension;
 
+import dev.harrel.jarhell.App;
+import dev.harrel.jarhell.DatabaseInitializer;
 import io.avaje.config.Config;
 import org.junit.jupiter.api.extension.*;
 import org.neo4j.driver.Driver;
@@ -24,7 +26,7 @@ import static org.junit.jupiter.api.extension.ExtensionContext.Store;
 
 public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallback, ParameterResolver {
     private static final Namespace STORE_NAMESPACE = Namespace.create(EnvironmentExtension.class);
-    private static Slf4jLogConsumer logConsumer = new Slf4jLogConsumer(LoggerFactory.getLogger(EnvironmentExtension.class));
+    private static final Slf4jLogConsumer logConsumer = new Slf4jLogConsumer(LoggerFactory.getLogger(EnvironmentExtension.class));
 
     public static void clearDatabase(Driver driver) {
         try (Session session = driver.session()) {

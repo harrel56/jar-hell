@@ -1,6 +1,6 @@
 package dev.harrel.jarhell.controller;
 
-import dev.harrel.jarhell.EnvironmentTest;
+import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.util.HttpUtil;

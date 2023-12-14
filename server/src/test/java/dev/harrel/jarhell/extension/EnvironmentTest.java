@@ -1,4 +1,4 @@
-package dev.harrel.jarhell;
+package dev.harrel.jarhell.extension;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 

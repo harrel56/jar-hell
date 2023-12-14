@@ -1,7 +1,7 @@
 package dev.harrel.jarhell.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import dev.harrel.jarhell.EnvironmentTest;
+import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.util.HttpUtil;
 import dev.harrel.jarhell.util.TestUtil;

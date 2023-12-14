@@ -16,10 +16,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.StringJoiner;
+import java.util.regex.Pattern;
 
 @Controller("/api/v1/search")
 class SearchController {
     private static final String SEARCH_URL = Config.get("maven.search-url");
+    private static final Pattern SANITIZATION_PATTERN = Pattern.compile("[^\\w\\.-]");
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
@@ -34,9 +37,13 @@ class SearchController {
         if (query == null || query.isBlank()) {
             return List.of();
         }
+        String queryString = createQueryString(query);
+        if (queryString.isEmpty()) {
+            return List.of();
+        }
 
         try {
-            URI uri = URI.create(SEARCH_URL + "?q=" + createQueryString(query));
+            URI uri = URI.create(SEARCH_URL + "?q=" + queryString);
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(uri)
                     .GET()
@@ -58,10 +65,24 @@ class SearchController {
     private String createQueryString(String input) {
         if (input.contains(":")) {
             String[] split = input.split(":", -1);
-            return "g:%s*+AND+a:%s*".formatted(split[0], split[1]);
+            StringJoiner joiner = new StringJoiner("+AND+");
+            String groupToken = sanitize(split[0]);
+            String artifactToken = sanitize(split[1]);
+            if (!groupToken.isEmpty()) {
+                joiner.add(groupToken);
+            }
+            if (!artifactToken.isEmpty()) {
+                joiner.add(artifactToken);
+            }
+            return joiner.toString();
         } else {
-            return "g:%1$s*+OR+a:%1$s*".formatted(input);
+            String token = sanitize(input);
+            return token.isEmpty() ? "" : "g:%1$s*+OR+a:%1$s*".formatted(token);
         }
+    }
+
+    private String sanitize(String input) {
+        return SANITIZATION_PATTERN.matcher(input).replaceAll("");
     }
 
     record Artifact(String g, String a) {}

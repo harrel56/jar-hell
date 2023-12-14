@@ -1,0 +1,63 @@
+### dev.harrel
+GET {{url}}/api/v1/search?query=dev.harrel
+
+> {%
+  client.test("Response is 200", () => {
+    client.assert(response.status === 200);
+  });
+  client.test("Contains entries", function() {
+    client.assert(response.body[0].g === 'dev.harrel');
+    client.assert(response.body[0].a === 'json-schema');
+  });
+%}
+
+### dev.harrel:json-schema
+GET {{url}}/api/v1/search?query=dev.harrel:json-schema
+
+> {%
+  client.test("Response is 200", () => {
+    client.assert(response.status === 200);
+  });
+  client.test("Contains entries", function() {
+    client.assert(response.body[0].g === 'dev.harrel');
+    client.assert(response.body[0].a === 'json-schema');
+  });
+%}
+
+### sanitization 1
+GET {{url}}/api/v1/search?query=json schema
+
+> {%
+  client.test("Response is 200", () => {
+    client.assert(response.status === 200);
+  });
+%}
+
+### sanitization 2
+GET {{url}}/api/v1/search?query=:
+
+> {%
+  client.test("Response is 200", () => {
+    client.assert(response.status === 200);
+  });
+%}
+
+### sanitization 3
+GET {{url}}/api/v1/search?query=1:2:3:4
+
+> {%
+  client.test("Response is 200", () => {
+    client.assert(response.status === 200);
+  });
+%}
+
+### sanitization 4
+GET {{url}}/api/v1/search?query=$$*!
+
+> {%
+  client.test("Response is 200", () => {
+    client.assert(response.status === 200);
+  });
+%}
+
+
