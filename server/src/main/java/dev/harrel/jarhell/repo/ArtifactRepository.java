@@ -21,10 +21,7 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Singleton;
 import java.io.UncheckedIOException;
 import java.time.ZonedDateTime;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -205,12 +202,12 @@ public class ArtifactRepository {
 
     private class AggregateTree {
         private final ArtifactProps artifactProps;
-        private final Map<Gav, AggregateTree> deps;
+        private final SortedMap<Gav, AggregateTree> deps;
         private RelationProps relationProps;
 
         AggregateTree(ArtifactProps artifactProps) {
             this.artifactProps = artifactProps;
-            this.deps = new LinkedHashMap<>();
+            this.deps = new TreeMap<>();
         }
 
         ArtifactTree toArtifactTree() {

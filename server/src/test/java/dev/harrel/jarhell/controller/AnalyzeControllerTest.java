@@ -3,7 +3,7 @@ package dev.harrel.jarhell.controller;
 import dev.harrel.jarhell.EnvironmentTest;
 import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.model.Gav;
-import dev.harrel.jarhell.util.TestUtil;
+import dev.harrel.jarhell.util.HttpUtil;
 import io.javalin.http.HandlerType;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Driver;
@@ -35,7 +35,7 @@ class AnalyzeControllerTest {
     void shouldAnalyzeStandaloneLib() throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:8060/api/v1/analyze"))
-                .POST(TestUtil.jsonPublisher(
+                .POST(HttpUtil.jsonPublisher(
                         new Gav("com.sanctionco.jmail", "jmail", "1.6.2")
                 ))
                 .build();
@@ -69,12 +69,12 @@ class AnalyzeControllerTest {
     void shouldReturnNotFound() throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:8060/api/v1/analyze"))
-                .POST(TestUtil.jsonPublisher(
+                .POST(HttpUtil.jsonPublisher(
                         new Gav("org.test", "non-existent", "9.9.9")
                 ))
                 .build();
 
-        HttpResponse<ErrorResponse> response = httpClient.send(request, TestUtil.jsonHandler(ErrorResponse.class));
+        HttpResponse<ErrorResponse> response = httpClient.send(request, HttpUtil.jsonHandler(ErrorResponse.class));
         assertThat(response.statusCode()).isEqualTo(404);
         assertThat(response.body()).isEqualTo(
                 new ErrorResponse("http://localhost:8060/api/v1/analyze",

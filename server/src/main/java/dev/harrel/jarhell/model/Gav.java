@@ -1,10 +1,11 @@
 package dev.harrel.jarhell.model;
 
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
 
-public record Gav(String groupId, String artifactId, String version, String classifier) {
+public record Gav(String groupId, String artifactId, String version, String classifier) implements Comparable<Gav> {
     public Gav {
         Objects.requireNonNull(groupId, "Field 'groupId' is required");
         Objects.requireNonNull(artifactId, "Field 'artifactId' is required");
@@ -28,6 +29,18 @@ public record Gav(String groupId, String artifactId, String version, String clas
 
     public Gav stripClassifier() {
         return classifier == null ? this : new Gav(groupId, artifactId, version);
+    }
+
+
+    private static final Comparator<Gav> COMPARATOR = Comparator
+            .comparing(Gav::groupId)
+            .thenComparing(Gav::artifactId)
+            .thenComparing(Gav::version)
+            .thenComparing(Gav::classifier, Comparator.nullsFirst(Comparator.naturalOrder()));
+
+    @Override
+    public int compareTo(Gav o) {
+        return COMPARATOR.compare(this, o);
     }
 
     @Override
