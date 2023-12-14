@@ -10,6 +10,15 @@ GET {{url}}/api/v1/packages/dev.harrel:json-schema:1.3.1
   });
 %}
 
+### dev.harrel:json-schema with depth=0
+GET {{url}}/api/v1/packages/dev.harrel:json-schema:1.3.1?depth=0
+
+> {%
+  client.test("Response is 200", () => {
+    client.assert(response.status === 200);
+  });
+%}
+
 ### com.amazonaws:DynamoDBLocal
 // @no-log
 GET {{url}}/api/v1/packages/com.amazonaws:DynamoDBLocal:2.0.0

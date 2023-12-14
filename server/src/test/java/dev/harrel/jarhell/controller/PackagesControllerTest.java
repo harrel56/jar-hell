@@ -262,6 +262,87 @@ class PackagesControllerTest {
         assertThat(dep2.get("dependencies").elements()).toIterable().isEmpty();
     }
 
+    @Test
+    void shouldFindWithDepth0() throws IOException, InterruptedException {
+        try (var session = driver.session()) {
+            session.executeWriteWithoutResult(
+                    tx -> tx.run("""
+                            CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0'})\
+                            -[:DEPENDS_ON {optional: false, scope: 'runtime'}]->\
+                            (:Artifact {groupId: 'org.test', artifactId: 'dep1', version: '1.0.0'})
+                            -[:DEPENDS_ON {optional: false, scope: 'runtime'}]->\
+                            (:Artifact {groupId: 'org.test', artifactId: 'dep2', version: '1.0.0'})
+                            """)
+            );
+        }
+
+        String uri = "http://localhost:8060/api/v1/packages/org.test:lib:1.0.0?depth=0";
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(uri))
+                .GET()
+                .build();
+
+        HttpResponse<JsonNode> response = httpClient.send(request, HttpUtil.jsonHandler(JsonNode.class));
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        JsonNode body = response.body();
+        assertArtifact(body, "org.test", "lib", "1.0.0", null);
+        assertThat(body.get("dependencies").elements()).toIterable().isEmpty();
+    }
+
+    @Test
+    void shouldFindWithDepth1() throws IOException, InterruptedException {
+        try (var session = driver.session()) {
+            session.executeWriteWithoutResult(
+                    tx -> tx.run("""
+                            CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0'})\
+                            -[:DEPENDS_ON {optional: false, scope: 'runtime'}]->\
+                            (:Artifact {groupId: 'org.test', artifactId: 'dep1', version: '1.0.0'})
+                            -[:DEPENDS_ON {optional: false, scope: 'runtime'}]->\
+                            (:Artifact {groupId: 'org.test', artifactId: 'dep2', version: '1.0.0'})
+                            """)
+            );
+        }
+
+        String uri = "http://localhost:8060/api/v1/packages/org.test:lib:1.0.0?depth=1";
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(uri))
+                .GET()
+                .build();
+
+        HttpResponse<JsonNode> response = httpClient.send(request, HttpUtil.jsonHandler(JsonNode.class));
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        JsonNode body = response.body();
+        assertArtifact(body, "org.test", "lib", "1.0.0", null);
+
+        List<JsonNode> dependencies = TestUtil.iteratorToList(body.get("dependencies").elements());
+        assertThat(dependencies).hasSize(1);
+        assertThat(dependencies.getFirst().get("optional").asBoolean()).isFalse();
+        assertThat(dependencies.getFirst().get("scope").asText()).isEqualTo("runtime");
+
+        JsonNode dep1 = dependencies.getFirst().get("artifact");
+        assertArtifact(dep1, "org.test", "dep1", "1.0.0", null);
+    }
+
+    @Test
+    void shouldReturn400ForInvalidDepth() throws IOException, InterruptedException {
+        String uri = "http://localhost:8060/api/v1/packages/org.test:lib:1.0.0?depth=hello";
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(uri))
+                .GET()
+                .build();
+
+        HttpResponse<ErrorResponse> response = httpClient.send(request, HttpUtil.jsonHandler(ErrorResponse.class));
+
+        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.body()).isEqualTo(
+                new ErrorResponse(uri,
+                        HandlerType.GET,
+                        "java.lang.NumberFormatException: For input string: \"hello\"")
+        );
+    }
+
     static void assertArtifact(JsonNode node,
                                    String groupId,
                                    String artifactId,

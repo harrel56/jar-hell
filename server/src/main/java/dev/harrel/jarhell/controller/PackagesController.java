@@ -7,6 +7,9 @@ import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.repo.ArtifactRepository;
 import io.avaje.http.api.Controller;
 import io.avaje.http.api.Get;
+import io.avaje.http.api.QueryParam;
+
+import java.util.Optional;
 
 @Controller("/api/v1/packages")
 class PackagesController {
@@ -17,10 +20,11 @@ class PackagesController {
     }
 
     @Get("/{coordinate}")
-    ArtifactTree get(String coordinate) {
+    ArtifactTree get(String coordinate, @QueryParam Integer depth) {
         Gav gav = Gav.fromCoordinate(coordinate)
                 .orElseThrow(() -> new BadRequestException("Invalid artifact coordinate format [%s]".formatted(coordinate)));
-        return artifactRepository.find(gav)
+        Integer depthParam = Optional.ofNullable(depth).orElse(-1);
+        return artifactRepository.find(gav, depthParam)
                 .orElseThrow(() -> new ResourceNotFoundException(gav));
 
     }

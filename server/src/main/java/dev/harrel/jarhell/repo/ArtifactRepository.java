@@ -40,6 +40,10 @@ public class ArtifactRepository {
     }
 
     public Optional<ArtifactTree> find(Gav gav) {
+        return find(gav, -1);
+    }
+
+    public Optional<ArtifactTree> find(Gav gav, int depth) {
         Map<String, Object> gavData = objectMapper.convertValue(gav, new TypeReference<>() {});
         try (var session = driver.session()) {
             SummarizedResult result = session.executeRead(tx -> {
@@ -57,11 +61,11 @@ public class ArtifactRepository {
                         CALL apoc.path.subgraphAll(root, {
                             relationshipFilter: "DEPENDS_ON>",
                             minLevel: 0,
-                            maxLevel: -1
+                            maxLevel: $depth
                         })
                         YIELD nodes, relationships
                         RETURN root, nodes, relationships""",
-                        parameters("props", gavData))
+                        parameters("props", gavData, "depth", depth))
                 );
                 return new SummarizedResult(res.list(), res.consume());
             });

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.error.ResourceNotFoundException;
 import dev.harrel.jarhell.error.BadRequestException;
+import io.avaje.http.api.InvalidTypeArgumentException;
 import io.avaje.inject.BeanScope;
 import io.avaje.inject.spi.GenericType;
 import io.javalin.Javalin;
@@ -48,6 +49,10 @@ public class App implements Closeable {
                     ctx.status(HttpStatus.BAD_REQUEST);
                 })
                 .exception(BadRequestException.class, (e, ctx) -> {
+                    ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
+                    ctx.status(HttpStatus.BAD_REQUEST);
+                })
+                .exception(InvalidTypeArgumentException.class, (e, ctx) -> {
                     ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
                     ctx.status(HttpStatus.BAD_REQUEST);
                 })
