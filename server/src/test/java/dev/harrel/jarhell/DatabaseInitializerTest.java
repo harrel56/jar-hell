@@ -32,6 +32,9 @@ class DatabaseInitializerTest {
         EagerResult indexGavResult = driver.executableQuery("SHOW INDEXES WHERE name = 'index_gav'").execute();
         assertIndex(indexGavResult, List.of("groupId", "artifactId", "version"));
 
+        EagerResult indexGaResult = driver.executableQuery("SHOW INDEXES WHERE name = 'index_ga'").execute();
+        assertIndex(indexGaResult, List.of("groupId", "artifactId"));
+
         EagerResult uniqueGavResult = driver.executableQuery("SHOW INDEXES WHERE name = 'unique_gav'").execute();
         assertIndex(uniqueGavResult, List.of("groupId", "artifactId", "version", "classifier"));
 

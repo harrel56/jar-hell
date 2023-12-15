@@ -19,11 +19,17 @@ public class DatabaseInitializer {
                     FOR (n:Artifact)
                     ON (n.groupId, n.artifactId, n.version)
                     """;
+    private static final String INDEX_GA = """
+                    CREATE INDEX index_ga IF NOT EXISTS
+                    FOR (n:Artifact)
+                    ON (n.groupId, n.artifactId)
+                    """;
 
     public static void initialize(Driver driver) {
         try (var session = driver.session()) {
             runDdl(session, UNIQUE_GAV_WITH_CLASSIFIER);
             runDdl(session, INDEX_GAV);
+            runDdl(session, INDEX_GA);
         }
     }
 
