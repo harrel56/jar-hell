@@ -1,6 +1,4 @@
-plugins {
-    id "com.github.node-gradle.node" version "3.5.1"
-}
+import org.apache.tools.ant.taskdefs.condition.Os
 
 configurations {
     output
@@ -10,9 +8,13 @@ tasks.register('clean') {
     delete files('dist')
 }
 
-tasks.register('build', NpmTask) {
-    dependsOn(npmInstall)
-    npmCommand = ['run', 'build']
+tasks.register('build', Exec) {
+    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+        commandLine 'npm.cmd', 'ci'
+    } else {
+        commandLine 'npm', 'ci'
+    }
+    standardOutput System.out
     inputs.files(fileTree('.').matching {
         exclude 'dist', 'node_modules', 'package-lock.json'
     }.findAll())
