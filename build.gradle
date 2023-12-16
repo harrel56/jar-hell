@@ -6,6 +6,10 @@ dependencies {
     server project(path: ':server', configuration: 'output')
 }
 
+tasks.register('clean') {
+    delete files('build')
+}
+
 tasks.register('build', Copy) {
     from(configurations.server)
     into('build')
