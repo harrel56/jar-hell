@@ -9,6 +9,7 @@ import io.avaje.http.api.Controller;
 import io.avaje.http.api.Get;
 import io.avaje.http.api.QueryParam;
 
+import java.util.List;
 import java.util.Optional;
 
 @Controller("/api/v1/packages")
@@ -17,6 +18,19 @@ class PackagesController {
 
     PackagesController(ArtifactRepository artifactRepository) {
         this.artifactRepository = artifactRepository;
+    }
+
+    @Get
+    List<ArtifactTree> getAllVersions(@QueryParam String groupId,
+                                      @QueryParam String artifactId,
+                                      @QueryParam String classifier) {
+        if (groupId == null) {
+            throw new BadRequestException("groupId parameter is required");
+        }
+        if (artifactId == null) {
+            throw new BadRequestException("artifactId parameter is required");
+        }
+        return artifactRepository.findAllVersions(groupId, artifactId, classifier);
     }
 
     @Get("/{coordinate}")

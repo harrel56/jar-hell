@@ -39,6 +39,48 @@ public class ArtifactRepository {
         this.objectMapper = objectMapper;
     }
 
+    public List<ArtifactTree> findAllVersions(String groupId, String artifactId, String classifier) {
+        try (var session = driver.session()) {
+            SummarizedResult result = session.executeRead(tx -> {
+                Result res = tx.run(new Query("""
+                                MATCH (root:Artifact)
+                                WHERE
+                                    root.groupId = $groupId
+                                    AND root.artifactId = $artifactId
+                                    AND (
+                                        root.classifier IS NULL
+                                        AND $classifier IS NULL
+                                        OR root.classifier = $classifier
+                                    )
+                                RETURN root
+                                """,
+                        parameters(
+                                "groupId", groupId,
+                                "artifactId", artifactId,
+                                "classifier", classifier)
+                        )
+                );
+                return new SummarizedResult(res.list(), res.consume());
+            });
+
+            logger.info("Querying for all versions of artifact [{}:{}(classifier: {})] - size: {}, availableAfter: {}ms, consumedAfter: {}ms",
+                    groupId,
+                    artifactId,
+                    classifier,
+                    result.records().size(),
+                    result.summary().resultAvailableAfter(TimeUnit.MILLISECONDS),
+                    result.summary().resultConsumedAfter(TimeUnit.MILLISECONDS)
+            );
+
+            return result.records().stream()
+                    .map(rec -> rec.get("root").asNode())
+                    .map(node -> new AggregateTree(toArtifactProps(node)))
+                    .map(AggregateTree::toArtifactTree)
+                    .sorted(Comparator.comparing(at -> at.artifactInfo().version()))
+                    .toList();
+        }
+    }
+
     public Optional<ArtifactTree> find(Gav gav) {
         return find(gav, -1);
     }

@@ -1,8 +1,9 @@
 package dev.harrel.jarhell.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import dev.harrel.jarhell.extension.EnvironmentTest;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import dev.harrel.jarhell.error.ErrorResponse;
+import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.util.HttpUtil;
 import dev.harrel.jarhell.util.TestUtil;
 import io.javalin.http.HandlerType;
@@ -343,11 +344,133 @@ class PackagesControllerTest {
         );
     }
 
+    @Test
+    void shouldFindAllVersions() throws IOException, InterruptedException {
+        try (var session = driver.session()) {
+            session.executeWriteWithoutResult(
+                    tx -> tx.run("""
+                            CREATE
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0'}),
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.2.0'})
+                            """)
+            );
+        }
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:8060/api/v1/packages?groupId=org.test&artifactId=lib"))
+                .GET()
+                .build();
+
+        HttpResponse<ArrayNode> response = httpClient.send(request, HttpUtil.jsonHandler(ArrayNode.class));
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        ArrayNode body = response.body();
+        assertThat(body.size()).isEqualTo(2);
+        assertArtifact(body.get(0), "org.test", "lib", "1.0.0", null);
+        assertThat(body.get(0).get("dependencies").elements()).toIterable().isEmpty();
+        assertArtifact(body.get(1), "org.test", "lib", "1.2.0", null);
+        assertThat(body.get(1).get("dependencies").elements()).toIterable().isEmpty();
+    }
+
+    @Test
+    void shouldFindAllVersionsWithClassifier() throws IOException, InterruptedException {
+        try (var session = driver.session()) {
+            session.executeWriteWithoutResult(
+                    tx -> tx.run("""
+                            CREATE
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0', classifier: 'doc'}),
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.2.0', classifier: 'doc'})
+                            """)
+            );
+        }
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:8060/api/v1/packages?groupId=org.test&artifactId=lib"))
+                .GET()
+                .build();
+
+        HttpResponse<ArrayNode> response = httpClient.send(request, HttpUtil.jsonHandler(ArrayNode.class));
+        assertThat(response.statusCode()).isEqualTo(200);
+        ArrayNode body = response.body();
+        assertThat(body.size()).isZero();
+
+        request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:8060/api/v1/packages?groupId=org.test&artifactId=lib&classifier=doc"))
+                .GET()
+                .build();
+
+        response = httpClient.send(request, HttpUtil.jsonHandler(ArrayNode.class));
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        body = response.body();
+        assertThat(body.size()).isEqualTo(2);
+        assertArtifact(body.get(0), "org.test", "lib", "1.0.0", "doc");
+        assertThat(body.get(0).get("dependencies").elements()).toIterable().isEmpty();
+        assertArtifact(body.get(1), "org.test", "lib", "1.2.0", "doc");
+        assertThat(body.get(1).get("dependencies").elements()).toIterable().isEmpty();
+    }
+
+    @Test
+    void shouldFailFindAllVersionsWithoutGroupId() throws IOException, InterruptedException {
+        try (var session = driver.session()) {
+            session.executeWriteWithoutResult(
+                    tx -> tx.run("""
+                            CREATE
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib'}),
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib'})
+                            """)
+            );
+        }
+
+        String uri = "http://localhost:8060/api/v1/packages?artifactId=lib";
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(uri))
+                .GET()
+                .build();
+
+        HttpResponse<ErrorResponse> response = httpClient.send(request, HttpUtil.jsonHandler(ErrorResponse.class));
+
+        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.body()).isEqualTo(
+                new ErrorResponse(uri,
+                        HandlerType.GET,
+                        "groupId parameter is required")
+        );
+    }
+
+    @Test
+    void shouldFailFindAllVersionsWithoutArtifactId() throws IOException, InterruptedException {
+        try (var session = driver.session()) {
+            session.executeWriteWithoutResult(
+                    tx -> tx.run("""
+                            CREATE
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib'}),
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib'})
+                            """)
+            );
+        }
+
+        String uri = "http://localhost:8060/api/v1/packages?groupId=dev.harrel";
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(uri))
+                .GET()
+                .build();
+
+        HttpResponse<ErrorResponse> response = httpClient.send(request, HttpUtil.jsonHandler(ErrorResponse.class));
+
+        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.body()).isEqualTo(
+                new ErrorResponse(uri,
+                        HandlerType.GET,
+                        "artifactId parameter is required")
+        );
+    }
+
     static void assertArtifact(JsonNode node,
-                                   String groupId,
-                                   String artifactId,
-                                   String version,
-                                   String classifier) {
+                               String groupId,
+                               String artifactId,
+                               String version,
+                               String classifier) {
         assertThat(node.get("groupId").asText()).isEqualTo(groupId);
         assertThat(node.get("artifactId").asText()).isEqualTo(artifactId);
         assertThat(node.get("version").asText()).isEqualTo(version);
