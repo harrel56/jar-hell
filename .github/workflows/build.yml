@@ -83,4 +83,4 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
-            sudo /home/harrel/jar-hell/deploy.sh ${{ needs.generate-image-tag.outputs.image-tag }}
+            /home/harrel/jar-hell/deploy.sh ${{ needs.generate-image-tag.outputs.image-tag }}
