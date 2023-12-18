@@ -1,5 +1,5 @@
 ### dev.harrel
-GET {{url}}/api/v1/search?query=dev.harrel
+GET {{url}}/api/v1/maven/search?query=dev.harrel
 
 > {%
   client.test("Response is 200", () => {
@@ -12,7 +12,7 @@ GET {{url}}/api/v1/search?query=dev.harrel
 %}
 
 ### dev.harrel:json-schema
-GET {{url}}/api/v1/search?query=dev.harrel:json-schema
+GET {{url}}/api/v1/maven/search?query=dev.harrel:json-schema
 
 > {%
   client.test("Response is 200", () => {
@@ -25,7 +25,7 @@ GET {{url}}/api/v1/search?query=dev.harrel:json-schema
 %}
 
 ### sanitization 1
-GET {{url}}/api/v1/search?query=json schema
+GET {{url}}/api/v1/maven/search?query=json schema
 
 > {%
   client.test("Response is 200", () => {
@@ -34,7 +34,7 @@ GET {{url}}/api/v1/search?query=json schema
 %}
 
 ### sanitization 2
-GET {{url}}/api/v1/search?query=:
+GET {{url}}/api/v1/maven/search?query=:
 
 > {%
   client.test("Response is 200", () => {
@@ -43,7 +43,7 @@ GET {{url}}/api/v1/search?query=:
 %}
 
 ### sanitization 3
-GET {{url}}/api/v1/search?query=1:2:3:4
+GET {{url}}/api/v1/maven/search?query=1:2:3:4
 
 > {%
   client.test("Response is 200", () => {
@@ -52,7 +52,7 @@ GET {{url}}/api/v1/search?query=1:2:3:4
 %}
 
 ### sanitization 4
-GET {{url}}/api/v1/search?query=$$*!
+GET {{url}}/api/v1/maven/search?query=$$*!
 
 > {%
   client.test("Response is 200", () => {

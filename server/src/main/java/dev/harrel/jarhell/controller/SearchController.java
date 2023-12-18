@@ -7,7 +7,7 @@ import io.avaje.http.api.QueryParam;
 
 import java.util.List;
 
-@Controller("/api/v1/search")
+@Controller("/api/v1/maven/search")
 class SearchController {
     private final MavenApiClient mavenApiClient;
 

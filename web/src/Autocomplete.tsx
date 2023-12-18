@@ -39,7 +39,7 @@ export const Autocomplete = () => {
     get,
     loading,
     error
-  } = useFetch<Artifact[]>(`${import.meta.env.VITE_SERVER_URL}/api/v1/search`, {cachePolicy: CachePolicies.NO_CACHE})
+  } = useFetch<Artifact[]>(`${import.meta.env.VITE_SERVER_URL}/api/v1/maven/search`, {cachePolicy: CachePolicies.NO_CACHE})
   useDebounce(() => {
     if (inputValue !== '') {
       get('?query=' + inputValue)
