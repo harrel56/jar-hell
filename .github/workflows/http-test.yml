@@ -16,4 +16,8 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v3
       - name: Run tests
-        run: java -cp /intellij-http-client/* com.intellij.httpClient.cli.HttpClientMain http/packages.http -V url=https://jarhell.harrel.dev
+        run: |
+          - cd http
+          - java -cp "/intellij-http-client/*" "com.intellij.httpClient.cli.HttpClientMain" \
+          - analyze.http packages.http search.http \
+          - --env-file http-client.env.json --env prod
