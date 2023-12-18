@@ -2,11 +2,11 @@ name: http-test
 
 on:
   workflow_dispatch:
-#  workflow_run:
-#    types:
-#      - completed
-#    workflows:
-#      - build
+  workflow_run:
+    types:
+      - completed
+    workflows:
+      - build
 
 jobs:
   api-tests:
@@ -16,4 +16,4 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v3
       - name: Run tests
-        run: java -cp "/intellij-http-client/*" "com.intellij.httpClient.cli.HttpClientMain" http/packages.http -V url=https://jarhell.harrel.dev
+        run: java -cp /intellij-http-client/* com.intellij.httpClient.cli.HttpClientMain http/packages.http -V url=https://jarhell.harrel.dev
