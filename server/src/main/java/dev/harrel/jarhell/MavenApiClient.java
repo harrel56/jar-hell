@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import dev.harrel.jarhell.analyze.ArtifactNotFoundException;
 import dev.harrel.jarhell.analyze.FilesInfo;
+import dev.harrel.jarhell.error.BadRequestException;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.central.ArtifactDoc;
 import dev.harrel.jarhell.model.central.MavenMetadata;
@@ -27,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Singleton
@@ -35,6 +37,8 @@ public class MavenApiClient {
 
     private static final String SEARCH_URL = Config.get("maven.search-url");
     private static final String CONTENT_URL = Config.get("maven.repo-url");
+
+    private static final Pattern SANITIZATION_PATTERN = Pattern.compile("[^\\w\\.-]");
 
     private final ObjectMapper objectMapper;
     private final XmlMapper xmlMapper;
@@ -45,6 +49,18 @@ public class MavenApiClient {
         this.xmlMapper = new XmlMapper();
         this.xmlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.httpClient = httpClient;
+    }
+
+    public List<SolrArtifact> queryMavenSolr(String query) {
+        if (query == null || query.isBlank()) {
+            return List.of();
+        }
+        String queryString = createQueryString(query);
+        if (queryString.isEmpty()) {
+            return List.of();
+        }
+
+        return fetch(SEARCH_URL + "?q=" + queryString, objectMapper, new TypeReference<>() {});
     }
 
     public List<String> fetchArtifactVersions(String groupId, String artifactId) {
@@ -96,7 +112,7 @@ public class MavenApiClient {
                     .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 400) {
-                throw new IllegalArgumentException("HTTP call failed [%s] for url [%s]".formatted(response.statusCode(), url));
+                throw new BadRequestException("HTTP call failed [%s] for url [%s]".formatted(response.statusCode(), url));
             }
             return objectMapper.readValue(response.body(), type);
         } catch (IOException e) {
@@ -121,4 +137,29 @@ public class MavenApiClient {
         String encodedResource = URLEncoder.encode(resource, StandardCharsets.UTF_8);
         return CONTENT_URL + "/" + encodedResource;
     }
+
+    private static String createQueryString(String input) {
+        if (input.contains(":")) {
+            String[] split = input.split(":", -1);
+            StringJoiner joiner = new StringJoiner("+AND+");
+            String groupToken = sanitizeQueryToken(split[0]);
+            String artifactToken = sanitizeQueryToken(split[1]);
+            if (!groupToken.isEmpty()) {
+                joiner.add(groupToken);
+            }
+            if (!artifactToken.isEmpty()) {
+                joiner.add(artifactToken);
+            }
+            return joiner.toString();
+        } else {
+            String token = sanitizeQueryToken(input);
+            return token.isEmpty() ? "" : "g:%1$s*+OR+a:%1$s*".formatted(token);
+        }
+    }
+
+    private static String sanitizeQueryToken(String input) {
+        return SANITIZATION_PATTERN.matcher(input).replaceAll("");
+    }
+
+    public record SolrArtifact(String g, String a) {}
 }
