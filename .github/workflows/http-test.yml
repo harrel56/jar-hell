@@ -15,5 +15,6 @@ jobs:
     steps:
       - name: Git checkout
         uses: actions/checkout@v3
+      - run: ls -la
       - name: Run tests
-        run: ijhttp http/packages.http
+        run: java -cp "/intellij-http-client/*" "com.intellij.httpClient.cli.HttpClientMain" http/packages.http
