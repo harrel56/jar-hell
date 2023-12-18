@@ -57,7 +57,12 @@ class Configuration {
                 staticFiles.precompress = true;
                 staticFiles.headers = Map.of("Cache-Control", "max-age=86400");
             });
-            config.plugins.enableCors(cors -> cors.add(it -> it.allowHost("http://localhost:5173")));
+            config.plugins.enableCors(cors ->
+                    cors.add(it -> it.allowHost(
+                            "http://localhost:5173",
+                            "http://localhost:8060",
+                            "https://jarhell.harrel.dev:8060"))
+            );
         };
     }
 }
