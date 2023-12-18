@@ -60,7 +60,8 @@ public class MavenApiClient {
             return List.of();
         }
 
-        return fetch(SEARCH_URL + "?q=" + queryString, objectMapper, new TypeReference<>() {});
+        SelectResponse<SolrArtifact> response = fetch(SEARCH_URL + "?q=" + queryString, objectMapper, new TypeReference<>() {});
+        return response.response().docs();
     }
 
     public List<String> fetchArtifactVersions(String groupId, String artifactId) {
