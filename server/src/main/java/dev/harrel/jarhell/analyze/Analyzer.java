@@ -1,5 +1,6 @@
 package dev.harrel.jarhell.analyze;
 
+import dev.harrel.jarhell.MavenApiClient;
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.model.descriptor.DescriptorInfo;
 
@@ -12,26 +13,26 @@ import java.util.Set;
 @Singleton
 class Analyzer {
     private final MavenRunner mavenRunner;
-    private final ApiClient apiClient;
+    private final MavenApiClient mavenApiClient;
     private final PackageAnalyzer packageAnalyzer;
 
-    Analyzer(MavenRunner mavenRunner, ApiClient apiClient, PackageAnalyzer packageAnalyzer) {
+    Analyzer(MavenRunner mavenRunner, MavenApiClient mavenApiClient, PackageAnalyzer packageAnalyzer) {
         this.mavenRunner = mavenRunner;
-        this.apiClient = apiClient;
+        this.mavenApiClient = mavenApiClient;
         this.packageAnalyzer = packageAnalyzer;
     }
 
     public boolean checkIfArtifactExists(Gav gav) {
-        return apiClient.checkIfArtifactExists(gav);
+        return mavenApiClient.checkIfArtifactExists(gav);
     }
 
     public ArtifactInfo analyze(String groupId, String artifactId) {
-        String version = apiClient.fetchLatestVersion(groupId, artifactId);
+        String version = mavenApiClient.fetchLatestVersion(groupId, artifactId);
         return analyze(new Gav(groupId, artifactId, version));
     }
 
     public ArtifactInfo analyze(Gav gav) {
-        FilesInfo filesInfo = apiClient.fetchFilesInfo(gav);
+        FilesInfo filesInfo = mavenApiClient.fetchFilesInfo(gav);
         DescriptorInfo descriptorInfo = mavenRunner.resolveDescriptor(gav);
         PackageInfo packageInfo = packageAnalyzer.analyzePackage(gav, filesInfo, descriptorInfo.packaging());
 

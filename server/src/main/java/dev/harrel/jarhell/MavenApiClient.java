@@ -1,9 +1,11 @@
-package dev.harrel.jarhell.analyze;
+package dev.harrel.jarhell;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import dev.harrel.jarhell.analyze.ArtifactNotFoundException;
+import dev.harrel.jarhell.analyze.FilesInfo;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.central.ArtifactDoc;
 import dev.harrel.jarhell.model.central.MavenMetadata;
@@ -28,8 +30,8 @@ import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 @Singleton
-class ApiClient {
-    private static final Logger logger = LoggerFactory.getLogger(ApiClient.class);
+public class MavenApiClient {
+    private static final Logger logger = LoggerFactory.getLogger(MavenApiClient.class);
 
     private static final String SEARCH_URL = Config.get("maven.search-url");
     private static final String CONTENT_URL = Config.get("maven.repo-url");
@@ -38,7 +40,7 @@ class ApiClient {
     private final XmlMapper xmlMapper;
     private final HttpClient httpClient;
 
-    ApiClient(ObjectMapper objectMapper, HttpClient httpClient) {
+    MavenApiClient(ObjectMapper objectMapper, HttpClient httpClient) {
         this.objectMapper = objectMapper;
         this.xmlMapper = new XmlMapper();
         this.xmlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
