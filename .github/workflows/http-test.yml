@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v3
       - name: Run tests
         run: |
-          - cd http
-          - java -cp "/intellij-http-client/*" "com.intellij.httpClient.cli.HttpClientMain" \
-          - analyze.http packages.http search.http \
-          - --env-file http-client.env.json --env prod
+          cd http
+          java -cp "/intellij-http-client/*" "com.intellij.httpClient.cli.HttpClientMain" \
+            analyze.http packages.http search.http \
+            --env-file http-client.env.json --env prod
