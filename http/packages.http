@@ -64,7 +64,7 @@ GET {{url}}/api/v1/packages/com.amazonaws:DynamoDBLocal:2.0.0
 
 ### org.apache.spark:spark-core_2.13
 // @no-log
-GET {{url}}/api/v1/packages/org.apache.spark:spark-core_2.13:3.4.1
+GET {{url}}/api/v1/packages/org.apache.spark:spark-core_2.13:3.4.1?depth=1
 
 > {%
   client.test("Response is 200", () => {
