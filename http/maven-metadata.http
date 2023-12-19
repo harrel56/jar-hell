@@ -2,6 +2,6 @@
 GET https://search.maven.org/remotecontent?filepath=dev/harrel/json-schema/maven-metadata.xml
 
 ### any
-GET https://search.maven.org/remotecontent?filepath=dev/harrel/json-schema/maven-metadata.xml
+GET https://search.maven.org/remotecontent?filepath=org/springframework/spring-context/maven-metadata.xml
 
 

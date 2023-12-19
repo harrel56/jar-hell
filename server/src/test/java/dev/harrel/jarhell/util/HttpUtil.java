@@ -2,10 +2,12 @@ package dev.harrel.jarhell.util;
 
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Type;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
@@ -24,9 +26,18 @@ public class HttpUtil {
     }
 
     public static <T> HttpResponse.BodyHandler<T> jsonHandler(Class<T> clazz) {
+        return jsonHandler(new TypeReference<>() {
+            @Override
+            public Type getType() {
+                return clazz;
+            }
+        });
+    }
+
+    public static <T> HttpResponse.BodyHandler<T> jsonHandler(TypeReference<T> tr) {
         return responseInfo -> BodySubscribers.mapping(BodySubscribers.ofByteArray(), bytes -> {
             try {
-                return objectMapper.readValue(bytes, clazz);
+                return objectMapper.readValue(bytes, tr);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
