@@ -146,10 +146,10 @@ public class MavenApiClient {
             String groupToken = sanitizeQueryToken(split[0]);
             String artifactToken = sanitizeQueryToken(split[1]);
             if (!groupToken.isEmpty()) {
-                joiner.add(groupToken);
+                joiner.add("g:" + groupToken + "*");
             }
             if (!artifactToken.isEmpty()) {
-                joiner.add(artifactToken);
+                joiner.add("a:" + artifactToken + "*");
             }
             return joiner.toString();
         } else {

@@ -1,6 +1,7 @@
 package dev.harrel.jarhell.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import dev.harrel.jarhell.MavenApiClient;
 import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.util.HttpUtil;
@@ -14,6 +15,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
 
+import static dev.harrel.jarhell.MavenApiClient.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @EnvironmentTest
@@ -56,7 +58,7 @@ class MavenApiControllerTest {
     }
 
     @Test
-    void shouldFailWithoutGroupId() throws IOException, InterruptedException {
+    void shouldFailVersionsWithoutGroupId() throws IOException, InterruptedException {
         String uri = "http://localhost:8060/api/v1/maven/versions?artifactId=json-schema";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
@@ -74,7 +76,7 @@ class MavenApiControllerTest {
     }
 
     @Test
-    void shouldFailWithoutArtifactId() throws IOException, InterruptedException {
+    void shouldFailVersionsWithoutArtifactId() throws IOException, InterruptedException {
         String uri = "http://localhost:8060/api/v1/maven/versions?groupId=dev.harrel";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
@@ -89,5 +91,20 @@ class MavenApiControllerTest {
                 HandlerType.GET,
                 "artifactId parameter is required"
         ));
+    }
+
+    @Test
+    void shouldRunSearch() throws IOException, InterruptedException {
+        String uri = "http://localhost:8060/api/v1/maven/search?query=dev.harrel:json-schema";
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(uri))
+                .GET()
+                .build();
+
+        HttpResponse<List<SolrArtifact>> response = httpClient.send(request, HttpUtil.jsonHandler(new TypeReference<>() {}));
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.body()).hasSize(1);
+        assertThat(response.body().getFirst()).isEqualTo(new SolrArtifact("dev.harrel", "json-schema"));
     }
 }

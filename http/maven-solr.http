@@ -2,6 +2,6 @@
 GET https://search.maven.org/solrsearch/select?q=dev.harrel
 
 ### any
-GET https://search.maven.org/solrsearch/select?q=g:com.sanctionco.jmail+AND+a:jmail+AND+v:1.6.2
+GET https://search.maven.org/solrsearch/select?q=g:dev.harrel*+AND+a:json-schema*
 
 
