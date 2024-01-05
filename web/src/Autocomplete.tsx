@@ -1,32 +1,24 @@
 import {useAutocomplete} from '@mui/base'
-import {useEffect, useState} from 'react'
+import {useState} from 'react'
 import {CachePolicies, useFetch} from 'use-http'
 import {useDebounce} from 'react-use'
 import {UseAutocompleteReturnValue} from '@mui/base/useAutocomplete/useAutocomplete'
-import {UseDebounceReturn} from 'react-use/lib/useDebounce'
 
 interface Artifact {
   g: string
   a: string
 }
 
-interface ListboxProps {
-  loading: boolean
-  isDebounced: UseDebounceReturn[0]
-  ac: UseAutocompleteReturnValue<Artifact>
-}
-
 const artifactString = (artifact: Artifact) => `${artifact.g}:${artifact.a}`
 
-const Listbox = ({loading, isDebounced, ac}: ListboxProps) => {
+const Listbox = ({loading, ac}: { loading: boolean, ac: UseAutocompleteReturnValue<Artifact> }) => {
   if (!ac.popupOpen) {
     return null
   }
-  const noResultsFound = !loading && isDebounced() && ac.groupedOptions.length === 0
   return (
     <ul {...ac.getListboxProps()}>
       {loading && <div>Loading...</div>}
-      {noResultsFound &&
+      {ac.groupedOptions.length === 0 &&
         <div>No results found</div>
       }
       {(ac.groupedOptions as Artifact[]).map((option, index) => (
@@ -39,34 +31,27 @@ const Listbox = ({loading, isDebounced, ac}: ListboxProps) => {
 }
 
 export const Autocomplete = () => {
-  const [value, setValue] = useState<Artifact | null>(null)
+  const [value, setValue] = useState<Artifact | null>()
   const [inputValue, setInputValue] = useState('')
-  const [options, setOptions] = useState<Artifact[]>([])
 
   const {
     data,
     get,
     loading,
     error
-  } = useFetch<Artifact[]>(`${import.meta.env.VITE_SERVER_URL}/api/v1/search`, {cachePolicy: CachePolicies.NO_CACHE})
+  } = useFetch<Artifact[]>(`${import.meta.env.VITE_SERVER_URL}/api/v1/maven/search`, {cachePolicy: CachePolicies.NO_CACHE})
   const [isDebounced] = useDebounce(() => {
     if (inputValue !== '') {
       get('?query=' + inputValue)
     }
   }, 500, [inputValue])
-  useEffect(() => setOptions(data ?? []), [data])
-  useEffect(() => {
-    if (error || inputValue === '') {
-      setOptions([])
-    }
-  }, [error, inputValue])
+  const options = error ? [] : data ?? []
 
   const ac = useAutocomplete({
-    id: 'packages-autocomplete',
+    id: 'use-autocomplete-demo',
     options: options,
     filterOptions: options => options,
     getOptionLabel: artifactString,
-    isOptionEqualToValue: (a1, a2) => artifactString(a1) === artifactString(a2),
     value,
     onChange: (_event, newValue) => setValue(newValue),
     inputValue,
@@ -80,7 +65,7 @@ export const Autocomplete = () => {
       <div {...ac.getRootProps()}>
         <input {...ac.getInputProps()} value={inputValue}/>
       </div>
-      <Listbox loading={loading} isDebounced={isDebounced} ac={ac}/>
+      <Listbox loading={loading} ac={ac}/>
     </div>
   )
 }

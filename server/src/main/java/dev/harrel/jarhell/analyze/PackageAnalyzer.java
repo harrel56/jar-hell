@@ -1,5 +1,6 @@
 package dev.harrel.jarhell.analyze;
 
+import dev.harrel.jarhell.MavenApiClient;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.PackageInfo;
 import org.slf4j.Logger;
@@ -52,7 +53,7 @@ class PackageAnalyzer {
             logger.warn("Couldn't determine package extension for artifact: [{}], packaging: [{}], extensions: {}", gav, packaging, filesInfo.extensions());
             return new PackageInfo(null, null);
         }
-        String url = ApiClient.createFileUrl(gav, packageExtension);
+        String url = MavenApiClient.createFileUrl(gav, packageExtension);
         Long packageSize = null;
         for (String rangeStep : RANGE_STEPS) {
             HttpRequest request = HttpRequest.newBuilder()

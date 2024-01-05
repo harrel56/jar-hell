@@ -69,3 +69,19 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKER_REGISTRY_HOST }}/jar-hell:${{ needs.generate-image-tag.outputs.image-tag }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs:
+      - generate-image-tag
+      - build-docker
+    steps:
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            cd /home/harrel/jar-hell
+            ./deploy.sh ${{ needs.generate-image-tag.outputs.image-tag }}

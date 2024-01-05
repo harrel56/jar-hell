@@ -1,0 +1,23 @@
+name: http-test
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    types:
+      - completed
+    workflows:
+      - build
+
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+    container: jetbrains/intellij-http-client:latest
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+      - name: Run tests
+        run: |
+          cd http
+          java -cp "/intellij-http-client/*" "com.intellij.httpClient.cli.HttpClientMain" \
+            analyze.http packages.http search.http \
+            --env-file http-client.env.json --env prod

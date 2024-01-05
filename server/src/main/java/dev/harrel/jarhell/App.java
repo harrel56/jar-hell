@@ -11,6 +11,7 @@ import io.javalin.Javalin;
 import io.javalin.config.JavalinConfig;
 import io.javalin.http.HttpStatus;
 import io.javalin.plugin.Plugin;
+import io.javalin.util.ConcurrencyUtil;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,7 @@ public class App implements Closeable {
             throw new IllegalStateException("App already started");
         }
 
+        ConcurrencyUtil.INSTANCE.setUseLoom(false);
         this.beanScope = BeanScope.builder().build();
 
         Consumer<JavalinConfig> configConsumer = beanScope.get(new GenericType<Consumer<JavalinConfig>>() {}, "javalinConfig");
