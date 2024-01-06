@@ -1,6 +1,6 @@
 import {useLoaderData} from 'react-router-dom'
 import {Autocomplete} from './Autocomplete.tsx'
-import {PackageLoaderData} from './index.tsx'
+import {PackageLoaderData} from './router.tsx'
 
 export const PackagePage = () => {
   const data = useLoaderData() as PackageLoaderData
