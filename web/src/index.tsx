@@ -15,13 +15,39 @@ export interface PackageLoaderData {
 const loadPackageData = async (gav: Gav): Promise<PackageLoaderData> => {
   const queryString = `groupId=${gav.groupId}&artifactId=${gav.artifactId}`
   const versionsPromise = fetch(`${import.meta.env.VITE_SERVER_URL}/api/v1/maven/versions?${queryString}`)
-    .then(res => res.json())
+    .then(async res => {
+      const json = await res.json()
+      if (res.ok) {
+        return json
+      } else if (res.status === 400) {
+        throw Error(`Artifact not found`)
+      } else {
+        throw Error(json.message)
+      }
+    })
   const analyzedPackagesPromise = fetch(`${import.meta.env.VITE_SERVER_URL}/api/v1/packages?${queryString}`)
-    .then(res => res.json())
+    .then(async res => {
+      const json = await res.json()
+      if (res.ok) {
+        return json
+      } else {
+        throw Error(json.message)
+      }
+    })
   const packageDataPromise = fetch(`${import.meta.env.VITE_SERVER_URL}/api/v1/packages/${gavToString(gav)}?depth=1`)
-    .then(res => res.json())
+    .then(async res => {
+      if (res.ok) {
+        return res.json()
+      } else if (res.status === 404) {
+        return null
+      } else {
+        const json = await res.json()
+        throw Error(json.message)
+      }
+    })
+    .catch(_ => null)
   const joined = await Promise.all([versionsPromise, analyzedPackagesPromise, packageDataPromise])
-  return { versions: joined[0], analyzedPackages: joined[1], packageData: joined[2] }
+  return {versions: joined[0], analyzedPackages: joined[1], packageData: joined[2]}
 }
 
 const router = createBrowserRouter([
