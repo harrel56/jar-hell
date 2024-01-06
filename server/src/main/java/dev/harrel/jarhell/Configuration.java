@@ -61,7 +61,7 @@ class Configuration {
                     cors.add(it -> it.allowHost(
                             "http://localhost:5173",
                             "http://localhost:8060",
-                            "https://jarhell.harrel.dev:8060"))
+                            "https://jarhell.harrel.dev"))
             );
         };
     }
