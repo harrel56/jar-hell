@@ -8,7 +8,11 @@ export const PackagePage = () => {
 
   return (
     <div>
-      <p>{JSON.stringify(data)}</p>
       <Autocomplete/>
+      <ul>
+        {data.versions.map(version => (
+          <li>{version}</li>
+        ))}
+      </ul>
     </div>)
 }
