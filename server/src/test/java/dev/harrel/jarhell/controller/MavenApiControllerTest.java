@@ -1,7 +1,6 @@
 package dev.harrel.jarhell.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import dev.harrel.jarhell.MavenApiClient;
 import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.util.HttpUtil;
@@ -105,6 +104,6 @@ class MavenApiControllerTest {
 
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.body()).hasSize(1);
-        assertThat(response.body().getFirst()).isEqualTo(new SolrArtifact("dev.harrel", "json-schema"));
+        assertThat(response.body().getFirst()).isEqualTo(new SolrArtifact("dev.harrel", "json-schema", "1.5.0"));
     }
 }
