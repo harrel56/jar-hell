@@ -1,9 +1,8 @@
 import {useAutocomplete} from '@mui/base'
 import {useEffect, useState} from 'react'
-import {CachePolicies, useFetch} from 'use-http'
-import {useDebounce} from 'react-use'
 import {UseAutocompleteReturnValue} from '@mui/base/useAutocomplete/useAutocomplete'
-import {UseDebounceReturn} from 'react-use/lib/useDebounce'
+import {useDebounce} from 'use-debounce'
+import {useApiFetch} from './hooks/useApiFetch.ts'
 
 interface Artifact {
   g: string
@@ -12,17 +11,17 @@ interface Artifact {
 
 interface ListboxProps {
   loading: boolean
-  isDebounced: UseDebounceReturn[0]
+  debouncing: boolean
   ac: UseAutocompleteReturnValue<Artifact>
 }
 
 const artifactString = (artifact: Artifact) => `${artifact.g}:${artifact.a}`
 
-const Listbox = ({loading, isDebounced, ac}: ListboxProps) => {
+const Listbox = ({loading, debouncing, ac}: ListboxProps) => {
   if (!ac.popupOpen) {
     return null
   }
-  const noResultsFound = !loading && isDebounced() && ac.inputValue !== '' && ac.groupedOptions.length === 0
+  const noResultsFound = !loading && !debouncing && ac.inputValue !== '' && ac.groupedOptions.length === 0
   return (
     <ul {...ac.getListboxProps()}>
       {loading && <div>Loading...</div>}
@@ -41,6 +40,7 @@ const Listbox = ({loading, isDebounced, ac}: ListboxProps) => {
 export const Autocomplete = () => {
   const [value, setValue] = useState<Artifact | null>(null)
   const [inputValue, setInputValue] = useState('')
+  const [debouncedInput, {isPending}] = useDebounce(inputValue, 500)
   const [options, setOptions] = useState<Artifact[]>([])
 
   const {
@@ -48,12 +48,14 @@ export const Autocomplete = () => {
     get,
     loading,
     error
-  } = useFetch<Artifact[]>(`${import.meta.env.VITE_SERVER_URL}/api/v1/maven/search`, {cachePolicy: CachePolicies.NO_CACHE})
-  const [isDebounced] = useDebounce(() => {
-    if (inputValue !== '') {
+  } = useApiFetch<Artifact[]>('/api/v1/maven/search')
+
+  useEffect(() => {
+    if (debouncedInput !== '') {
       get('?query=' + inputValue)
     }
-  }, 500, [inputValue])
+  }, [debouncedInput])
+
   useEffect(() => setOptions(data ?? []), [data])
   useEffect(() => {
     if (error || inputValue === '') {
@@ -80,7 +82,7 @@ export const Autocomplete = () => {
       <div {...ac.getRootProps()}>
         <input {...ac.getInputProps()} value={inputValue}/>
       </div>
-      <Listbox loading={loading} isDebounced={isDebounced} ac={ac}/>
+      <Listbox loading={loading} debouncing={isPending()} ac={ac}/>
     </div>
   )
 }

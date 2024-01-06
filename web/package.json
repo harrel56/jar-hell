@@ -15,7 +15,7 @@
     "react-dom": "18.2.0",
     "react-router-dom": "6.21.0",
     "use-http": "1.0.28",
-    "react-use": "17.4.2",
+    "use-debounce": "10.0.0",
     "react-icons": "4.12.0",
     "@mui/base": "5.0.0-beta.27"
   },
