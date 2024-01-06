@@ -162,5 +162,5 @@ public class MavenApiClient {
         return SANITIZATION_PATTERN.matcher(input).replaceAll("");
     }
 
-    public record SolrArtifact(String g, String a) {}
+    public record SolrArtifact(String g, String a, String latestVersion) {}
 }

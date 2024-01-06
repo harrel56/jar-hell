@@ -1,14 +1,14 @@
-import {useLoaderData, useParams} from 'react-router-dom'
+import {useLoaderData} from 'react-router-dom'
 import {Autocomplete} from './Autocomplete.tsx'
+import {PackageLoaderData} from './index.tsx'
 
 export const PackagePage = () => {
-  const { gav } = useParams()
-  const data = useLoaderData()
+  const data = useLoaderData() as PackageLoaderData
+  console.log(data)
 
   return (
     <div>
       <p>{JSON.stringify(data)}</p>
-      <p>{gav}</p>
       <Autocomplete/>
     </div>)
 }
