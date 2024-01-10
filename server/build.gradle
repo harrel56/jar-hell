@@ -31,9 +31,9 @@ dependencies {
     implementation 'org.tinylog:slf4j-tinylog:2.6.2'
     implementation 'org.tinylog:tinylog-impl:2.6.2'
     implementation 'io.javalin:javalin:5.6.3'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.0'
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.16.0'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.16.1'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.1'
 
     implementation 'org.apache.maven:maven-resolver-provider:3.9.6'
     implementation 'org.apache.maven.resolver:maven-resolver-transport-http:1.9.18'
@@ -44,7 +44,7 @@ dependencies {
 
     testImplementation platform('org.junit:junit-bom:5.10.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'org.assertj:assertj-core:3.24.2'
+    testImplementation 'org.assertj:assertj-core:3.25.1'
     testImplementation 'org.awaitility:awaitility:4.2.0'
 
     testImplementation 'org.testcontainers:neo4j:1.19.3'
