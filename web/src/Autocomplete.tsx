@@ -84,12 +84,10 @@ export const Autocomplete = () => {
   })
 
   return (
-    <div style={{marginBottom: 24}}>
+    <div className='w-96 flex flex-col gap-1' {...ac.getRootProps()}>
       {value && <p>{artifactString(value)}</p>}
       <label {...ac.getInputLabelProps()}>Hello</label>
-      <div {...ac.getRootProps()}>
-        <input {...ac.getInputProps()} value={inputValue}/>
-      </div>
+      <input className='h-10 p-1' {...ac.getInputProps()} value={inputValue}/>
       <Listbox loading={loading} debouncing={isPending()} ac={ac}/>
     </div>
   )

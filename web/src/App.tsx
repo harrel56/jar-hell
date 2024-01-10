@@ -4,8 +4,7 @@ export const App = () => {
   const outlet = useOutlet()
 
   return (
-    <div className='main-container'>
-      <p>Hello there</p>
-      <div>{outlet}</div>
+    <div className='w-full flex flex-col items-center'>
+      <div className='w-8/12 flex flex-col items-center'>{outlet}</div>
     </div>)
 }
