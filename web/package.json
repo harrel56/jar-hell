@@ -11,11 +11,11 @@
     "update-deps": "npx npm-check-updates -u"
   },
   "dependencies": {
-    "@mui/base": "5.0.0-beta.30",
+    "@mui/base": "5.0.0-beta.31",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-icons": "4.12.0",
-    "react-router-dom": "6.21.1",
+    "react-icons": "5.0.1",
+    "react-router-dom": "6.21.2",
     "use-debounce": "10.0.0",
     "use-http": "1.0.28"
   },
