@@ -1,8 +1,8 @@
 import {useAutocomplete, UseAutocompleteReturnValue} from '@mui/base/useAutocomplete/useAutocomplete'
 import {useEffect, useState} from 'react'
 import {useDebounce} from 'use-debounce'
-import {useApiFetch} from './hooks/useApiFetch.ts'
 import {useNavigate} from 'react-router-dom'
+import {useFetch} from './hooks/useFetch.ts'
 
 interface Artifact {
   g: string
@@ -60,10 +60,10 @@ export const Autocomplete = () => {
   }
   const {
     data,
-    get,
     loading,
-    error
-  } = useApiFetch<Artifact[]>('/api/v1/maven/search')
+    error,
+    get
+  } = useFetch<Artifact[]>('/api/v1/maven/search')
 
   useEffect(() => {
     if (debouncedInput !== '') {
