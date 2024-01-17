@@ -12,7 +12,6 @@ interface Artifact {
 
 interface ListboxProps {
   loading: boolean
-  debouncing: boolean
   ac: UseAutocompleteReturnValue<Artifact>
 }
 
@@ -25,20 +24,21 @@ const toShortArtifactString = (artifact: Artifact) => {
   return toArtifactString(artifact)
 }
 
-const Listbox = ({loading, debouncing, ac}: ListboxProps) => {
-  if (!ac.popupOpen) {
+const Listbox = ({loading, ac}: ListboxProps) => {
+  if (!ac.popupOpen || ac.inputValue === '') {
     return null
   }
-  const noResultsFound = !loading && !debouncing && ac.inputValue !== '' && ac.groupedOptions.length === 0
+  const noResultsFound = !loading && ac.groupedOptions.length === 0
   return (
     <div className='relative cursor-pointer'>
-      <ul className='absolute flex flex-col overflow-y-auto max-h-96 gap-0.5 border-2 border-emerald-700' {...ac.getListboxProps()}>
+      <ul className='absolute flex flex-col w-full max-h-96 overflow-y-auto gap-0.5 border-2 border-emerald-700' {...ac.getListboxProps()}>
         {loading && <li>Loading...</li>}
-        {noResultsFound &&
-          <li>No results found</li>
-        }
-        {(ac.groupedOptions as Artifact[]).map((option, index) => (
-          <li className='p-2 bg-amber-100 whitespace-nowrap' {...ac.getOptionProps({option, index})}>
+        {noResultsFound && <li>No results found</li>}
+        {/*{([{g: 'test', a: 'siema'}] as Artifact[]).map((option, index) => (*/}
+         {(ac.groupedOptions as Artifact[]).map((option, index) => (
+          <li className='truncate flex-shrink-0 p-2 bg-amber-100'
+              {...ac.getOptionProps({option, index})}
+              title={toArtifactString(option)}>
             {toShortArtifactString(option)}
           </li>
         ))}
@@ -49,7 +49,7 @@ const Listbox = ({loading, debouncing, ac}: ListboxProps) => {
 
 export const Autocomplete = () => {
   const [inputValue, setInputValue] = useState('')
-  const [debouncedInput, {isPending}] = useDebounce(inputValue, 500)
+  const [debouncedInput] = useDebounce(inputValue, 500)
   const [options, setOptions] = useState<Artifact[]>([])
   const navigate = useNavigate()
 
@@ -86,14 +86,16 @@ export const Autocomplete = () => {
     isOptionEqualToValue: (a1, a2) => toArtifactString(a1) === toArtifactString(a2),
     onChange: (_event, newValue) => onPackageSelect(newValue),
     inputValue,
-    onInputChange: (_event, newInputValue) => setInputValue(newInputValue)
+    onInputChange: (_event, newInputValue) => setInputValue(newInputValue),
+    clearOnBlur: false,
+    autoComplete: false
   })
 
   return (
-    <div className='w-96 flex flex-col font-mono' {...ac.getRootProps()}>
+    <div className='w-full flex flex-col font-mono' {...ac.getRootProps()}>
       {/*<label {...ac.getInputLabelProps()}>Hello</label>*/}
       <input className='h-10 p-1' {...ac.getInputProps()} value={inputValue}/>
-      <Listbox loading={loading} debouncing={isPending()} ac={ac}/>
+      <Listbox loading={loading} ac={ac}/>
     </div>
   )
 }
