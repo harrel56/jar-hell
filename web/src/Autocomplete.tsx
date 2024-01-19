@@ -88,6 +88,7 @@ export const Autocomplete = () => {
     inputValue,
     onInputChange: (_event, newInputValue) => setInputValue(newInputValue),
     clearOnBlur: false,
+    clearOnEscape: true,
     autoComplete: false
   })
 
