@@ -11,7 +11,7 @@
     "update-deps": "npx npm-check-updates -u"
   },
   "dependencies": {
-    "@mui/base": "5.0.0-beta.32",
+    "@mui/base": "5.0.0-beta.33",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-icons": "5.0.1",
