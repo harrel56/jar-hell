@@ -14,7 +14,7 @@ jobs:
     container: jetbrains/intellij-http-client:latest
     steps:
       - name: Git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Run tests
         run: |
           cd http
