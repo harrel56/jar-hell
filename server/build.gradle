@@ -70,7 +70,7 @@ tasks.register('fatJar', Jar) {
     manifest {
         attributes 'Main-Class': 'dev.harrel.jarhell.App'
     }
-    from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 }
 
