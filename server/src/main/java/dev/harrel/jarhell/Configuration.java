@@ -11,7 +11,6 @@ import io.avaje.inject.Bean;
 import io.avaje.inject.Factory;
 import io.javalin.config.JavalinConfig;
 import io.javalin.json.JavalinJackson;
-import io.javalin.plugin.Plugin;
 import org.neo4j.driver.*;
 
 import java.net.URI;

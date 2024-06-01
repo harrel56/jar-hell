@@ -10,14 +10,11 @@ import io.avaje.inject.spi.GenericType;
 import io.javalin.Javalin;
 import io.javalin.config.JavalinConfig;
 import io.javalin.http.HttpStatus;
-import io.javalin.plugin.Plugin;
-import io.javalin.util.ConcurrencyUtil;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.util.List;
 import java.util.function.Consumer;
 
 public class App implements Closeable {
