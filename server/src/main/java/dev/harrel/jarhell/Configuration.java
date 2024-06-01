@@ -18,10 +18,10 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 @Factory
-class Configuration {
+public class Configuration {
 
     @Bean
-    ObjectMapper objectMapper() {
+    public ObjectMapper objectMapper() {
         return new ObjectMapper()
                 .setSerializationInclusion(JsonInclude.Include.NON_NULL)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)

@@ -1,3 +1,19 @@
+### analyze and wait
+POST {{url}}/api/v1/analyze-and-wait
+Content-Type: application/json
+
+{
+  "groupId": "dev.harrel",
+  "artifactId": "json-schema",
+  "version": "1.5.1"
+}
+
+> {%
+  client.test("Request executed successfully", () => {
+    client.assert(response.status === 200, "Response status is not 200");
+  });
+%}
+
 ### dev.harrel:json-schema
 POST {{url}}/api/v1/analyze
 Content-Type: application/json

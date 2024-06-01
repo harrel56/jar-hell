@@ -3,7 +3,9 @@ package dev.harrel.jarhell.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.harrel.jarhell.Configuration;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -14,7 +16,8 @@ import java.net.http.HttpResponse;
 import static java.net.http.HttpResponse.BodySubscribers;
 
 public class HttpUtil {
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = new Configuration().objectMapper()
+            .configure(DeserializationFeature.USE_LONG_FOR_INTS, true);
 
     public static HttpRequest.BodyPublisher jsonPublisher(Object obj) {
         try {

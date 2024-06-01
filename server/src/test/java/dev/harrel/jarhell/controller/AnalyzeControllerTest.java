@@ -1,8 +1,14 @@
 package dev.harrel.jarhell.controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.harrel.jarhell.Configuration;
 import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.error.ErrorResponse;
+import dev.harrel.jarhell.model.ArtifactInfo;
+import dev.harrel.jarhell.model.ArtifactTree;
 import dev.harrel.jarhell.model.Gav;
+import dev.harrel.jarhell.model.descriptor.Licence;
 import dev.harrel.jarhell.util.HttpUtil;
 import io.javalin.http.HandlerType;
 import org.junit.jupiter.api.Test;
@@ -48,21 +54,29 @@ class AnalyzeControllerTest {
 
         EagerResult eagerResult = fetchAllNodes();
         Map<String, Object> properties = eagerResult.records().getFirst().get("n").asMap();
-        assertThat(properties).contains(
-                Map.entry("groupId", "com.sanctionco.jmail"),
-                Map.entry("artifactId", "jmail"),
-                Map.entry("name", "jmail"),
-                Map.entry("description", "A modern, fast, zero-dependency library for working with emails in Java"),
-                Map.entry("packaging", "jar"),
-                Map.entry("packageSize", 30629L),
-                Map.entry("version", "1.6.2"),
-                Map.entry("url", "https://github.com/RohanNagar/jmail"),
-                Map.entry("bytecodeVersion", "52.0"),
-                Map.entry("licenses", "[{\"name\":\"MIT License\",\"url\":\"https://opensource.org/licenses/mit-license.php\"}]"),
-                Map.entry("totalSize", 30629L),
-                Map.entry("bytecodeVersion", "52.0"),
-                Map.entry("classifiers", List.of("javadoc", "sources"))
-        );
+        assertThat(properties).containsEntry("licenses", "[{\"name\":\"MIT License\",\"url\":\"https://opensource.org/licenses/mit-license.php\"}]");
+        assertArtifactInfo(properties);
+    }
+
+    @Test
+    void shouldAnalyzeAndWaitForStandaloneLib() throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:8060/api/v1/analyze-and-wait"))
+                .POST(HttpUtil.jsonPublisher(
+                        new Gav("com.sanctionco.jmail", "jmail", "1.6.2")
+                ))
+                .build();
+
+        HttpResponse<Map<String, Object>> response = httpClient.send(request, HttpUtil.jsonHandler(new TypeReference<>() {}));
+        assertThat(response.statusCode()).isEqualTo(200);
+        Map<String, Object> properties = response.body();
+        assertThat(properties).isNotNull();
+        assertThat(properties).containsEntry("licenses", List.of(Map.of(
+                "name", "MIT License",
+                "url", "https://opensource.org/licenses/mit-license.php"
+        )));
+        assertThat(properties).containsEntry("dependencies", List.of());
+        assertArtifactInfo(properties);
     }
 
     @Test
@@ -85,5 +99,21 @@ class AnalyzeControllerTest {
 
     private EagerResult fetchAllNodes() {
         return driver.executableQuery("MATCH (n) RETURN n").execute();
+    }
+
+    private void assertArtifactInfo(Map<String, Object> properties) {
+        assertThat(properties).contains(
+                Map.entry("groupId", "com.sanctionco.jmail"),
+                Map.entry("artifactId", "jmail"),
+                Map.entry("name", "jmail"),
+                Map.entry("description", "A modern, fast, zero-dependency library for working with emails in Java"),
+                Map.entry("packaging", "jar"),
+                Map.entry("packageSize", 30629L),
+                Map.entry("version", "1.6.2"),
+                Map.entry("url", "https://github.com/RohanNagar/jmail"),
+                Map.entry("bytecodeVersion", "52.0"),
+                Map.entry("totalSize", 30629L),
+                Map.entry("classifiers", List.of("javadoc", "sources"))
+        );
     }
 }
