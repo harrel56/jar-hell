@@ -1,14 +1,9 @@
 package dev.harrel.jarhell.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.harrel.jarhell.Configuration;
-import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.error.ErrorResponse;
-import dev.harrel.jarhell.model.ArtifactInfo;
-import dev.harrel.jarhell.model.ArtifactTree;
+import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.model.Gav;
-import dev.harrel.jarhell.model.descriptor.Licence;
 import dev.harrel.jarhell.util.HttpUtil;
 import io.javalin.http.HandlerType;
 import org.junit.jupiter.api.Test;
@@ -92,8 +87,8 @@ class AnalyzeControllerTest {
         assertThat(response.statusCode()).isEqualTo(404);
         assertThat(response.body()).isEqualTo(
                 new ErrorResponse("http://localhost:8060/api/v1/analyze",
-                                  HandlerType.POST,
-                                  "Package with coordinates [org.test:non-existent:9.9.9] not found")
+                        HandlerType.POST,
+                        "Package with coordinates [org.test:non-existent:9.9.9] not found")
         );
     }
 

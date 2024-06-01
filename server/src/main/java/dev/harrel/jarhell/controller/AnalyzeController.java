@@ -1,7 +1,6 @@
 package dev.harrel.jarhell.controller;
 
 import dev.harrel.jarhell.analyze.AnalyzeEngine;
-import dev.harrel.jarhell.model.ArtifactTree;
 import dev.harrel.jarhell.model.Gav;
 import io.avaje.http.api.Controller;
 import io.avaje.http.api.Post;
