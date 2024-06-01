@@ -37,7 +37,6 @@ public class App implements Closeable {
             throw new IllegalStateException("App already started");
         }
 
-        ConcurrencyUtil.INSTANCE.setUseLoom(false);
         this.beanScope = BeanScope.builder().build();
 
         Consumer<JavalinConfig> configConsumer = beanScope.get(new GenericType<Consumer<JavalinConfig>>() {}, "javalinConfig");
@@ -64,14 +63,12 @@ public class App implements Closeable {
                     ctx.status(HttpStatus.INTERNAL_SERVER_ERROR);
                 });
 
-        List<Plugin> plugins = beanScope.list(Plugin.class); // web routes
-        plugins.forEach(plugin -> plugin.apply(server));
         server.start(8060);
     }
 
     @Override
     public void close() {
-        server.close();
+        server.stop();
         beanScope.close();
     }
 
