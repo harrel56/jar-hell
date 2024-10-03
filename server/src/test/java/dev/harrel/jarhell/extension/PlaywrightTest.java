@@ -17,7 +17,7 @@ public @interface PlaywrightTest {
         public Options getOptions() {
             Options options = new Options();
             options.setBaseUrl("http://localhost:8060/");
-            options.setHeadless(false);
+            options.setHeadless(true);
             options.setBrowserName("chromium");
             return options;
         }

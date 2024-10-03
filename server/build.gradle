@@ -63,6 +63,12 @@ processResources {
     }
 }
 
+/* ./gradlew playwright --args="install --with-deps chromium" */
+tasks.register('playwright', JavaExec) {
+    classpath sourceSets.test.runtimeClasspath
+    mainClass = 'com.microsoft.playwright.CLI'
+}
+
 tasks.withType(JavaExec).configureEach {
     environment.putAll(project.getProperties())
 }
