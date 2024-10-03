@@ -49,6 +49,8 @@ dependencies {
 
     testImplementation 'org.testcontainers:neo4j:1.19.8'
     testImplementation 'org.wiremock.integrations.testcontainers:wiremock-testcontainers-module:1.0-alpha-13'
+
+    implementation 'com.microsoft.playwright:playwright:1.47.0'
 }
 
 processResources {

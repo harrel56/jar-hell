@@ -12,7 +12,7 @@ export const useFetch = <T = any>(userUri: string) => {
   const [data, setData] = useState<T>()
   const [error, setError] = useState<ErrorContext>()
   const [loading, setLoading] = useState(false)
-  const uri = useMemo(() => new URL(userUri, import.meta.env.VITE_SERVER_URL ?? document.baseURI), [userUri])
+  const uri = useMemo(() => new URL(userUri, import.meta.env.VITE_SERVER_URL || document.baseURI), [userUri])
 
   const doFetch = async (method: Method, path: string, body?: Body) => {
     const href = new URL(path, uri).href
