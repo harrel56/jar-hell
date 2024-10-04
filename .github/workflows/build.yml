@@ -31,11 +31,14 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Setup browsers for Playwright
-        run: npx playwright install --with-deps
+      - name: Gradle build
+        run: ./gradlew build -x test -PimageVersion=${{ needs.generate-image-tag.outputs.image-tag }}
 
-      - name: Execute Gradle build
-        run: ./gradlew build --no-daemon -PimageVersion=${{ needs.generate-image-tag.outputs.image-tag }}
+      - name: Gradle setup Playwright browsers
+        run: ./gradlew playwright --args="install --with-deps"
+
+      - name: Gradle verify
+        run: ./gradlew verify
 
       - name: Upload build
         uses: actions/upload-artifact@v4
