@@ -11,7 +11,7 @@ class WebTest {
     void shouldClickButton(Page page, Browser browser) {
         System.out.println(browser.browserType().name());
         page.navigate("/");
-//        page.locator("button").click();
+        page.locator("input").click();
 //        page.waitForCondition(() -> false);
 //        assertEquals("Clicked", page.evaluate("result"));
     }
