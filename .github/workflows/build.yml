@@ -19,7 +19,7 @@ jobs:
     needs: generate-image-tag
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright/java:vv1.47.0-noble
+      image: mcr.microsoft.com/playwright/java:v1.47.0
       options: --user 1001
     steps:
       - name: Git checkout
