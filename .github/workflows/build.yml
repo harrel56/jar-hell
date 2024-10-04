@@ -37,8 +37,8 @@ jobs:
       - name: Gradle setup Playwright browsers
         run: ./gradlew playwright --args="install --with-deps"
 
-      - name: Gradle verify
-        run: ./gradlew verify
+      - name: Gradle check (test)
+        run: ./gradlew check
 
       - name: Upload build
         uses: actions/upload-artifact@v4
