@@ -3,6 +3,7 @@ import {useEffect, useState} from 'react'
 import {useDebounce} from 'use-debounce'
 import {useNavigate} from 'react-router-dom'
 import {useFetch} from './hooks/useFetch.ts'
+import {Input} from '@/components/ui/Input.tsx'
 
 interface Artifact {
   g: string
@@ -95,7 +96,7 @@ export const Autocomplete = () => {
   return (
     <div className='w-full flex flex-col font-mono' {...ac.getRootProps()}>
       {/*<label {...ac.getInputLabelProps()}>Hello</label>*/}
-      <input className='h-10 p-1' {...ac.getInputProps()} value={inputValue}/>
+      <Input className='h-10 p-1' {...ac.getInputProps()} value={inputValue}/>
       <Listbox loading={loading} ac={ac}/>
     </div>
   )
