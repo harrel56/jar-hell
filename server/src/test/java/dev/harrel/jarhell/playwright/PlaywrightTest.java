@@ -7,6 +7,7 @@ import dev.harrel.jarhell.extension.EnvironmentTest;
 import org.junit.jupiter.api.Tag;
 
 import java.lang.annotation.*;
+import java.util.Optional;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -21,7 +22,8 @@ public @interface PlaywrightTest {
             Options options = new Options();
             options.setBaseUrl("http://localhost:8060/");
             options.setHeadless(true);
-            options.setBrowserName("chromium");
+            String browser = Optional.ofNullable(System.getenv("PLAYWRIGHT_BROWSER")).orElse("chromium");
+            options.setBrowserName(browser);
             return options;
         }
     }
