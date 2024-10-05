@@ -32,7 +32,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Gradle build
-        run: ./gradlew build -x test -PimageVersion=${{ needs.generate-image-tag.outputs.image-tag }}
+        run: ./gradlew build -x check -PimageVersion=${{ needs.generate-image-tag.outputs.image-tag }}
 
       - name: Gradle check (test)
         run: ./gradlew check
@@ -67,7 +67,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Gradle build
-        run: ./gradlew build -x test
+        run: ./gradlew build -x check
 
       - name: Setup browser
         run: ./gradlew playwright --args="install --with-deps ${{ matrix.browser }}"
