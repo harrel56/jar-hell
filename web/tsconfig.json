@@ -19,6 +19,12 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+
+    /* ui.shadcn.com */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": [
     "src",
