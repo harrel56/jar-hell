@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+
 plugins {
     id 'java'
 }
@@ -63,16 +65,6 @@ processResources {
     }
 }
 
-/* ./gradlew playwright --args="install --with-deps chromium" */
-tasks.register('playwright', JavaExec) {
-    classpath sourceSets.test.runtimeClasspath
-    mainClass = 'com.microsoft.playwright.CLI'
-}
-
-tasks.withType(JavaExec).configureEach {
-    environment.putAll(project.getProperties())
-}
-
 tasks.register('fatJar', Jar) {
     group 'build'
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -102,4 +94,20 @@ tasks.register('playwrightTest', Test) {
 
 check {
     dependsOn playwrightTest
+}
+
+/* ./gradlew playwright --args="install --with-deps chromium" */
+tasks.register('playwright', JavaExec) {
+    classpath sourceSets.test.runtimeClasspath
+    mainClass = 'com.microsoft.playwright.CLI'
+}
+
+tasks.withType(JavaExec).configureEach {
+    environment.putAll(project.getProperties())
+}
+
+tasks.withType(Test).configureEach {
+    testLogging {
+        events TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED
+    }
 }
