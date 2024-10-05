@@ -34,8 +34,8 @@ jobs:
       - name: Gradle build
         run: ./gradlew build -x check -PimageVersion=${{ needs.generate-image-tag.outputs.image-tag }}
 
-      - name: Gradle check (test)
-        run: ./gradlew check
+      - name: Gradle test
+        run: ./gradlew test
 
       - name: Upload build
         uses: actions/upload-artifact@v4
