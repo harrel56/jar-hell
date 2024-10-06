@@ -1,12 +1,13 @@
 import {useAutocomplete, UseAutocompleteReturnValue} from '@mui/base/useAutocomplete/useAutocomplete'
-import React, {useEffect, useState} from 'react'
+import React, {useEffect, useLayoutEffect, useState} from 'react'
 import {useDebounce} from 'use-debounce'
 import {useFetch} from './hooks/useFetch.ts'
 import {Input} from '@/components/ui/Input.tsx'
 import {clsx} from 'clsx'
 import {SearchIcon} from 'lucide-react'
 import {LoadingSpinner} from '@/LoadingSpinner.tsx'
-import {Link} from 'react-router-dom'
+import {Link, useParams} from 'react-router-dom'
+import {stringToGav} from '@/util.ts'
 
 interface Artifact {
   g: string
@@ -65,6 +66,7 @@ export const Autocomplete = () => {
   const [selectedValue, setSelectedValue] = useState<string | null>(inputValue)
   const [debouncedInput] = useDebounce(inputValue, 500)
   const [options, setOptions] = useState<Artifact[]>([])
+  const { gav } = useParams()
 
   const {
     data,
@@ -73,7 +75,17 @@ export const Autocomplete = () => {
     get
   } = useFetch<Artifact[]>('/api/v1/maven/search')
 
+  useLayoutEffect(() => {
+    if (gav) {
+      const gavObject = stringToGav(gav)
+      const gavInput = gavObject ? `${gavObject.groupId}:${gavObject.artifactId}` : ''
+      setInputValue(gavInput)
+      setSelectedValue(gavInput)
+    }
+  }, [gav])
+
   useEffect(() => {
+    /* Don't make requests when input is the same as selection */
     if (debouncedInput !== selectedValue && debouncedInput !== '') {
       get('?query=' + inputValue)
     }

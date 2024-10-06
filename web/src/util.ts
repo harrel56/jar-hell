@@ -13,7 +13,7 @@ export const gavToString = (gav: Gav) => {
   }
 }
 
-export const stringToGav = (str: string): Gav => {
+export const stringToGav = (str: string): Gav | null => {
   const parts = str.split(':')
   if (parts.length === 3) {
     return {
@@ -29,7 +29,7 @@ export const stringToGav = (str: string): Gav => {
       classifier: parts[3]
     }
   } else {
-    throw Error('Invalid package coordinate')
+    return null
   }
 }
 

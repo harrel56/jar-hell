@@ -55,8 +55,7 @@ export const createRouter = () => createBrowserRouter([
     Component: App,
     children: [
       {
-        index: true,
-        element: null
+        index: true
       },
       {
         errorElement: <ErrorBoundary/>,
@@ -64,6 +63,9 @@ export const createRouter = () => createBrowserRouter([
         element: <PackagePage/>,
         loader: async ({params}) => {
           const gav = stringToGav(params.gav!)
+          if (!gav) {
+            throw Error("Package format is invalid")
+          }
           return loadPackageData(gav)
         }
       },
