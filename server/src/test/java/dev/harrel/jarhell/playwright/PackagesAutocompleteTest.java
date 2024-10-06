@@ -56,4 +56,44 @@ class PackagesAutocompleteTest {
         }
         assertThat(ac).isFocused();
     }
+
+    @Test
+    void displaysNotFound(Page page) {
+        ac.fill("ui-test2");
+        assertThat(page.getByText("No results found")).isVisible();
+    }
+
+    @Test
+    void closesOptionsOnEscape(Page page) {
+        ac.fill("ui-test2");
+        assertThat(page.getByText("No results found")).isVisible();
+        page.keyboard().press("Escape");
+        assertThat(page.getByText("No results found")).not().isVisible();
+        assertThat(ac).isFocused();
+    }
+
+    @Test
+    void navigatesOnOptionClick(Page page) {
+        ac.fill("ui-test");
+        page.getByRole(AriaRole.OPTION).nth(2).click();
+        assertThat(page).hasURL("/packages/test-group2:ui-test2:1.0.0");
+    }
+
+    @Test
+    void navigatesOnKeyboardEvents(Page page) {
+        ac.fill("ui-test");
+        page.getByRole(AriaRole.OPTION).nth(19).waitFor();
+        page.keyboard().press("ArrowUp");
+        page.keyboard().press("ArrowUp");
+        page.keyboard().press("Enter");
+        assertThat(page).hasURL("/packages/test-group19:ui-test19:1.0.0");
+    }
+
+    @Test
+    void longPackageNamesDoesntIncreaseOptionWidth(Page page) {
+        ac.fill("ui-test");
+        double acWidth = ac.boundingBox().width;
+        double optionWidth = page.getByRole(AriaRole.OPTION).nth(19).boundingBox().width;
+        assertThat(acWidth).isGreaterThan(optionWidth);
+    }
 }
