@@ -1,3 +1,5 @@
+import plugin from 'tailwindcss/plugin.js'
+
 /** @type {import('tailwindcss').Config} */
 export default {
     darkMode: ["class"],
@@ -56,6 +58,11 @@ export default {
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+		require("tailwindcss-animate"),
+		plugin(function({ addVariant }) {
+			addVariant('mui-focused', '&.Mui-focused')
+		})
+	],
 }
 

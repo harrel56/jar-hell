@@ -1,9 +1,10 @@
 import {useAutocomplete, UseAutocompleteReturnValue} from '@mui/base/useAutocomplete/useAutocomplete'
-import {useEffect, useState} from 'react'
+import React, {useEffect, useState} from 'react'
 import {useDebounce} from 'use-debounce'
 import {useNavigate} from 'react-router-dom'
 import {useFetch} from './hooks/useFetch.ts'
 import {Input} from '@/components/ui/Input.tsx'
+import {clsx} from 'clsx'
 
 interface Artifact {
   g: string
@@ -25,23 +26,31 @@ const toShortArtifactString = (artifact: Artifact) => {
   return toArtifactString(artifact)
 }
 
+const ListboxOption = ({children, selectable, ...props}: React.PropsWithChildren<any>) => {
+  selectable = typeof selectable === 'undefined'
+  return (
+    <li className={clsx('truncate', 'flex-shrink-0', 'p-4', 'rounded-md', 'mui-focused:bg-input', selectable && ['hover:bg-input', 'cursor-pointer'])}
+        {...props}>
+      {children}
+    </li>
+  )
+}
+
 const Listbox = ({loading, ac}: ListboxProps) => {
   if (!ac.popupOpen || ac.inputValue === '') {
     return null
   }
   const noResultsFound = !loading && ac.groupedOptions.length === 0
+  // ac.groupedOptions = [{g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}, {g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}, {g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}, {g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}] as any
   return (
-    <div className='relative cursor-pointer'>
-      <ul className='absolute flex flex-col w-full max-h-96 overflow-y-auto gap-0.5 border-2 border-emerald-700' {...ac.getListboxProps()}>
-        {loading && <li>Loading...</li>}
-        {noResultsFound && <li>No results found</li>}
-        {/*{([{g: 'test', a: 'siema'}] as Artifact[]).map((option, index) => (*/}
+    <div className='relative mt-1.5'>
+      <ul className='absolute flex flex-col w-full max-h-96 overflow-y-auto p-1 border rounded-md' {...ac.getListboxProps()}>
+        {loading && <ListboxOption selectable={false}>Loading...</ListboxOption>}
+        {noResultsFound && <ListboxOption selectable={false}>No results found</ListboxOption>}
          {(ac.groupedOptions as Artifact[]).map((option, index) => (
-          <li className='truncate flex-shrink-0 p-2 bg-amber-100'
-              {...ac.getOptionProps({option, index})}
-              title={toArtifactString(option)}>
+          <ListboxOption{...ac.getOptionProps({option, index})} title={toArtifactString(option)}>
             {toShortArtifactString(option)}
-          </li>
+          </ListboxOption>
         ))}
       </ul>
     </div>
@@ -96,7 +105,7 @@ export const Autocomplete = () => {
   return (
     <div className='w-full flex flex-col font-mono' {...ac.getRootProps()}>
       {/*<label {...ac.getInputLabelProps()}>Hello</label>*/}
-      <Input className='h-10 p-1' {...ac.getInputProps()} value={inputValue}/>
+      <Input className='h-10 p-6' {...ac.getInputProps()} value={inputValue}/>
       <Listbox loading={loading} ac={ac}/>
     </div>
   )
