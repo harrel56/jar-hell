@@ -27,8 +27,7 @@ const toShortArtifactString = (artifact: Artifact) => {
   return toArtifactString(artifact)
 }
 
-const ListboxOption = ({children, selectable, ...props}: React.PropsWithChildren<any>) => {
-  selectable = typeof selectable === 'undefined'
+const ListboxOption = ({children, selectable = true, ...props}: React.PropsWithChildren<any>) => {
   return (
     <li className={clsx('truncate', 'flex-shrink-0', 'p-4', 'rounded-md', 'mui-focused:bg-input', selectable && ['hover:bg-input', 'cursor-pointer'])}
         {...props}>
@@ -102,7 +101,7 @@ export const Autocomplete = () => {
   })
 
   return (
-    <div className='w-full flex flex-col font-mono' {...ac.getRootProps()}>
+    <div className='lg:w-[1000px] md:w-full m-auto pt-8 w-full flex flex-col font-mono' {...ac.getRootProps()}>
       <Input className='h-16 pl-6 text-2xl'
              {...ac.getInputProps()}
              value={inputValue}

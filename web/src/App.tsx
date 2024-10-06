@@ -1,6 +1,17 @@
 import {useOutlet} from 'react-router-dom'
+import {ThemeProvider} from '@/components/ThemeProvider.tsx'
+import {ThemeToggle} from '@/components/ThemeToggle.tsx'
 
 export const App = () => {
   const outlet = useOutlet()
-  return <div className='lg:w-[1000px] md:w-full m-auto pt-12 px-2 flex flex-col items-center'>{outlet}</div>
+  return (
+    <ThemeProvider>
+      <div className='p-4 flex flex-col'>
+        <div className='flex justify-end gap-2 max-w-[1400px] w-full self-center'>
+          <ThemeToggle/>
+        </div>
+        {outlet}
+      </div>
+    </ThemeProvider>
+  )
 }
