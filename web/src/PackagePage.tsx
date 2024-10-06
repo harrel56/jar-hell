@@ -1,5 +1,4 @@
 import {useLoaderData} from 'react-router-dom'
-import {Autocomplete} from './Autocomplete.tsx'
 import {PackageLoaderData} from './router.tsx'
 
 export const PackagePage = () => {
@@ -8,7 +7,6 @@ export const PackagePage = () => {
 
   return (
     <div>
-      <Autocomplete/>
       <ul>
         {data.versions.map(version => (
           <li>{version}</li>

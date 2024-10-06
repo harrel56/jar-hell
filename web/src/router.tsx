@@ -1,7 +1,6 @@
 import {Gav, gavToString, Package, stringToGav} from './util.ts'
 import {createBrowserRouter} from 'react-router-dom'
 import {App} from './App.tsx'
-import {Autocomplete} from './Autocomplete.tsx'
 import {ErrorBoundary} from './ErrorBoundary.tsx'
 import {PackagePage} from './PackagePage.tsx'
 
@@ -57,7 +56,7 @@ export const createRouter = () => createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Autocomplete/>
+        element: null
       },
       {
         errorElement: <ErrorBoundary/>,
