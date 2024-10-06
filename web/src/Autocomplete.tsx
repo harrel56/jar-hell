@@ -44,7 +44,7 @@ const Listbox = ({loading, ac}: ListboxProps) => {
   // ac.groupedOptions = [{g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}, {g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}, {g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}, {g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}] as any
   return (
     <div className='relative mt-1.5'>
-      <ul className='absolute flex flex-col w-full max-h-96 overflow-y-auto p-1 border rounded-md' {...ac.getListboxProps()}>
+      <ul className='absolute flex flex-col w-full max-h-[454px] overflow-y-auto p-1 border rounded-md' {...ac.getListboxProps()}>
         {loading && <ListboxOption selectable={false}>Loading...</ListboxOption>}
         {noResultsFound && <ListboxOption selectable={false}>No results found</ListboxOption>}
          {(ac.groupedOptions as Artifact[]).map((option, index) => (
@@ -104,8 +104,7 @@ export const Autocomplete = () => {
 
   return (
     <div className='w-full flex flex-col font-mono' {...ac.getRootProps()}>
-      {/*<label {...ac.getInputLabelProps()}>Hello</label>*/}
-      <Input className='h-10 p-6' {...ac.getInputProps()} value={inputValue}/>
+      <Input className='h-16 p-6 text-2xl' {...ac.getInputProps()} value={inputValue} placeholder='Search for a dependency...'/>
       <Listbox loading={loading} ac={ac}/>
     </div>
   )
