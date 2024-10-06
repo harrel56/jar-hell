@@ -29,7 +29,8 @@ const toShortArtifactString = (artifact: Artifact) => {
 
 const ListboxOption = ({children, selectable = true, ...props}: React.PropsWithChildren<any>) => {
   return (
-    <li className={clsx('truncate', 'flex-shrink-0', 'p-4', 'rounded-md', 'mui-focused:bg-input', selectable && ['hover:bg-input', 'cursor-pointer'])}
+    <li className={clsx('truncate', 'flex-shrink-0', 'p-4', 'rounded-md', 'mui-focused:bg-input', 'transition-colors',
+      selectable && ['hover:bg-input', 'cursor-pointer'])}
         {...props}>
       {children}
     </li>
