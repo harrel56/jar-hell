@@ -62,6 +62,7 @@ const Listbox = ({ac}: ListboxProps) => {
 
 export const Autocomplete = () => {
   const [inputValue, setInputValue] = useState('')
+  const [selectedValue, setSelectedValue] = useState<string | null>(inputValue)
   const [debouncedInput] = useDebounce(inputValue, 500)
   const [options, setOptions] = useState<Artifact[]>([])
 
@@ -73,7 +74,7 @@ export const Autocomplete = () => {
   } = useFetch<Artifact[]>('/api/v1/maven/search')
 
   useEffect(() => {
-    if (debouncedInput !== '') {
+    if (debouncedInput !== selectedValue && debouncedInput !== '') {
       get('?query=' + inputValue)
     }
   }, [debouncedInput])
@@ -90,9 +91,18 @@ export const Autocomplete = () => {
     options: options,
     filterOptions: options => options,
     getOptionLabel: toArtifactString,
+    getOptionKey: toArtifactString,
     isOptionEqualToValue: (a1, a2) => toArtifactString(a1) === toArtifactString(a2),
     inputValue,
     onInputChange: (_event, newInputValue) => setInputValue(newInputValue),
+    onChange: (_event, option) => {
+      if (option) {
+        setOptions([option])
+        setSelectedValue(toArtifactString(option))
+      } else {
+        setSelectedValue(null)
+      }
+    },
     clearOnBlur: false,
     clearOnEscape: true,
     autoComplete: false
