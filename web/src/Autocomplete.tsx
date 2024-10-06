@@ -46,15 +46,15 @@ const Listbox = ({ac}: ListboxProps) => {
       <ul
         className='absolute flex flex-col w-full max-h-[452px] overflow-y-auto p-1 border rounded-md' {...ac.getListboxProps()}>
         {ac.groupedOptions.length === 0 && <ListboxOption selectable={false}>No results found</ListboxOption>}
-        {(ac.groupedOptions as Artifact[]).map((option, index) => (
-          <Link to={`/packages/${toArtifactString(option)}:${option.latestVersion}`} key={toArtifactString(option)}>
-            <ListboxOption {...ac.getOptionProps({option, index})}
-                           title={toArtifactString(option)}
-                           artifact={option}>
-              {toShortArtifactString(option)}
-            </ListboxOption>
-          </Link>
-        ))}
+        {(ac.groupedOptions as Artifact[]).map((option, index) => {
+          const artifactString = toArtifactString(option)
+          const {key, ...optionProps} = ac.getOptionProps({option, index})
+          return (
+            <Link key={artifactString} to={`/packages/${artifactString}:${option.latestVersion}`} title={artifactString}>
+              <ListboxOption {...optionProps}>{toShortArtifactString(option)}</ListboxOption>
+            </Link>
+          )
+        })}
       </ul>
     </div>
   )
@@ -91,7 +91,6 @@ export const Autocomplete = () => {
     filterOptions: options => options,
     getOptionLabel: toArtifactString,
     isOptionEqualToValue: (a1, a2) => toArtifactString(a1) === toArtifactString(a2),
-    // onChange: (_event, newValue) => onPackageSelect(newValue),
     inputValue,
     onInputChange: (_event, newInputValue) => setInputValue(newInputValue),
     clearOnBlur: false,
