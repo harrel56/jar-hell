@@ -5,6 +5,8 @@ import {useNavigate} from 'react-router-dom'
 import {useFetch} from './hooks/useFetch.ts'
 import {Input} from '@/components/ui/Input.tsx'
 import {clsx} from 'clsx'
+import {SearchIcon} from 'lucide-react'
+import {LoadingSpinner} from '@/LoadingSpinner.tsx'
 
 interface Artifact {
   g: string
@@ -13,7 +15,6 @@ interface Artifact {
 }
 
 interface ListboxProps {
-  loading: boolean
   ac: UseAutocompleteReturnValue<Artifact>
 }
 
@@ -36,17 +37,15 @@ const ListboxOption = ({children, selectable, ...props}: React.PropsWithChildren
   )
 }
 
-const Listbox = ({loading, ac}: ListboxProps) => {
+const Listbox = ({ac}: ListboxProps) => {
   if (!ac.popupOpen || ac.inputValue === '') {
     return null
   }
-  const noResultsFound = !loading && ac.groupedOptions.length === 0
   // ac.groupedOptions = [{g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}, {g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}, {g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}, {g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}] as any
   return (
     <div className='relative mt-1.5'>
       <ul className='absolute flex flex-col w-full max-h-[454px] overflow-y-auto p-1 border rounded-md' {...ac.getListboxProps()}>
-        {loading && <ListboxOption selectable={false}>Loading...</ListboxOption>}
-        {noResultsFound && <ListboxOption selectable={false}>No results found</ListboxOption>}
+        {ac.groupedOptions.length === 0 && <ListboxOption selectable={false}>No results found</ListboxOption>}
          {(ac.groupedOptions as Artifact[]).map((option, index) => (
           <ListboxOption{...ac.getOptionProps({option, index})} title={toArtifactString(option)}>
             {toShortArtifactString(option)}
@@ -104,8 +103,12 @@ export const Autocomplete = () => {
 
   return (
     <div className='w-full flex flex-col font-mono' {...ac.getRootProps()}>
-      <Input className='h-16 p-6 text-2xl' {...ac.getInputProps()} value={inputValue} placeholder='Search for a dependency...'/>
-      <Listbox loading={loading} ac={ac}/>
+      <Input className='h-16 pl-6 text-2xl'
+             {...ac.getInputProps()}
+             value={inputValue}
+             placeholder='Search for a dependency...'
+             EndIcon={loading ? LoadingSpinner : SearchIcon}/>
+      <Listbox ac={ac}/>
     </div>
   )
 }
