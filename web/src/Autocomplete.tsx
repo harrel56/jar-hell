@@ -107,6 +107,7 @@ export const Autocomplete = () => {
              {...ac.getInputProps()}
              value={inputValue}
              placeholder='Search for a dependency...'
+             autoFocus
              EndIcon={loading ? LoadingSpinner : SearchIcon}/>
       <Listbox ac={ac}/>
     </div>
