@@ -11,6 +11,7 @@ import io.avaje.inject.Bean;
 import io.avaje.inject.Factory;
 import io.javalin.config.JavalinConfig;
 import io.javalin.json.JavalinJackson;
+import io.javalin.plugin.bundled.CorsPluginConfig;
 import org.neo4j.driver.*;
 
 import java.net.URI;
@@ -59,13 +60,11 @@ public class Configuration {
                 staticFiles.precompress = true;
                 staticFiles.headers = Map.of("Cache-Control", "max-age=86400");
             });
-            config.bundledPlugins.enableCors(cors ->
-                    cors.addRule(it -> it.allowHost(
-                            "http://localhost:5173",
-                            "http://localhost:8060",
-                            "http://localhost:8686",
-                            "https://jarhell.harrel.dev"))
-            );
+            if (Config.enabled("jar-hell.dev-mode")) {
+                config.bundledPlugins.enableCors(cors ->
+                        cors.addRule(CorsPluginConfig.CorsRule::anyHost)
+                );
+            }
             avajePlugins.forEach(config::registerPlugin);
         };
     }
