@@ -92,10 +92,6 @@ tasks.register('playwrightTest', Test) {
     }
 }
 
-check {
-    dependsOn playwrightTest
-}
-
 /* ./gradlew playwright --args="install --with-deps chromium" */
 tasks.register('playwright', JavaExec) {
     classpath sourceSets.test.runtimeClasspath

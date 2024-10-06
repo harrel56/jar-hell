@@ -63,6 +63,7 @@ public class Configuration {
                     cors.addRule(it -> it.allowHost(
                             "http://localhost:5173",
                             "http://localhost:8060",
+                            "http://localhost:8686",
                             "https://jarhell.harrel.dev"))
             );
             avajePlugins.forEach(config::registerPlugin);

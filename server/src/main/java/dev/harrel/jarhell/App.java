@@ -22,14 +22,14 @@ public class App implements Closeable {
 
     public static void main(String[] args) {
         App app = new App();
-        app.start();
+        app.start(8060);
         Runtime.getRuntime().addShutdownHook(new Thread(app::close));
     }
 
     private BeanScope beanScope;
     private Javalin server;
 
-    public void start() {
+    public void start(int port) {
         if (this.beanScope != null) {
             throw new IllegalStateException("App already started");
         }
@@ -60,7 +60,7 @@ public class App implements Closeable {
                     ctx.status(HttpStatus.INTERNAL_SERVER_ERROR);
                 });
 
-        server.start(8060);
+        server.start(port);
     }
 
     @Override

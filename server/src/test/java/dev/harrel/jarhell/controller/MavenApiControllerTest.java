@@ -3,6 +3,7 @@ package dev.harrel.jarhell.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.extension.EnvironmentTest;
+import dev.harrel.jarhell.extension.Host;
 import dev.harrel.jarhell.util.HttpUtil;
 import io.javalin.http.HandlerType;
 import org.junit.jupiter.api.Test;
@@ -19,8 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @EnvironmentTest
 class MavenApiControllerTest {
-
     private final HttpClient httpClient;
+
+    @Host
+    private String host;
 
     MavenApiControllerTest(HttpClient httpClient) {
         this.httpClient = httpClient;
@@ -28,7 +31,7 @@ class MavenApiControllerTest {
 
     @Test
     void shouldReturnListOfVersions() throws IOException, InterruptedException {
-        String uri = "http://localhost:8060/api/v1/maven/versions?groupId=dev.harrel&artifactId=json-schema";
+        String uri = host + "/api/v1/maven/versions?groupId=dev.harrel&artifactId=json-schema";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
                 .GET()
@@ -58,7 +61,7 @@ class MavenApiControllerTest {
 
     @Test
     void shouldFailVersionsWithoutGroupId() throws IOException, InterruptedException {
-        String uri = "http://localhost:8060/api/v1/maven/versions?artifactId=json-schema";
+        String uri = host + "/api/v1/maven/versions?artifactId=json-schema";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
                 .GET()
@@ -76,7 +79,7 @@ class MavenApiControllerTest {
 
     @Test
     void shouldFailVersionsWithoutArtifactId() throws IOException, InterruptedException {
-        String uri = "http://localhost:8060/api/v1/maven/versions?groupId=dev.harrel";
+        String uri = host + "/api/v1/maven/versions?groupId=dev.harrel";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
                 .GET()
@@ -94,7 +97,7 @@ class MavenApiControllerTest {
 
     @Test
     void shouldRunSearch() throws IOException, InterruptedException {
-        String uri = "http://localhost:8060/api/v1/maven/search?query=dev.harrel:json-schema";
+        String uri = host + "/api/v1/maven/search?query=dev.harrel:json-schema";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
                 .GET()

@@ -16,6 +16,7 @@ import org.testcontainers.utility.MountableFile;
 import org.wiremock.integrations.testcontainers.WireMockContainer;
 
 import java.io.Closeable;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.List;
 import java.util.Optional;
@@ -24,9 +25,11 @@ import java.util.concurrent.CompletableFuture;
 import static org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import static org.junit.jupiter.api.extension.ExtensionContext.Store;
 
-public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallback, ParameterResolver {
+public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallback, ParameterResolver, TestInstancePostProcessor {
     private static final Namespace STORE_NAMESPACE = Namespace.create(EnvironmentExtension.class);
     private static final Slf4jLogConsumer logConsumer = new Slf4jLogConsumer(LoggerFactory.getLogger(EnvironmentExtension.class));
+
+    public static final int PORT = 8686;
 
     public static void clearDatabase(Driver driver) {
         try (Session session = driver.session()) {
@@ -56,6 +59,16 @@ public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallba
     @Override
     public Object resolveParameter(ParameterContext pc, ExtensionContext ec) {
         return getFromBeanScope(ec, pc.getParameter().getType()).orElseThrow();
+    }
+
+    @Override
+    public void postProcessTestInstance(Object testInstance, ExtensionContext context) throws Exception {
+        for (Field field : testInstance.getClass().getDeclaredFields()) {
+            if (field.isAnnotationPresent(Host.class)) {
+                field.setAccessible(true);
+                field.set(testInstance, "http://localhost:" + PORT);
+            }
+        }
     }
 
     private Store getStore(ExtensionContext context) {
@@ -117,7 +130,7 @@ public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallba
 
     private App startApp() {
         App app = new App();
-        app.start();
+        app.start(8686);
         return app;
     }
 

@@ -3,6 +3,7 @@ package dev.harrel.jarhell.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.extension.EnvironmentTest;
+import dev.harrel.jarhell.extension.Host;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.util.HttpUtil;
 import io.javalin.http.HandlerType;
@@ -27,6 +28,9 @@ class AnalyzeControllerTest {
     private final HttpClient httpClient;
     private final Driver driver;
 
+    @Host
+    private String host;
+
     AnalyzeControllerTest(HttpClient httpClient, Driver driver) {
         this.httpClient = httpClient;
         this.driver = driver;
@@ -35,7 +39,7 @@ class AnalyzeControllerTest {
     @Test
     void shouldAnalyzeStandaloneLib() throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8060/api/v1/analyze"))
+                .uri(URI.create(host + "/api/v1/analyze"))
                 .POST(HttpUtil.jsonPublisher(
                         new Gav("com.sanctionco.jmail", "jmail", "1.6.2")
                 ))
@@ -56,7 +60,7 @@ class AnalyzeControllerTest {
     @Test
     void shouldAnalyzeAndWaitForStandaloneLib() throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8060/api/v1/analyze-and-wait"))
+                .uri(URI.create(host + "/api/v1/analyze-and-wait"))
                 .POST(HttpUtil.jsonPublisher(
                         new Gav("com.sanctionco.jmail", "jmail", "1.6.2")
                 ))
@@ -77,7 +81,7 @@ class AnalyzeControllerTest {
     @Test
     void shouldReturnNotFound() throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8060/api/v1/analyze"))
+                .uri(URI.create(host + "/api/v1/analyze"))
                 .POST(HttpUtil.jsonPublisher(
                         new Gav("org.test", "non-existent", "9.9.9")
                 ))
@@ -86,7 +90,7 @@ class AnalyzeControllerTest {
         HttpResponse<ErrorResponse> response = httpClient.send(request, HttpUtil.jsonHandler(ErrorResponse.class));
         assertThat(response.statusCode()).isEqualTo(404);
         assertThat(response.body()).isEqualTo(
-                new ErrorResponse("http://localhost:8060/api/v1/analyze",
+                new ErrorResponse(host + "/api/v1/analyze",
                         HandlerType.POST,
                         "Package with coordinates [org.test:non-existent:9.9.9] not found")
         );

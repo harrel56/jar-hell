@@ -176,6 +176,57 @@
         }
       }
     },
+
+    {
+      "request": {
+        "method": "GET",
+        "urlPath": "/solr",
+        "queryParameters": {
+          "q": {
+            "equalTo": "g:ui-test* OR a:ui-test*"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "fixedDelayMilliseconds": 500,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "jsonBody": {
+          "responseHeader": {},
+          "response": {
+            "numFound": 20,
+            "start": 0,
+            "docs": [
+              {"g": "test-group0", "a": "ui-test0"},
+              {"g": "test-group1", "a": "ui-test1"},
+              {"g": "test-group2", "a": "ui-test2"},
+              {"g": "test-group3", "a": "ui-test3"},
+              {"g": "test-group4", "a": "ui-test4"},
+              {"g": "test-group6", "a": "ui-test6"},
+              {"g": "test-group7", "a": "ui-test7"},
+              {"g": "test-group8", "a": "ui-test8"},
+              {"g": "test-group9", "a": "ui-test9"},
+              {"g": "test-group10", "a": "ui-test10"},
+              {"g": "test-group11", "a": "ui-test11"},
+              {"g": "test-group12", "a": "ui-test12"},
+              {"g": "test-group13", "a": "ui-test13"},
+              {"g": "test-group14", "a": "ui-test14"},
+              {"g": "test-group15", "a": "ui-test15"},
+              {"g": "test-group16", "a": "ui-test16"},
+              {"g": "test-group17", "a": "ui-test17"},
+              {"g": "test-group18", "a": "ui-test18"},
+              {"g": "test-group19", "a": "ui-test19"},
+              {"g": "test-group20", "a": "ui-test20"}
+            ]
+          },
+          "spellcheck": {
+            "suggestions": []
+          }
+        }
+      }
+    },
     {
       "priority": 999,
       "request": {

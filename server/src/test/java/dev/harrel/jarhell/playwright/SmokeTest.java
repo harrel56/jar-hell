@@ -9,7 +9,7 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 @PlaywrightTest
 class SmokeTest {
     @Test
-    void loadsMainAutocomplete(Page page) {
+    void loadsPackagesAutocomplete(Page page) {
         page.navigate("/");
         Locator acLocator = page.locator("#packages-autocomplete");
         assertThat(acLocator).isInViewport();

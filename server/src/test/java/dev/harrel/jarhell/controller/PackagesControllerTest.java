@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.extension.EnvironmentTest;
+import dev.harrel.jarhell.extension.Host;
 import dev.harrel.jarhell.util.HttpUtil;
 import dev.harrel.jarhell.util.TestUtil;
 import io.javalin.http.HandlerType;
@@ -26,6 +27,9 @@ class PackagesControllerTest {
     private final HttpClient httpClient;
     private final Driver driver;
 
+    @Host
+    private String host;
+
     PackagesControllerTest(HttpClient httpClient, Driver driver) {
         this.httpClient = httpClient;
         this.driver = driver;
@@ -43,7 +47,7 @@ class PackagesControllerTest {
             ":::"
     })
     void shouldFailForInvalidCoordinates(String coordinate) throws IOException, InterruptedException {
-        String uri = "http://localhost:8060/api/v1/packages/%s".formatted(coordinate);
+        String uri = host + "/api/v1/packages/%s".formatted(coordinate);
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
                 .GET()
@@ -61,7 +65,7 @@ class PackagesControllerTest {
 
     @Test
     void shouldReturn404ForNotFound() throws IOException, InterruptedException {
-        String uri = "http://localhost:8060/api/v1/packages/org.test:lib:1.0.0";
+        String uri = host + "/api/v1/packages/org.test:lib:1.0.0";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
                 .GET()
@@ -86,7 +90,7 @@ class PackagesControllerTest {
         }
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8060/api/v1/packages/org.test:lib:1.0.0"))
+                .uri(URI.create(host + "/api/v1/packages/org.test:lib:1.0.0"))
                 .GET()
                 .build();
 
@@ -107,7 +111,7 @@ class PackagesControllerTest {
         }
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8060/api/v1/packages/org.test:lib:1.0.0:doc"))
+                .uri(URI.create(host + "/api/v1/packages/org.test:lib:1.0.0:doc"))
                 .GET()
                 .build();
 
@@ -127,7 +131,7 @@ class PackagesControllerTest {
             );
         }
 
-        String uri = "http://localhost:8060/api/v1/packages/org.test:lib:1.0.0";
+        String uri = host + "/api/v1/packages/org.test:lib:1.0.0";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
                 .GET()
@@ -155,7 +159,7 @@ class PackagesControllerTest {
             );
         }
 
-        String uri = "http://localhost:8060/api/v1/packages/org.test:lib:1.0.0";
+        String uri = host + "/api/v1/packages/org.test:lib:1.0.0";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
                 .GET()
@@ -192,7 +196,7 @@ class PackagesControllerTest {
             );
         }
 
-        String uri = "http://localhost:8060/api/v1/packages/org.test:lib:1.0.0";
+        String uri = host + "/api/v1/packages/org.test:lib:1.0.0";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
                 .GET()
@@ -234,7 +238,7 @@ class PackagesControllerTest {
             );
         }
 
-        String uri = "http://localhost:8060/api/v1/packages/org.test:lib:1.0.0";
+        String uri = host + "/api/v1/packages/org.test:lib:1.0.0";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
                 .GET()
@@ -277,7 +281,7 @@ class PackagesControllerTest {
             );
         }
 
-        String uri = "http://localhost:8060/api/v1/packages/org.test:lib:1.0.0?depth=0";
+        String uri = host + "/api/v1/packages/org.test:lib:1.0.0?depth=0";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
                 .GET()
@@ -305,7 +309,7 @@ class PackagesControllerTest {
             );
         }
 
-        String uri = "http://localhost:8060/api/v1/packages/org.test:lib:1.0.0?depth=1";
+        String uri = host + "/api/v1/packages/org.test:lib:1.0.0?depth=1";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
                 .GET()
@@ -328,7 +332,7 @@ class PackagesControllerTest {
 
     @Test
     void shouldReturn400ForInvalidDepth() throws IOException, InterruptedException {
-        String uri = "http://localhost:8060/api/v1/packages/org.test:lib:1.0.0?depth=hello";
+        String uri = host + "/api/v1/packages/org.test:lib:1.0.0?depth=hello";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
                 .GET()
@@ -357,7 +361,7 @@ class PackagesControllerTest {
         }
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8060/api/v1/packages?groupId=org.test&artifactId=lib"))
+                .uri(URI.create(host + "/api/v1/packages?groupId=org.test&artifactId=lib"))
                 .GET()
                 .build();
 
@@ -385,7 +389,7 @@ class PackagesControllerTest {
         }
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8060/api/v1/packages?groupId=org.test&artifactId=lib"))
+                .uri(URI.create(host + "/api/v1/packages?groupId=org.test&artifactId=lib"))
                 .GET()
                 .build();
 
@@ -395,7 +399,7 @@ class PackagesControllerTest {
         assertThat(body.size()).isZero();
 
         request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8060/api/v1/packages?groupId=org.test&artifactId=lib&classifier=doc"))
+                .uri(URI.create(host + "/api/v1/packages?groupId=org.test&artifactId=lib&classifier=doc"))
                 .GET()
                 .build();
 
@@ -422,7 +426,7 @@ class PackagesControllerTest {
             );
         }
 
-        String uri = "http://localhost:8060/api/v1/packages?artifactId=lib";
+        String uri = host + "/api/v1/packages?artifactId=lib";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
                 .GET()
@@ -450,7 +454,7 @@ class PackagesControllerTest {
             );
         }
 
-        String uri = "http://localhost:8060/api/v1/packages?groupId=dev.harrel";
+        String uri = host + "/api/v1/packages?groupId=dev.harrel";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
                 .GET()
