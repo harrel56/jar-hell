@@ -55,7 +55,8 @@ export const createRouter = () => createBrowserRouter([
     Component: App,
     children: [
       {
-        index: true
+        index: true,
+        element: null
       },
       {
         errorElement: <ErrorBoundary/>,

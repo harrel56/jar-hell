@@ -6,13 +6,13 @@ import {Input} from '@/components/ui/Input.tsx'
 import {clsx} from 'clsx'
 import {SearchIcon} from 'lucide-react'
 import {LoadingSpinner} from '@/LoadingSpinner.tsx'
-import {Link, useParams} from 'react-router-dom'
+import {Link, useNavigate, useParams} from 'react-router-dom'
 import {stringToGav} from '@/util.ts'
 
 interface Artifact {
   g: string
   a: string
-  latestVersion: string
+  latestVersion?: string
 }
 
 interface ListboxProps {
@@ -63,10 +63,11 @@ const Listbox = ({ac}: ListboxProps) => {
 
 export const Autocomplete = () => {
   const [inputValue, setInputValue] = useState('')
-  const [selectedValue, setSelectedValue] = useState<string | null>(inputValue)
+  const [selectedValue, setSelectedValue] = useState<Artifact | null>(null)
   const [debouncedInput] = useDebounce(inputValue, 500)
   const [options, setOptions] = useState<Artifact[]>([])
   const { gav } = useParams()
+  const navigate = useNavigate()
 
   const {
     data,
@@ -76,27 +77,31 @@ export const Autocomplete = () => {
   } = useFetch<Artifact[]>('/api/v1/maven/search')
 
   useLayoutEffect(() => {
-    if (gav) {
-      const gavObject = stringToGav(gav)
-      const gavInput = gavObject ? `${gavObject.groupId}:${gavObject.artifactId}` : ''
-      setInputValue(gavInput)
-      setSelectedValue(gavInput)
+    const gavObject = gav && stringToGav(gav)
+    if (gavObject) {
+      setInputValue(`${gavObject.groupId}:${gavObject.artifactId}`)
+      const option = {g: gavObject.groupId, a: gavObject.artifactId}
+      setSelectedValue(option)
+      setOptions([option])
+    } else {
+      setInputValue('')
+      setSelectedValue(null)
     }
   }, [gav])
 
   useEffect(() => {
     /* Don't make requests when input is the same as selection */
-    if (debouncedInput !== selectedValue && debouncedInput !== '') {
+    if (debouncedInput !== (selectedValue && toArtifactString(selectedValue)) && debouncedInput !== '') {
       get('?query=' + inputValue)
     }
   }, [debouncedInput])
 
   useEffect(() => setOptions(data ?? []), [data])
   useEffect(() => {
-    if (error || inputValue === '') {
+    if (error || debouncedInput === '') {
       setOptions([])
     }
-  }, [error, inputValue])
+  }, [error, debouncedInput])
 
   const ac = useAutocomplete({
     id: 'packages-autocomplete',
@@ -107,10 +112,14 @@ export const Autocomplete = () => {
     isOptionEqualToValue: (a1, a2) => toArtifactString(a1) === toArtifactString(a2),
     inputValue,
     onInputChange: (_event, newInputValue) => setInputValue(newInputValue),
-    onChange: (_event, option) => {
+    value: selectedValue,
+    onChange: (event, option) => {
       if (option) {
         setOptions([option])
-        setSelectedValue(toArtifactString(option))
+        setSelectedValue(option)
+        if (event.nativeEvent.type === 'keydown') {
+          navigate(`/packages/${toArtifactString(option)}:${option.latestVersion}`)
+        }
       } else {
         setSelectedValue(null)
       }
