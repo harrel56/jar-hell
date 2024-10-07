@@ -103,6 +103,7 @@ tasks.withType(JavaExec).configureEach {
 }
 
 tasks.withType(Test).configureEach {
+    environment 'AVAJE_PROFILES', 'dev'
     testLogging {
         events TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED
     }
