@@ -73,6 +73,13 @@ export const Autocomplete = () => {
     get
   } = useFetch<Artifact[]>('/api/v1/maven/search')
 
+  useLayoutEffect(() => setOptions(data ?? []), [data])
+  useLayoutEffect(() => {
+    if (error || debouncedInput === '') {
+      setOptions([])
+    }
+  }, [error, debouncedInput])
+
   useLayoutEffect(() => {
     const gavObject = gav && stringToGav(gav)
     if (gavObject) {
@@ -92,13 +99,6 @@ export const Autocomplete = () => {
       get('?query=' + inputValue)
     }
   }, [debouncedInput])
-
-  useLayoutEffect(() => setOptions(data ?? []), [data])
-  useLayoutEffect(() => {
-    if (error || debouncedInput === '') {
-      setOptions([])
-    }
-  }, [error, debouncedInput])
 
   const ac = useAutocomplete({
     id: 'packages-autocomplete',
