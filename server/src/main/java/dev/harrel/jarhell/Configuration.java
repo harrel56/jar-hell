@@ -60,7 +60,7 @@ public class Configuration {
                 staticFiles.precompress = true;
                 staticFiles.headers = Map.of("Cache-Control", "max-age=86400");
             });
-            if (Config.enabled("jar-hell.dev-mode")) {
+            if (Config.enabled("jar-hell.dev-mode", false)) {
                 config.bundledPlugins.enableCors(cors ->
                         cors.addRule(CorsPluginConfig.CorsRule::anyHost)
                 );
