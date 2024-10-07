@@ -1,5 +1,5 @@
 import {useAutocomplete, UseAutocompleteReturnValue} from '@mui/base/useAutocomplete/useAutocomplete'
-import React, {useEffect, useLayoutEffect, useState} from 'react'
+import React, {useLayoutEffect, useState} from 'react'
 import {useDebounce} from 'use-debounce'
 import {useFetch} from './hooks/useFetch.ts'
 import {Input} from '@/components/ui/Input.tsx'
@@ -38,9 +38,6 @@ const ListboxOption = ({children, selectable = true, ...props}: React.PropsWithC
 }
 
 const Listbox = ({ac}: ListboxProps) => {
-  if (!ac.popupOpen || ac.inputValue === '') {
-    return null
-  }
   // ac.groupedOptions = [{g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}, {g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}, {g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}, {g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}] as any
   return (
     <div className='relative mt-1.5'>
@@ -89,15 +86,15 @@ export const Autocomplete = () => {
     }
   }, [gav])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     /* Don't make requests when input is the same as selection */
     if (debouncedInput !== (selectedValue && toArtifactString(selectedValue)) && debouncedInput !== '') {
       get('?query=' + inputValue)
     }
   }, [debouncedInput])
 
-  useEffect(() => setOptions(data ?? []), [data])
-  useEffect(() => {
+  useLayoutEffect(() => setOptions(data ?? []), [data])
+  useLayoutEffect(() => {
     if (error || debouncedInput === '') {
       setOptions([])
     }
@@ -129,6 +126,10 @@ export const Autocomplete = () => {
     autoComplete: false
   })
 
+  /* Well, hopefully this is right */
+  const listboxVisible = ac.popupOpen &&
+    (ac.groupedOptions.length !== 0 || (inputValue === debouncedInput && debouncedInput !== '' && !loading))
+
   return (
     <div className='lg:w-[1000px] md:w-full m-auto pt-8 w-full flex flex-col font-mono' {...ac.getRootProps()}>
       <Input className='h-16 pl-6 text-2xl'
@@ -137,7 +138,7 @@ export const Autocomplete = () => {
              placeholder='Search for a dependency...'
              autoFocus
              EndIcon={loading ? LoadingSpinner : SearchIcon}/>
-      <Listbox ac={ac}/>
+      {listboxVisible && <Listbox ac={ac}/>}
     </div>
   )
 }
