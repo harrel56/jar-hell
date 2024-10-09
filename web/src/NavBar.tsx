@@ -10,7 +10,7 @@ export const NavBar = () => {
       <Link className='flex items-center' to='/'>
         <img src={imgUrl} alt='hell in a jar' className='h-[40px] mr-4'></img>
         <span className='text-2xl font-extrabold capitalize'>
-          <span>jar</span><span className='text-[#e75429]'>hell</span>
+          <span>jar</span><span className='text-hellyeah'>hell</span>
         </span>
       </Link>
       <div className='flex'>
