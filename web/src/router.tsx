@@ -18,7 +18,7 @@ const loadPackageData = async (gav: Gav): Promise<PackageLoaderData> => {
     .then(async res => {
       const json = await res.json()
       if (res.ok) {
-        return json
+        return (json as string[]).toReversed()
       } else if (res.status === 400) {
         throw Error(`Artifact not found`)
       } else {
