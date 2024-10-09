@@ -16,10 +16,15 @@ interface Artifact {
 }
 
 interface ListboxProps {
-  ac: UseAutocompleteReturnValue<Artifact>
+  ac: UseAutocompleteReturnValue<Artifact, false, false, true>
 }
 
-const toArtifactString = (artifact: Artifact) => `${artifact.g}:${artifact.a}`
+const toArtifactString = (artifact: Artifact | string) => {
+  if (typeof artifact === 'string') {
+    return artifact
+  }
+  return `${artifact.g}:${artifact.a}`
+}
 const toShortArtifactString = (artifact: Artifact) => {
   const idx = artifact.a.indexOf(artifact.g)
   if (idx === 0) {
@@ -27,6 +32,10 @@ const toShortArtifactString = (artifact: Artifact) => {
   }
   return toArtifactString(artifact)
 }
+
+const isInputTheSameAsSelection = (input: string, selection: Artifact | null) =>
+  input !== '' && input !== (selection && toArtifactString(selection))
+
 
 const ListboxOption = ({children, selectable = true, ...props}: React.PropsWithChildren<any>) => {
   return (
@@ -82,12 +91,12 @@ export const Autocomplete = () => {
   }, [error, debouncedInput])
 
   useLayoutEffect(() => {
-    const gavObject = gav && stringToGav(gav)
-    if (gavObject) {
+    if (gav) {
+      const gavObject = stringToGav(gav)
       setInputValue(`${gavObject.groupId}:${gavObject.artifactId}`)
       const option = {g: gavObject.groupId, a: gavObject.artifactId}
       setSelectedValue(option)
-      setOptions([option])
+      setOptions([])
     } else {
       setInputValue('')
       setSelectedValue(null)
@@ -95,8 +104,7 @@ export const Autocomplete = () => {
   }, [gav])
 
   useLayoutEffect(() => {
-    /* Don't make requests when input is the same as selection */
-    if (debouncedInput !== (selectedValue && toArtifactString(selectedValue)) && debouncedInput !== '') {
+    if (isInputTheSameAsSelection(debouncedInput, selectedValue)) {
       get('?query=' + inputValue)
     }
   }, [debouncedInput])
@@ -112,24 +120,39 @@ export const Autocomplete = () => {
     onInputChange: (_event, newInputValue) => setInputValue(newInputValue),
     value: selectedValue,
     onChange: (event, option) => {
-      if (option) {
-        setOptions([option])
-        setSelectedValue(option)
+      let artifact: Artifact | null
+      if (typeof option === 'string') {
+        const [group, artifactId] = option.split(':', 2)
+        artifact = {g: group, a: artifactId ?? group}
+      } else {
+        artifact = option
+      }
+
+      if (artifact) {
+        setOptions([])
+        setSelectedValue(artifact)
         if (event.nativeEvent.type === 'keydown') {
-          navigate(`/packages/${toArtifactString(option)}:${option.latestVersion}`)
+          if (artifact.latestVersion) {
+            navigate(`/packages/${toArtifactString(artifact)}:${artifact.latestVersion}`)
+          } else {
+            navigate(`/packages/${toArtifactString(artifact)}`)
+
+          }
         }
       } else {
+        setOptions([])
         setSelectedValue(null)
       }
     },
     clearOnBlur: false,
     clearOnEscape: true,
-    autoComplete: false
+    autoComplete: false,
+    freeSolo: true,
   })
 
   /* Well, hopefully this is right */
-  const listboxVisible = ac.popupOpen &&
-    (ac.groupedOptions.length !== 0 || (inputValue === debouncedInput && debouncedInput !== '' && !loading))
+  const listboxVisible = ac.popupOpen && (ac.groupedOptions.length !== 0 ||
+    (isInputTheSameAsSelection(debouncedInput, selectedValue) && inputValue === debouncedInput && !loading))
 
   return (
     <div className='lg:w-[1000px] md:w-full m-auto pt-8 w-full flex flex-col font-mono' {...ac.getRootProps()}>

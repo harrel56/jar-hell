@@ -13,24 +13,9 @@ export const gavToString = (gav: Gav) => {
   }
 }
 
-export const stringToGav = (str: string): Gav | null => {
-  const parts = str.split(':')
-  if (parts.length === 3) {
-    return {
-      groupId: parts[0],
-      artifactId: parts[1],
-      version: parts[2]
-    }
-  } else if (parts.length === 4) {
-    return {
-      groupId: parts[0],
-      artifactId: parts[1],
-      version: parts[2],
-      classifier: parts[3]
-    }
-  } else {
-    return null
-  }
+export const stringToGav = (str: string): Gav => {
+  const [groupId, artifactId, version, classifier] = str.split(':', 4)
+  return {groupId, artifactId: artifactId ?? groupId, version, classifier}
 }
 
 export interface License {
