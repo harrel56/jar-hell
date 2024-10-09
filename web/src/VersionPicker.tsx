@@ -1,5 +1,5 @@
 import {Separator} from '@/components/ui/Separator.tsx'
-import {useMemo} from 'react'
+import React, {useMemo} from 'react'
 import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from '@/components/ui/Accordion.tsx'
 
 export interface VersionPickerProps {
@@ -23,15 +23,20 @@ export const VersionPicker = ({versions}: VersionPickerProps) => {
       <h2 className="mb-4 text-2xl font-bold">Versions</h2>
       {Array.from(versionNodes.entries()).map(([major, versions]) => (
         <AccordionItem key={major} value={major}>
-          <AccordionTrigger>{major}</AccordionTrigger>
+          <AccordionTrigger>
+            <div className=''>
+              <span>{`${major}.x`}</span>
+              <span className='ml-4 text-muted text-xs'>{`${versions.length} items`}</span>
+            </div>
+          </AccordionTrigger>
           <AccordionContent>
             {versions.map(version =>
-              <>
-                <div key={version} className="text-sm font-mono">
+              <React.Fragment key={version}>
+                <div className="text-sm font-mono">
                   {version}
                 </div>
-                <Separator key={`separator-${version}`} className="my-2"/>
-              </>
+                <Separator className="my-2"/>
+              </React.Fragment>
             )}
           </AccordionContent>
         </AccordionItem>

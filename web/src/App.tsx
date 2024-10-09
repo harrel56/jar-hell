@@ -10,7 +10,9 @@ export const App = () => {
       <div className='px-4 flex flex-col'>
         <NavBar/>
         <Autocomplete/>
-        {outlet}
+        <div className='max-w-[1400px] w-full self-center pt-12'>
+          {outlet}
+        </div>
       </div>
     </ThemeProvider>
   )
