@@ -1,21 +1,27 @@
 import {Separator} from '@/components/ui/Separator.tsx'
 import React, {useMemo} from 'react'
 import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from '@/components/ui/Accordion.tsx'
+import {useParams} from 'react-router-dom'
+import {stringToGav} from '@/util.ts'
+import clsx from 'clsx'
 
 export interface VersionPickerProps {
   versions: string[]
 }
 
 export const VersionPicker = ({versions}: VersionPickerProps) => {
+  const { gav } = useParams()
+  const gavObject = useMemo(() => stringToGav(gav!), [gav])
   const versionNodes = useMemo(() => calculateVersionNodes(versions), [versions])
 
+
   return (
-    <Accordion type="single" collapsible className="w-full min-w-[160px] basis-1/5">
-      <h2 className="mb-4 text-2xl font-bold">Versions</h2>
+    <Accordion type='single' collapsible className='w-full min-w-[160px] basis-1/5'>
+      <h2 className='mb-4 text-2xl font-bold'>Versions</h2>
       {Array.from(versionNodes.entries()).map(([major, versions]) => (
         <AccordionItem key={major} value={major}>
           <AccordionTrigger>
-            <div className=''>
+            <div>
               <span>{`${major}.x`}</span>
               <span className='ml-4 text-muted text-xs'>{`${versions.length} items`}</span>
             </div>
@@ -23,8 +29,9 @@ export const VersionPicker = ({versions}: VersionPickerProps) => {
           <AccordionContent>
             {versions.map(version =>
               <React.Fragment key={version}>
-                <Separator className="my-2 mx-4"/>
-                <div className="text-sm font-mono mx-4">
+                <Separator className='my-1 mx-4'/>
+                <div className={clsx('text-sm font-mono ml-4 py-1.5 px-2 rounded-sm transition-colors hover:bg-input',
+                  version === gavObject?.version && 'bg-input text-hellyeah')}>
                   {version}
                 </div>
               </React.Fragment>
