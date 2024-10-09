@@ -10,7 +10,7 @@ export const VersionPicker = ({versions}: VersionPickerProps) => {
   const versionNodes = useMemo(() => calculateVersionNodes(versions), [versions])
 
   return (
-    <Accordion type="single" collapsible className="w-full">
+    <Accordion type="single" collapsible className="w-full min-w-[160px] basis-1/5">
       <h2 className="mb-4 text-2xl font-bold">Versions</h2>
       {Array.from(versionNodes.entries()).map(([major, versions]) => (
         <AccordionItem key={major} value={major}>
@@ -23,10 +23,10 @@ export const VersionPicker = ({versions}: VersionPickerProps) => {
           <AccordionContent>
             {versions.map(version =>
               <React.Fragment key={version}>
-                <div className="text-sm font-mono">
+                <Separator className="my-2 mx-4"/>
+                <div className="text-sm font-mono mx-4">
                   {version}
                 </div>
-                <Separator className="my-2"/>
               </React.Fragment>
             )}
           </AccordionContent>

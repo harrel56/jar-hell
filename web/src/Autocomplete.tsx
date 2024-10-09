@@ -42,7 +42,8 @@ const Listbox = ({ac}: ListboxProps) => {
   return (
     <div className='relative'>
       <ul
-        className='absolute flex flex-col w-full max-h-[452px] overflow-y-auto mt-1.5 p-1 border rounded-md' {...ac.getListboxProps()}>
+        className='absolute flex flex-col w-full max-h-[452px] overflow-y-auto mt-1.5 p-1 border rounded-md bg-background'
+        {...ac.getListboxProps()}>
         {ac.groupedOptions.length === 0 && <ListboxOption selectable={false}>No results found</ListboxOption>}
         {(ac.groupedOptions as Artifact[]).map((option, index) => {
           const artifactString = toArtifactString(option)
