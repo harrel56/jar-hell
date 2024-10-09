@@ -1,7 +1,7 @@
 import {Separator} from '@/components/ui/Separator.tsx'
 import React, {useMemo} from 'react'
 import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from '@/components/ui/Accordion.tsx'
-import {useParams} from 'react-router-dom'
+import {Link, useParams} from 'react-router-dom'
 import {stringToGav} from '@/util.ts'
 import clsx from 'clsx'
 
@@ -11,29 +11,33 @@ export interface VersionPickerProps {
 
 export const VersionPicker = ({versions}: VersionPickerProps) => {
   const { gav } = useParams()
-  const gavObject = useMemo(() => stringToGav(gav!), [gav])
+  const gavObject = useMemo(() => stringToGav(gav!), [gav])!
   const versionNodes = useMemo(() => calculateVersionNodes(versions), [versions])
-
+  const defaultSeries = useMemo(() => {
+    const [major, minor] = gavObject.version.split('.', 2)
+    return versionNodes.has(major) ? major : `${major}.${minor}`
+  }, [versionNodes, gavObject])
 
   return (
-    <Accordion type='single' collapsible className='w-full min-w-[160px] basis-1/5'>
+    <Accordion type='single' collapsible defaultValue={defaultSeries} className='w-full min-w-[160px] basis-1/5'>
       <h2 className='mb-4 text-2xl font-bold'>Versions</h2>
-      {Array.from(versionNodes.entries()).map(([major, versions]) => (
-        <AccordionItem key={major} value={major}>
+      {Array.from(versionNodes.entries()).map(([versionSeries, versions]) => (
+        <AccordionItem key={versionSeries} value={versionSeries}>
           <AccordionTrigger>
             <div>
-              <span>{`${major}.x`}</span>
-              <span className='ml-4 text-muted text-xs'>{`${versions.length} items`}</span>
+              <span className={clsx(versionSeries === defaultSeries && 'text-hellyeah')}>{`${versionSeries}.x`}</span>
+              <span className='ml-4 text-input text-xs'>{`${versions.length} items`}</span>
             </div>
           </AccordionTrigger>
           <AccordionContent>
             {versions.map(version =>
               <React.Fragment key={version}>
                 <Separator className='my-1 mx-4'/>
-                <div className={clsx('text-sm font-mono ml-4 py-1.5 px-2 rounded-sm transition-colors hover:bg-input',
-                  version === gavObject?.version && 'bg-input text-hellyeah')}>
+                <Link className={clsx('block text-sm font-mono ml-4 py-1.5 px-2 rounded-sm transition-colors hover:bg-input',
+                  version === gavObject?.version && 'bg-input text-hellyeah')}
+                  to={`/packages/${gavObject?.groupId}:${gavObject?.artifactId}:${version}`}>
                   {version}
-                </div>
+                </Link>
               </React.Fragment>
             )}
           </AccordionContent>
