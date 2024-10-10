@@ -11,9 +11,12 @@ export interface VersionPickerProps {
 
 export const VersionPicker = ({versions}: VersionPickerProps) => {
   const { gav } = useParams()
-  const gavObject = useMemo(() => stringToGav(gav!), [gav])!
+  const gavObject = useMemo(() => stringToGav(gav!), [gav])
   const versionNodes = useMemo(() => calculateVersionNodes(versions), [versions])
   const defaultSeries = useMemo(() => {
+    if (!gavObject.version) {
+      return undefined
+    }
     const [major, minor] = gavObject.version.split('.', 2)
     return versionNodes.has(major) ? major : `${major}.${minor}`
   }, [versionNodes, gavObject])
