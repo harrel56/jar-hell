@@ -20,7 +20,7 @@ export const VersionPicker = ({versions, analyzedPackages}: VersionPickerProps) 
   const { gav } = useParams()
   const gavObject = useMemo(() => stringToGav(gav!), [gav])
   const versionNodes = useMemo(() => calculateVersionNodes(versions, analyzedPackages),
-    [versions])
+    [versions, analyzedPackages])
   const defaultSeries = useMemo(() => {
     if (!gavObject.version) {
       return undefined

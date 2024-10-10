@@ -9,6 +9,9 @@ export default {
   ],
   theme: {
   	extend: {
+			fontSize: {
+				'2xs': '0.6rem'
+			},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
