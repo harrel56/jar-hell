@@ -2,17 +2,25 @@ import {Separator} from '@/components/ui/Separator.tsx'
 import React, {useMemo} from 'react'
 import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from '@/components/ui/Accordion.tsx'
 import {Link, useParams} from 'react-router-dom'
-import {stringToGav} from '@/util.ts'
+import {Package, stringToGav} from '@/util.ts'
 import clsx from 'clsx'
+import {Badge} from '@/components/ui/Badge.tsx'
 
 export interface VersionPickerProps {
   versions: string[]
+  analyzedPackages: Package[]
 }
 
-export const VersionPicker = ({versions}: VersionPickerProps) => {
+interface VersionNode {
+  version: string
+  package?: Package
+}
+
+export const VersionPicker = ({versions, analyzedPackages}: VersionPickerProps) => {
   const { gav } = useParams()
   const gavObject = useMemo(() => stringToGav(gav!), [gav])
-  const versionNodes = useMemo(() => calculateVersionNodes(versions), [versions])
+  const versionNodes = useMemo(() => calculateVersionNodes(versions, analyzedPackages),
+    [versions])
   const defaultSeries = useMemo(() => {
     if (!gavObject.version) {
       return undefined
@@ -33,13 +41,14 @@ export const VersionPicker = ({versions}: VersionPickerProps) => {
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            {versions.map(version =>
-              <React.Fragment key={version}>
+            {versions.map(node =>
+              <React.Fragment key={node.version}>
                 <Separator className='my-1 mx-4'/>
                 <Link className={clsx('block text-sm font-mono ml-4 py-1.5 px-2 rounded-sm transition-colors hover:bg-input',
-                  version === gavObject?.version && 'bg-input text-hellyeah')}
-                  to={`/packages/${gavObject?.groupId}:${gavObject?.artifactId}:${version}`}>
-                  {version}
+                  node.version === gavObject?.version && 'bg-input text-hellyeah')}
+                  to={`/packages/${gavObject?.groupId}:${gavObject?.artifactId}:${node.version}`}>
+                  {node.version}
+                  {node.package && <Badge variant='outline' className='ml-4 border-primary'>Analyzed</Badge>}
                 </Link>
               </React.Fragment>
             )}
@@ -57,7 +66,7 @@ export const VersionPicker = ({versions}: VersionPickerProps) => {
  * - in scope of 1 major there is a minor that got >= 10 patch versions
  * otherwise group by major
  * */
-const calculateVersionNodes = (versions: string[]) => {
+const calculateVersionNodes = (versions: string[], analyzedPackages: Package[]) => {
   const byMajor = new Map<string, Map<string, string[]>>()
   versions.forEach(version => {
     const [major, minor] = version.split('.', 2)
@@ -68,18 +77,22 @@ const calculateVersionNodes = (versions: string[]) => {
     byMajor.set(major, byMinor)
   })
 
-  const nodes = new Map<string, string[]>()
+  const nodes = new Map<string, VersionNode[]>()
   Array.from(byMajor.entries()).forEach(([major, byMinor]) => {
     const expandMinor = byMajor.size === 1 || Array.from(byMinor.values()).some(patches => patches.length >= 10)
     if (expandMinor) {
       Array.from(byMinor.entries()).forEach(([minor, patches]) => {
-        nodes.set(`${major}.${minor}`, patches)
+        nodes.set(`${major}.${minor}`, joinVersionsWithPackages(patches, analyzedPackages))
       })
     } else {
       const newVersions: string[] = []
       Array.from(byMinor.values()).forEach(patches => newVersions.push(...patches))
-      nodes.set(major, newVersions)
+      nodes.set(major, joinVersionsWithPackages(newVersions, analyzedPackages))
     }
   })
   return nodes
+}
+
+const joinVersionsWithPackages = (versions: string[], analyzedPackages: Package[]) => {
+  return versions.map(version => ({version, package: analyzedPackages.find(pkg => pkg.version === version)}))
 }
