@@ -24,6 +24,6 @@ class AnalyzeController {
     @Post("/api/v1/analyze-and-wait")
     void analyzeAndWait(Gav gav, Context ctx) {
         analyzeEngine.analyze(gav).join();
-        ctx.redirect("/api/v1/packages/%s?depth=0".formatted(gav));
+        ctx.redirect("/api/v1/packages/%s?depth=1".formatted(gav));
     }
 }
