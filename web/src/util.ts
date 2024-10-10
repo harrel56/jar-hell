@@ -36,4 +36,5 @@ export interface Package extends Gav {
   licenses: License[]
   classifiers: string[]
   created: string
+  dependencies?: Package[]
 }

@@ -5,6 +5,7 @@ import {ErrorBoundary} from './ErrorBoundary.tsx'
 import {PackagePage} from './PackagePage.tsx'
 
 export interface PackageLoaderData {
+  gav: Gav
   versions: string[]
   analyzedPackages: Package[]
   packageData: Package | null
@@ -57,7 +58,7 @@ const loadPackageData = async (gav: Gav): Promise<PackageLoaderData | Response> 
     }
   }
   const joined = await Promise.all([versionsPromise, analyzedPackagesPromise, packageDataPromise])
-  return {versions: versions, analyzedPackages: joined[1], packageData: joined[2]}
+  return {gav, versions: versions, analyzedPackages: joined[1], packageData: joined[2]}
 }
 
 export const createRouter = () => createBrowserRouter([
