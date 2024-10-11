@@ -4,7 +4,7 @@ export interface ByteDisplayProps {
 }
 
 export const ByteCount = ({bytes}: ByteDisplayProps) => {
-  return <span className='text-5xl'>{calculateMsg(bytes)}</span>
+  return <span className='text-5xl' title={bytes + ' bytes'}>{calculateMsg(bytes)}</span>
 }
 
 const calculateMsg = (bytes: number) => {

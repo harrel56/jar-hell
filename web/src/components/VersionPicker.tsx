@@ -1,8 +1,8 @@
 import {Separator} from '@/shadcn/components/ui/Separator.tsx'
-import React, {useMemo} from 'react'
+import React, {useLayoutEffect, useMemo, useState} from 'react'
 import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from '@/shadcn/components/ui/Accordion.tsx'
 import {Link, useParams} from 'react-router-dom'
-import {Package, stringToGav} from '@/util.ts'
+import {Gav, Package, stringToGav} from '@/util.ts'
 import clsx from 'clsx'
 import {Badge} from '@/shadcn/components/ui/Badge.tsx'
 
@@ -21,28 +21,25 @@ export const VersionPicker = ({versions, analyzedPackages}: VersionPickerProps) 
   const gavObject = useMemo(() => stringToGav(gav!), [gav])
   const versionNodes = useMemo(() => calculateVersionNodes(versions, analyzedPackages),
     [versions, analyzedPackages])
-  const defaultSeries = useMemo(() => {
-    if (!gavObject.version) {
-      return undefined
-    }
-    const [major, minor] = gavObject.version.split('.', 2)
-    return versionNodes.has(major) ? major : `${major}.${minor}`
-  }, [versionNodes, gavObject])
+  const [expandedSeries, setExpandedSeries] = useState(calculateExpandedSeries(gavObject, versionNodes))
+  useLayoutEffect(() => setExpandedSeries(calculateExpandedSeries(gavObject, versionNodes)),
+    [gavObject, versionNodes])
 
   return (
-    <Accordion type='single' collapsible defaultValue={defaultSeries} className='w-full min-w-[160px] basis-1/5'>
+    <Accordion type='single' collapsible value={expandedSeries} onValueChange={value => setExpandedSeries(value)}
+               className='w-full min-w-[160px] basis-1/5'>
       <h2 className='mb-4 text-2xl font-bold'>Versions</h2>
       {Array.from(versionNodes.entries()).map(([versionSeries, versions]) => (
-        <AccordionItem key={versionSeries} value={versionSeries}>
+        <AccordionItem key={gav + versionSeries} value={versionSeries}>
           <AccordionTrigger>
             <div>
-              <span className={clsx(versionSeries === defaultSeries && 'text-hellyeah')}>{`${versionSeries}.x`}</span>
+              <span className={clsx(versionSeries === expandedSeries && 'text-hellyeah')}>{`${versionSeries}.x`}</span>
               <span className='ml-4 text-input text-xs'>{`${versions.length} items`}</span>
             </div>
           </AccordionTrigger>
           <AccordionContent>
             {versions.map(node =>
-              <React.Fragment key={node.version}>
+              <React.Fragment key={gav + node.version}>
                 <Separator className='my-1 mx-4'/>
                 <Link className={clsx('block text-sm font-mono ml-4 py-1.5 px-2 rounded-sm transition-colors hover:bg-input',
                   node.version === gavObject?.version && 'bg-input text-hellyeah')}
@@ -58,6 +55,14 @@ export const VersionPicker = ({versions, analyzedPackages}: VersionPickerProps) 
       ))}
     </Accordion>
   )
+}
+
+const calculateExpandedSeries = (gavObject: Gav, versionNodes: Map<string, VersionNode[]>) => {
+  if (!gavObject.version) {
+    return undefined
+  }
+  const [major, minor] = gavObject.version.split('.', 2)
+  return versionNodes.has(major) ? major : `${major}.${minor}`
 }
 
 /**
