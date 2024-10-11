@@ -6,6 +6,7 @@ import {useFetch} from '@/hooks/useFetch.ts'
 import {gavToString, Package} from '@/util.ts'
 import {useLayoutEffect, useState} from 'react'
 import {LoadingSpinner} from '@/components/LoadingSpinner.tsx'
+import {ByteCount} from '@/components/ByteCount.tsx'
 
 export const PackagePage = () => {
   const loaderData = useLoaderData() as PackageLoaderData
@@ -30,9 +31,9 @@ export const PackagePage = () => {
       <VersionPicker versions={loaderData.versions} analyzedPackages={analyzedPackages}/>
       <Separator orientation='vertical' className='h-auto'/>
       <div className='min-w-[600px] min-h-[400px] w-full flex bg-input items-center justify-center'>
-        {loading && <LoadingSpinner/>}
+        {loading && <LoadingSpinner className=''/>}
         {error && <p>Error occurred</p>}
-        {packageData && !loading && !error && <p className='text-5xl'>{packageData.totalSize}</p>}
+        {packageData?.totalSize && !loading && !error && <ByteCount bytes={packageData.totalSize}/>}
       </div>
     </div>)
 }
