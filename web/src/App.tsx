@@ -1,7 +1,7 @@
 import {useOutlet} from 'react-router-dom'
-import {ThemeProvider} from '@/components/ThemeProvider'
-import {NavBar} from '@/NavBar.tsx'
-import {Autocomplete} from '@/Autocomplete.tsx'
+import {ThemeProvider} from '@/shadcn/components/ThemeProvider'
+import {NavBar} from '@/components/NavBar.tsx'
+import {Autocomplete} from '@/components/Autocomplete.tsx'
 
 export const App = () => {
   const outlet = useOutlet()

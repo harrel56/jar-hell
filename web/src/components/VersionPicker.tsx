@@ -1,10 +1,10 @@
-import {Separator} from '@/components/ui/Separator.tsx'
+import {Separator} from '@/shadcn/components/ui/Separator.tsx'
 import React, {useMemo} from 'react'
-import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from '@/components/ui/Accordion.tsx'
+import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from '@/shadcn/components/ui/Accordion.tsx'
 import {Link, useParams} from 'react-router-dom'
 import {Package, stringToGav} from '@/util.ts'
 import clsx from 'clsx'
-import {Badge} from '@/components/ui/Badge.tsx'
+import {Badge} from '@/shadcn/components/ui/Badge.tsx'
 
 export interface VersionPickerProps {
   versions: string[]

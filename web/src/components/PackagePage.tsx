@@ -1,11 +1,11 @@
-import {VersionPicker} from '@/VersionPicker.tsx'
+import {VersionPicker} from '@/components/VersionPicker.tsx'
 import {useLoaderData} from 'react-router-dom'
 import {PackageLoaderData} from '@/router.tsx'
-import {Separator} from '@/components/ui/Separator.tsx'
+import {Separator} from '@/shadcn/components/ui/Separator.tsx'
 import {useFetch} from '@/hooks/useFetch.ts'
 import {gavToString, Package} from '@/util.ts'
 import {useLayoutEffect, useState} from 'react'
-import {LoadingSpinner} from '@/LoadingSpinner.tsx'
+import {LoadingSpinner} from '@/components/LoadingSpinner.tsx'
 
 export const PackagePage = () => {
   const loaderData = useLoaderData() as PackageLoaderData

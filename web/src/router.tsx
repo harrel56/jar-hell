@@ -2,7 +2,7 @@ import {Gav, gavToString, Package, stringToGav} from './util.ts'
 import {createBrowserRouter, redirect} from 'react-router-dom'
 import {App} from './App.tsx'
 import {ErrorBoundary} from './ErrorBoundary.tsx'
-import {PackagePage} from './PackagePage.tsx'
+import {PackagePage} from './components/PackagePage.tsx'
 
 export interface PackageLoaderData {
   gav: Gav

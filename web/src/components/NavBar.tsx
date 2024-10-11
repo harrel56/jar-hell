@@ -1,6 +1,6 @@
-import {ThemeToggle} from '@/components/ThemeToggle'
-import {Icons} from '@/components/ui/Icons'
-import {Button} from '@/components/ui/Button.tsx'
+import {ThemeToggle} from '@/shadcn/components/ThemeToggle.tsx'
+import {Icons} from '@/shadcn/components/ui/Icons.tsx'
+import {Button} from '@/shadcn/components/ui/Button.tsx'
 import {Link} from 'react-router-dom'
 import imgUrl from '@static/jarhell.png'
 

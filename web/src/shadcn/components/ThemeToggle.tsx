@@ -1,7 +1,7 @@
 import {Moon, Sun} from 'lucide-react'
-import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/DropdownMenu'
-import {useTheme} from '@/components/ThemeProvider'
-import {Button} from '@/components/ui/Button.tsx'
+import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/shadcn/components/ui/DropdownMenu.tsx'
+import {useTheme} from '@/shadcn/components/ThemeProvider.tsx'
+import {Button} from '@/shadcn/components/ui/Button.tsx'
 
 export function ThemeToggle() {
   const {setTheme} = useTheme()
