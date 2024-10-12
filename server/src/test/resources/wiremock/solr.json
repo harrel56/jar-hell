@@ -183,7 +183,7 @@
         "urlPath": "/solr",
         "queryParameters": {
           "q": {
-            "equalTo": "g:ui-test* OR a:ui-test*"
+            "equalTo": "ui-test"
           }
         }
       },
