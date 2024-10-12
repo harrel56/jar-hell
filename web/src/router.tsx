@@ -1,14 +1,12 @@
-import {Gav, gavToString, Package, stringToGav} from './util.ts'
+import {Gav, Package, stringToGav} from './util.ts'
 import {createBrowserRouter, redirect} from 'react-router-dom'
 import {App} from './App.tsx'
 import {ErrorBoundary} from './ErrorBoundary.tsx'
 import {PackagePage} from './components/PackagePage.tsx'
 
 export interface PackageLoaderData {
-  gav: Gav
   versions: string[]
   analyzedPackages: Package[]
-  packageData: Package | null
 }
 
 const serverUrl = import.meta.env.VITE_SERVER_URL
@@ -36,29 +34,11 @@ const loadPackageData = async (gav: Gav): Promise<PackageLoaderData | Response> 
       }
     })
 
-  let packageDataPromise = Promise.resolve<Package | null>(null)
   const versions = await versionsPromise
-  const analyzedPackages = await analyzedPackagesPromise
-  if (gav.version) {
-    if (!versions.includes(gav.version)) {
-      return redirect(`/packages/${gav.groupId}:${gav.artifactId}`)
-    }
-    if (analyzedPackages.some(pkg => pkg.version === gav.version)) {
-      packageDataPromise = fetch(`${serverUrl}/api/v1/packages/${gavToString(gav)}?depth=1`)
-        .then(async res => {
-          if (res.ok) {
-            return res.json()
-          } else if (res.status === 404) {
-            return null
-          } else {
-            const json = await res.json()
-            throw Error(json.message)
-          }
-        })
-    }
+  if (gav.version && !versions.includes(gav.version)) {
+    return redirect(`/packages/${gav.groupId}:${gav.artifactId}`)
   }
-  const joined = await Promise.all([versionsPromise, analyzedPackagesPromise, packageDataPromise])
-  return {gav, versions: versions, analyzedPackages: joined[1], packageData: joined[2]}
+  return {versions, analyzedPackages: await analyzedPackagesPromise}
 }
 
 export const createRouter = () => createBrowserRouter([
@@ -77,9 +57,14 @@ export const createRouter = () => createBrowserRouter([
         loader: async ({params}) => {
           const gav = stringToGav(params.gav!)
           if (!gav) {
-            throw Error("Package format is invalid")
+            throw Error('Package format is invalid')
           }
           return loadPackageData(gav)
+        },
+        shouldRevalidate: ({currentParams, nextParams}) => {
+          const oldGav = stringToGav(currentParams.gav!)
+          const newGav = stringToGav(nextParams.gav!)
+          return oldGav.groupId !== newGav.groupId || oldGav.artifactId !== newGav.artifactId
         }
       },
       {

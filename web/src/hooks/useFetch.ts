@@ -1,4 +1,4 @@
-import {useCallback, useLayoutEffect, useMemo, useState} from 'react'
+import {MutableRefObject, useCallback, useLayoutEffect, useMemo, useRef, useState} from 'react'
 
 export type Method = 'get' | 'post' | 'put' | 'delete' | 'patch' | 'head'
 export type Body = BodyInit
@@ -16,31 +16,40 @@ export const useFetch = <T = any>(userUri: string, deps: any[] = []) => {
   const [data, setData] = useState<T>()
   const [error, setError] = useState<ErrorContext>()
   const [loading, setLoading] = useState(false)
+  const controllerRef: MutableRefObject<AbortController | null> = useRef(null)
   const uri = useMemo(() => new URL(userUri, import.meta.env.VITE_SERVER_URL || document.baseURI), [userUri])
   useLayoutEffect(() => {
-    setData(undefined)
-    setError(undefined)
-    setLoading(false)
+    return () => {
+      controllerRef.current?.abort()
+      setData(undefined)
+      setError(undefined)
+      setLoading(false)
+    }
   }, deps)
 
   const doFetch = async (method: Method, path: string, body?: Body) => {
     const href = new URL(path, uri).href
-    setData(undefined)
-    setError(undefined)
+    controllerRef.current?.abort()
+    const controller = new AbortController()
+    controllerRef.current = controller
     setLoading(true)
     try {
       const res = await fetch(href, {
         method: method,
-        body: body
+        body: body,
+        signal: controller.signal
       })
       const json = await res.json()
       if (res.ok) {
         setData(json)
-      } else {
+      } else{
         setError({ status: res.status, data: json })
       }
     } catch (e) {
-      setError({ cause: e })
+      if (controller.signal.aborted) {
+        return
+      }
+      setError({cause: e})
     }
     setLoading(false)
   }

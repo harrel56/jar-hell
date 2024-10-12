@@ -34,7 +34,7 @@ export const VersionPicker = ({versions, analyzedPackages}: VersionPickerProps) 
           <AccordionTrigger>
             <div>
               <span className={clsx(versionSeries === expandedSeries && 'text-hellyeah')}>{`${versionSeries}.x`}</span>
-              <span className='ml-4 text-input text-xs'>{`${versions.length} items`}</span>
+              <span className='ml-4 text-faded text-xs'>{`${versions.length} items`}</span>
             </div>
           </AccordionTrigger>
           <AccordionContent>
