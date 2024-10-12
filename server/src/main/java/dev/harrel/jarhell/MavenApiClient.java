@@ -60,7 +60,7 @@ public class MavenApiClient {
             return List.of();
         }
 
-        SelectResponse<SolrArtifact> response = fetch(SEARCH_URL + "?q=" + queryString, objectMapper, new TypeReference<>() {});
+        SelectResponse<SolrArtifact> response = fetch(SEARCH_URL + "?q=" + queryString + "&rows=80", objectMapper, new TypeReference<>() {});
         return response.response().docs();
     }
 
@@ -153,8 +153,7 @@ public class MavenApiClient {
             }
             return joiner.toString();
         } else {
-            String token = sanitizeQueryToken(input);
-            return token.isEmpty() ? "" : "g:%1$s*+OR+a:%1$s*".formatted(token);
+            return sanitizeQueryToken(input); // empty string is 400, should I care?
         }
     }
 
