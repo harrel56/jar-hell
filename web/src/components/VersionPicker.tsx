@@ -22,7 +22,10 @@ export const VersionPicker = ({versions, analyzedPackages}: VersionPickerProps) 
   const versionNodes = useMemo(() => calculateVersionNodes(versions, analyzedPackages),
     [versions, analyzedPackages])
   const [expandedSeries, setExpandedSeries] = useState(calculateExpandedSeries(gavObject, versionNodes))
+  const [highlightedSeries, setHighlightedSeries] = useState(calculateExpandedSeries(gavObject, versionNodes))
   useLayoutEffect(() => setExpandedSeries(calculateExpandedSeries(gavObject, versionNodes)),
+    [gavObject, versionNodes])
+  useLayoutEffect(() => setHighlightedSeries(calculateExpandedSeries(gavObject, versionNodes)),
     [gavObject, versionNodes])
 
   return (
@@ -33,7 +36,7 @@ export const VersionPicker = ({versions, analyzedPackages}: VersionPickerProps) 
         <AccordionItem key={gav + versionSeries} value={versionSeries}>
           <AccordionTrigger>
             <div>
-              <span className={clsx(versionSeries === expandedSeries && 'text-hellyeah')}>{`${versionSeries}.x`}</span>
+              <span className={clsx(versionSeries === highlightedSeries && 'text-hellyeah')}>{`${versionSeries}.x`}</span>
               <span className='ml-4 text-faded text-xs'>{`${versions.length} items`}</span>
             </div>
           </AccordionTrigger>
