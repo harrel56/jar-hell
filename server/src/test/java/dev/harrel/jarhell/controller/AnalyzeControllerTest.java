@@ -49,12 +49,34 @@ class AnalyzeControllerTest {
         assertThat(response.statusCode()).isEqualTo(202);
         assertThat(response.body()).isEmpty();
 
-        await().atMost(Duration.ofSeconds(5)).until(() -> !fetchAllNodes().records().isEmpty());
+        await().atMost(Duration.ofSeconds(5)).until(() -> !fetchByArtifactId("jmail").records().isEmpty());
 
-        EagerResult eagerResult = fetchAllNodes();
+        EagerResult eagerResult = fetchByArtifactId("jmail");
         Map<String, Object> properties = eagerResult.records().getFirst().get("n").asMap();
         assertThat(properties).containsEntry("licenses", "[{\"name\":\"MIT License\",\"url\":\"https://opensource.org/licenses/mit-license.php\"}]");
-        assertArtifactInfo(properties);
+        assertJmailArtifactInfo(properties);
+    }
+
+    @Test
+    void shouldAnalyzeLibWithDependency() throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(host + "/api/v1/analyze"))
+                .POST(HttpUtil.jsonPublisher(
+                        new Gav("org.test", "artifact", "3.0.1")
+                ))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        assertThat(response.statusCode()).isEqualTo(202);
+        assertThat(response.body()).isEmpty();
+
+        await().atMost(Duration.ofSeconds(5)).until(() -> !fetchByArtifactId("artifact").records().isEmpty());
+
+        Map<String, Object> jmailProperties = fetchByArtifactId("jmail").records().getFirst().get("n").asMap();
+        assertThat(jmailProperties).containsEntry("licenses", "[{\"name\":\"MIT License\",\"url\":\"https://opensource.org/licenses/mit-license.php\"}]");
+        assertJmailArtifactInfo(jmailProperties);
+        Map<String, Object> testProperties = fetchByArtifactId("artifact").records().getFirst().get("n").asMap();
+        assertTestArtifactInfo(testProperties);
     }
 
     @Test
@@ -75,7 +97,30 @@ class AnalyzeControllerTest {
                 "url", "https://opensource.org/licenses/mit-license.php"
         )));
         assertThat(properties).containsEntry("dependencies", List.of());
-        assertArtifactInfo(properties);
+        assertJmailArtifactInfo(properties);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldAnalyzeAndWaitForLibWithDependency() throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(host + "/api/v1/analyze-and-wait"))
+                .POST(HttpUtil.jsonPublisher(
+                        new Gav("org.test", "artifact", "3.0.1")
+                ))
+                .build();
+
+        HttpResponse<Map<String, Object>> response = httpClient.send(request, HttpUtil.jsonHandler(new TypeReference<>() {}));
+        assertThat(response.statusCode()).isEqualTo(200);
+        Map<String, Object> properties = response.body();
+        assertThat(properties).isNotNull();
+        assertTestArtifactInfo(properties);
+        var dependencies = (List<Map<String, Object>>) properties.get("dependencies");
+        assertThat(dependencies).hasSize(1);
+        assertThat(dependencies.getFirst()).containsEntry("optional", false);
+        assertThat(dependencies.getFirst()).containsEntry("scope", "compile");
+
+        assertJmailArtifactInfo(((Map<String, Object>) dependencies.getFirst().get("artifact")));
     }
 
     @Test
@@ -96,11 +141,11 @@ class AnalyzeControllerTest {
         );
     }
 
-    private EagerResult fetchAllNodes() {
-        return driver.executableQuery("MATCH (n) RETURN n").execute();
+    private EagerResult fetchByArtifactId(String id) {
+        return driver.executableQuery("MATCH (n {artifactId:'%s'}) RETURN n".formatted(id)).execute();
     }
 
-    private void assertArtifactInfo(Map<String, Object> properties) {
+    private void assertJmailArtifactInfo(Map<String, Object> properties) {
         assertThat(properties).contains(
                 Map.entry("groupId", "com.sanctionco.jmail"),
                 Map.entry("artifactId", "jmail"),
@@ -112,6 +157,21 @@ class AnalyzeControllerTest {
                 Map.entry("url", "https://github.com/RohanNagar/jmail"),
                 Map.entry("bytecodeVersion", "52.0"),
                 Map.entry("totalSize", 30629L),
+                Map.entry("classifiers", List.of("javadoc", "sources"))
+        );
+    }
+
+    private void assertTestArtifactInfo(Map<String, Object> properties) {
+        assertThat(properties).contains(
+                Map.entry("groupId", "org.test"),
+                Map.entry("artifactId", "artifact"),
+                Map.entry("version", "3.0.1"),
+                Map.entry("name", "artifact"),
+                Map.entry("description", "Artifact for tests"),
+                Map.entry("packaging", "jar"),
+                Map.entry("packageSize", 2105L),
+                Map.entry("totalSize", 32734L),
+                Map.entry("bytecodeVersion", "65.0"),
                 Map.entry("classifiers", List.of("javadoc", "sources"))
         );
     }
