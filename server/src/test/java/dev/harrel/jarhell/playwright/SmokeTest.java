@@ -15,4 +15,18 @@ class SmokeTest {
         assertThat(acLocator).isInViewport();
         assertThat(acLocator).isEditable();
     }
+
+    @Test
+    void clickingLogoRedirectsToHome(Page page) {
+        page.navigate("/packages/test:test");
+        page.getByAltText("hell in a jar").click();
+        assertThat(page).hasURL("/");
+    }
+
+    @Test
+    void clickingLogoTextRedirectsToHome(Page page) {
+        page.navigate("/packages/test:test");
+        page.getByText("Jarhell").click();
+        assertThat(page).hasURL("/");
+    }
 }

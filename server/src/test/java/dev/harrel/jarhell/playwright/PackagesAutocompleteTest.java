@@ -96,4 +96,39 @@ class PackagesAutocompleteTest {
         double optionWidth = page.getByRole(AriaRole.OPTION).nth(19).boundingBox().width;
         assertThat(acWidth).isGreaterThan(optionWidth);
     }
+
+    @Test
+    void clickingEnterWhenEmptyDoesNothing(Page page) {
+        page.navigate("/packages/test:test");
+        page.keyboard().press("Enter");
+        assertThat(page).hasURL("/packages/test:test");
+    }
+
+    @Test
+    void blurDoesNotWorkForFreeSolo(Page page) {
+        ac.fill("test");
+        ac.blur();
+        assertThat(page).hasURL("/");
+    }
+
+    @Test
+    void canFreeSoloSingleToken(Page page) {
+        ac.fill("test");
+        page.keyboard().press("Enter");
+        assertThat(page).hasURL("/packages/test:test");
+    }
+
+    @Test
+    void canFreeSoloGroupWithArtifactId(Page page) {
+        ac.fill("test-group:test-id");
+        page.keyboard().press("Enter");
+        assertThat(page).hasURL("/packages/test-group:test-id");
+    }
+
+    @Test
+    void cannotFreeSoloGroupWithArtifactIdWithVersion(Page page) {
+        ac.fill("test-group:test-id:1.0.0");
+        page.keyboard().press("Enter");
+        assertThat(page).hasURL("/packages/test-group:test-id");
+    }
 }
