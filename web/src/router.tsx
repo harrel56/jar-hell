@@ -1,8 +1,9 @@
 import {Gav, Package, stringToGav} from './util.ts'
-import {createBrowserRouter, redirect} from 'react-router-dom'
+import {createBrowserRouter} from 'react-router-dom'
 import {App} from './App.tsx'
 import {ErrorBoundary, NotFoundError} from './ErrorBoundary.tsx'
 import {PackagePage} from './components/PackagePage.tsx'
+import {ArtifactInfoContainer} from '@/components/ArtifactInfoContainer.tsx'
 
 export interface PackageLoaderData {
   versions: string[]
@@ -34,11 +35,7 @@ const loadPackageData = async (gav: Gav): Promise<PackageLoaderData | Response> 
       }
     })
 
-  const versions = await versionsPromise
-  if (gav.version && !versions.includes(gav.version)) {
-    return redirect(`/packages/${gav.groupId}:${gav.artifactId}`)
-  }
-  return {versions, analyzedPackages: await analyzedPackagesPromise}
+  return {versions: await versionsPromise, analyzedPackages: await analyzedPackagesPromise}
 }
 
 export const createRouter = () => createBrowserRouter([
@@ -65,7 +62,14 @@ export const createRouter = () => createBrowserRouter([
           const oldGav = stringToGav(currentParams.gav!)
           const newGav = stringToGav(nextParams.gav!)
           return oldGav.groupId !== newGav.groupId || oldGav.artifactId !== newGav.artifactId
-        }
+        },
+        children: [
+          {
+            errorElement: <ErrorBoundary/>,
+            index: true,
+            element: <ArtifactInfoContainer/>
+          }
+        ]
       },
       {
         path: '*',
