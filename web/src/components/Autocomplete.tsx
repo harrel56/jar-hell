@@ -47,7 +47,6 @@ const ListboxOption = ({children, selectable = true, ...props}: React.PropsWithC
 }
 
 const Listbox = ({ac}: ListboxProps) => {
-  // ac.groupedOptions = [{g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}, {g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}, {g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}, {g: 'test', a: 'siema'}, {g: 'test2', a: 'siema2'}, {g: 'test3', a: 'siema3'}] as any
   return (
     <div className='relative'>
       <ul
@@ -91,8 +90,8 @@ export const Autocomplete = () => {
   }, [error, debouncedInput])
 
   useLayoutEffect(() => {
-    if (gav) {
-      const gavObject = stringToGav(gav)
+    const gavObject = gav && stringToGav(gav)
+    if (gavObject && gavObject.artifactId) {
       setInputValue(`${gavObject.groupId}:${gavObject.artifactId}`)
       const option = {g: gavObject.groupId, a: gavObject.artifactId}
       setSelectedValue(option)
