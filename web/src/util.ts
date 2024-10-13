@@ -15,7 +15,7 @@ export const gavToString = (gav: Gav) => {
 
 export const stringToGav = (str: string): Gav => {
   const [groupId, artifactId, version, classifier] = str.split(':', 4)
-  return {groupId, artifactId: artifactId ?? groupId, version, classifier}
+  return {groupId, artifactId, version, classifier}
 }
 
 export interface License {

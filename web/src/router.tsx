@@ -1,7 +1,7 @@
 import {Gav, Package, stringToGav} from './util.ts'
 import {createBrowserRouter, redirect} from 'react-router-dom'
 import {App} from './App.tsx'
-import {ErrorBoundary} from './ErrorBoundary.tsx'
+import {ErrorBoundary, NotFoundError} from './ErrorBoundary.tsx'
 import {PackagePage} from './components/PackagePage.tsx'
 
 export interface PackageLoaderData {
@@ -19,7 +19,7 @@ const loadPackageData = async (gav: Gav): Promise<PackageLoaderData | Response> 
       if (res.ok) {
         return (json as string[]).toReversed()
       } else if (res.status === 400) {
-        throw Error(`Artifact not found`)
+        throw new NotFoundError(`Artifact not found`)
       } else {
         throw Error(json.message)
       }
@@ -56,8 +56,8 @@ export const createRouter = () => createBrowserRouter([
         element: <PackagePage/>,
         loader: async ({params}) => {
           const gav = stringToGav(params.gav!)
-          if (!gav) {
-            throw Error('Package format is invalid')
+          if (!gav.groupId || !gav.artifactId) {
+            throw Error('Package format is invalid') // todo error
           }
           return loadPackageData(gav)
         },

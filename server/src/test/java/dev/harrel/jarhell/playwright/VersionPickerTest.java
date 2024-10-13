@@ -1,6 +1,7 @@
 package dev.harrel.jarhell.playwright;
 
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.AriaRole;
 import org.junit.jupiter.api.Test;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
@@ -8,11 +9,7 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 
 @PlaywrightTest
 class VersionPickerTest {
-    private final Page.GetByTextOptions options = new Page.GetByTextOptions();
-
-    public VersionPickerTest() {
-        options.setExact(true);
-    }
+    private final Page.GetByTextOptions options = new Page.GetByTextOptions().setExact(true);
 
     @Test
     void groupsVersionsProperly(Page page) {
@@ -32,5 +29,8 @@ class VersionPickerTest {
         assertThat(page.getByText("3.0.x", options)).not().isVisible();
         assertThat(page.getByText("3.1.x", options)).not().isVisible();
         assertThat(page.getByText("3.2.x", options)).not().isVisible();
+
+        assertThat(page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setExpanded(false)).getByText("items")).hasCount(7);
+        assertThat(page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setExpanded(true))).not().isVisible();
     }
 }
