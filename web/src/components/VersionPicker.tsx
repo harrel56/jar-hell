@@ -46,6 +46,7 @@ export const VersionPicker = ({versions, analyzedPackages}: VersionPickerProps) 
                 <Separator className='my-1 mx-4'/>
                 <Link className={clsx('block text-sm font-mono ml-4 py-1.5 px-2 rounded-sm transition-colors hover:bg-input',
                   node.version === gavObject?.version && 'bg-input text-hellyeah')}
+                  aria-current={node.version === gavObject?.version}
                   to={`/packages/${gavObject?.groupId}:${gavObject?.artifactId}:${node.version}`}>
                   {node.version}
                   {node.package && <Badge variant='outline' className='ml-4 border-primary'>Analyzed</Badge>}

@@ -33,4 +33,39 @@ class VersionPickerTest {
         assertThat(page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setExpanded(false)).getByText("items")).hasCount(7);
         assertThat(page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setExpanded(true))).not().isVisible();
     }
+
+    @Test
+    void expandsSectionDependingOnChosenVersion(Page page) {
+        page.navigate("/packages/org.test:artifact:1.1.1");
+        assertThat(page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setExpanded(true))).containsText("1.1.x");
+        assertThat(page.locator("[aria-current='true']")).containsText("1.1.1");
+
+        page.navigate("/packages/org.test:artifact:2.0.8");
+        assertThat(page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setExpanded(true))).containsText("2.x");
+        assertThat(page.locator("[aria-current='true']")).containsText("2.0.8");
+
+        page.goBack();
+        assertThat(page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setExpanded(true))).containsText("1.1.x");
+        assertThat(page.locator("[aria-current='true']")).containsText("1.1.1");
+
+        page.goForward();
+        assertThat(page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setExpanded(true))).containsText("2.x");
+        assertThat(page.locator("[aria-current='true']")).containsText("2.0.8");
+    }
+
+    @Test
+    void navigatesToVersionAndAnalyzes(Page page) {
+        page.navigate("/packages/org.test:artifact");
+        page.getByText("3.x", options).click();
+        page.getByText("3.0.1", options).click();
+
+        assertThat(page).hasURL("/packages/org.test:artifact:3.0.1");
+        assertThat(page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setExpanded(true))).containsText("3.x");
+        assertThat(page.locator("[aria-current='true']")).containsText("3.0.1");
+        assertThat(page.locator("[aria-current='true']").getByText("Analyzed")).not().isAttached();
+
+        assertThat(page.getByText("Analysis is in progress")).isInViewport();
+        assertThat(page.getByText("32.73KB")).isInViewport();
+        assertThat(page.locator("[aria-current='true']").getByText("Analyzed")).isVisible();
+    }
 }
