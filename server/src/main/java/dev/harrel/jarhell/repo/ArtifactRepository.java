@@ -149,6 +149,7 @@ public class ArtifactRepository {
             );
 
             Map<String, Object> parentGav = toGavMap(artifactTree.artifactInfo());
+            parentGav.computeIfAbsent("classifier", k -> "");
             artifactTree.dependencies().forEach(dep -> {
                         Map<String, Object> depProps = Map.of("optional", dep.optional(), "scope", dep.scope());
                         Map<String, Object> depGav = toGavMap(dep.artifact().artifactInfo());

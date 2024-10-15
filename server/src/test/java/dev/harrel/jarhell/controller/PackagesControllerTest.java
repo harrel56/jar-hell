@@ -85,7 +85,7 @@ class PackagesControllerTest {
     void shouldFindByGav() throws IOException, InterruptedException {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(
-                    tx -> tx.run("CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0'})")
+                    tx -> tx.run("CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0', classifier: ''})")
             );
         }
 
@@ -152,9 +152,9 @@ class PackagesControllerTest {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(
                     tx -> tx.run("""
-                            CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0'})\
+                            CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0', classifier: ''})\
                             -[:DEPENDS_ON {optional: false, scope: 'runtime'}]->\
-                            (:Artifact {groupId: 'org.test', artifactId: 'dep1', version: '1.0.0'})
+                            (:Artifact {groupId: 'org.test', artifactId: 'dep1', version: '1.0.0', classifier: ''})
                             """)
             );
         }
@@ -186,12 +186,12 @@ class PackagesControllerTest {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(
                     tx -> tx.run("""
-                            CREATE (root:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0'})\
+                            CREATE (root:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0', classifier: ''})\
                             -[:DEPENDS_ON {optional: true, scope: 'runtime'}]->\
-                            (:Artifact {groupId: 'org.test', artifactId: 'dep1', version: '1.0.0'}),
+                            (:Artifact {groupId: 'org.test', artifactId: 'dep1', version: '1.0.0', classifier: ''}),
                                                         
                             (root)-[:DEPENDS_ON {optional: false, scope: 'compile'}]->\
-                            (:Artifact {groupId: 'org.test', artifactId: 'dep2', version: '1.0.0'})
+                            (:Artifact {groupId: 'org.test', artifactId: 'dep2', version: '1.0.0', classifier: ''})
                             """)
             );
         }
@@ -229,11 +229,11 @@ class PackagesControllerTest {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(
                     tx -> tx.run("""
-                            CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0'})\
+                            CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0', classifier: ''})\
                             -[:DEPENDS_ON {optional: false, scope: 'runtime'}]->\
-                            (:Artifact {groupId: 'org.test', artifactId: 'dep1', version: '1.0.0'})
+                            (:Artifact {groupId: 'org.test', artifactId: 'dep1', version: '1.0.0', classifier: ''})
                             -[:DEPENDS_ON {optional: false, scope: 'runtime'}]->\
-                            (:Artifact {groupId: 'org.test', artifactId: 'dep2', version: '1.0.0'})
+                            (:Artifact {groupId: 'org.test', artifactId: 'dep2', version: '1.0.0', classifier: ''})
                             """)
             );
         }
@@ -272,11 +272,11 @@ class PackagesControllerTest {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(
                     tx -> tx.run("""
-                            CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0'})\
+                            CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0', classifier: ''})\
                             -[:DEPENDS_ON {optional: false, scope: 'runtime'}]->\
-                            (:Artifact {groupId: 'org.test', artifactId: 'dep1', version: '1.0.0'})
+                            (:Artifact {groupId: 'org.test', artifactId: 'dep1', version: '1.0.0', classifier: ''})
                             -[:DEPENDS_ON {optional: false, scope: 'runtime'}]->\
-                            (:Artifact {groupId: 'org.test', artifactId: 'dep2', version: '1.0.0'})
+                            (:Artifact {groupId: 'org.test', artifactId: 'dep2', version: '1.0.0', classifier: ''})
                             """)
             );
         }
@@ -300,11 +300,11 @@ class PackagesControllerTest {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(
                     tx -> tx.run("""
-                            CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0'})\
+                            CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0', classifier: ''})\
                             -[:DEPENDS_ON {optional: false, scope: 'runtime'}]->\
-                            (:Artifact {groupId: 'org.test', artifactId: 'dep1', version: '1.0.0'})
+                            (:Artifact {groupId: 'org.test', artifactId: 'dep1', version: '1.0.0', classifier: ''})
                             -[:DEPENDS_ON {optional: false, scope: 'runtime'}]->\
-                            (:Artifact {groupId: 'org.test', artifactId: 'dep2', version: '1.0.0'})
+                            (:Artifact {groupId: 'org.test', artifactId: 'dep2', version: '1.0.0', classifier: ''})
                             """)
             );
         }
@@ -354,8 +354,8 @@ class PackagesControllerTest {
             session.executeWriteWithoutResult(
                     tx -> tx.run("""
                             CREATE
-                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0'}),
-                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.2.0'})
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0', classifier: ''}),
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.2.0', classifier: ''})
                             """)
             );
         }
