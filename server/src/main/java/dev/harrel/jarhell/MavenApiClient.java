@@ -117,7 +117,7 @@ public class MavenApiClient {
             }
             return objectMapper.readValue(response.body(), type);
         } catch (IOException e) {
-            logger.error("HTTP fetch failed for url [{}]", url);
+            logger.error("HTTP fetch failed for url [{}]", url, e);
             throw new UncheckedIOException(e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
