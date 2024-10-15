@@ -47,17 +47,13 @@ public class ArtifactRepository {
                                 WHERE
                                     root.groupId = $groupId
                                     AND root.artifactId = $artifactId
-                                    AND (
-                                        root.classifier IS NULL
-                                        AND $classifier IS NULL
-                                        OR root.classifier = $classifier
-                                    )
+                                    AND root.classifier = $classifier
                                 RETURN root
                                 """,
                         parameters(
                                 "groupId", groupId,
                                 "artifactId", artifactId,
-                                "classifier", classifier)
+                                "classifier", classifier == null ? "" : classifier)
                         )
                 );
                 return new SummarizedResult(res.list(), res.consume());
@@ -87,6 +83,7 @@ public class ArtifactRepository {
 
     public Optional<ArtifactTree> find(Gav gav, int depth) {
         Map<String, Object> gavData = objectMapper.convertValue(gav, new TypeReference<>() {});
+        gavData.computeIfAbsent("classifier", k -> "");
         try (var session = driver.session()) {
             SummarizedResult result = session.executeRead(tx -> {
                 Result res = tx.run(new Query("""
@@ -95,11 +92,7 @@ public class ArtifactRepository {
                             root.groupId = $props.groupId
                             AND root.artifactId = $props.artifactId
                             AND root.version = $props.version
-                            AND (
-                                root.classifier IS NULL
-                                AND $props.classifier IS NULL
-                                OR root.classifier = $props.classifier
-                            )
+                            AND root.classifier = $props.classifier
                         CALL apoc.path.subgraphAll(root, {
                             relationshipFilter: "DEPENDS_ON>",
                             minLevel: 0,
@@ -148,6 +141,7 @@ public class ArtifactRepository {
     public void save(ArtifactTree artifactTree) {
         ArtifactProps artifactProps = toArtifactProps(artifactTree.artifactInfo());
         Map<String, Object> propsMap = objectMapper.convertValue(artifactProps, new TypeReference<>() {});
+        propsMap.computeIfAbsent("classifier", k -> "");
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(tx -> tx.run(new Query("CREATE (a:Artifact $props) SET a.created = datetime()",
                             parameters("props", propsMap))
@@ -158,25 +152,18 @@ public class ArtifactRepository {
             artifactTree.dependencies().forEach(dep -> {
                         Map<String, Object> depProps = Map.of("optional", dep.optional(), "scope", dep.scope());
                         Map<String, Object> depGav = toGavMap(dep.artifact().artifactInfo());
+                        depGav.computeIfAbsent("classifier", k -> "");
                         session.executeWriteWithoutResult(tx -> tx.run(new Query("""
                                 MATCH (a:Artifact), (d:Artifact)
                                 WHERE
                                     a.groupId = $parentGav.groupId
                                     AND a.artifactId = $parentGav.artifactId
                                     AND a.version = $parentGav.version
-                                    AND (
-                                            a.classifier IS NULL
-                                            AND $parentGav.classifier IS NULL
-                                            OR a.classifier = $parentGav.classifier
-                                    )
+                                    AND a.classifier = $parentGav.classifier
                                     AND d.groupId = $depGav.groupId
                                     AND d.artifactId = $depGav.artifactId
                                     AND d.version = $depGav.version
-                                    AND (
-                                            d.classifier IS NULL
-                                            AND $depGav.classifier IS NULL
-                                            OR d.classifier = $depGav.classifier
-                                    )
+                                    AND d.classifier = $depGav.classifier
                                 CREATE (a)-[:DEPENDS_ON $depProps]->(d)""",
                                 parameters("parentGav", parentGav, "depGav", depGav, "depProps", depProps))));
                     }
