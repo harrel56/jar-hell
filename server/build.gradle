@@ -26,11 +26,15 @@ dependencies {
 
     implementation 'org.apache.commons:commons-lang3:3.17.0' // can be possibly removed
 
-    implementation 'io.avaje:avaje-inject:9.10-javax'
+    implementation ('io.avaje:avaje-inject:10.3-javax') {
+        exclude group: 'io.avaje', module: 'avaje-inject-events'
+    }
     implementation 'io.avaje:avaje-config:4.0'
     implementation 'io.avaje:avaje-http-api:2.7'
-    annotationProcessor 'io.avaje:avaje-inject-generator:9.10-javax'
-    annotationProcessor 'io.avaje:avaje-http-javalin-generator:2.7'
+    annotationProcessor 'io.avaje:avaje-inject-generator:10.3-javax'
+    annotationProcessor ('io.avaje:avaje-http-javalin-generator:2.7') {
+        exclude group: 'io.avaje', module: 'avaje-inject-events'
+    }
 
     implementation 'org.tinylog:slf4j-tinylog:2.7.0'
     implementation 'org.tinylog:tinylog-impl:2.7.0'
