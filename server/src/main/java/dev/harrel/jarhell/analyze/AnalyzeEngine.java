@@ -3,7 +3,6 @@ package dev.harrel.jarhell.analyze;
 import dev.harrel.jarhell.error.ResourceNotFoundException;
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.repo.ArtifactRepository;
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
@@ -44,7 +43,7 @@ public class AnalyzeEngine {
             throw new ResourceNotFoundException(gav);
         }
 
-        return new RequestScope().analyzeInternal(gav, new LinkedHashSet<>()).whenComplete((value, ex) -> {
+        return new RequestScope().analyzeInternal(gav, new LinkedHashSet<>(Set.of(gav))).whenComplete((value, ex) -> {
             if (ex != null) {
                 logger.error("Error occurred during analysis of [{}]", gav, ex);
             }
@@ -52,7 +51,7 @@ public class AnalyzeEngine {
     }
 
     private class RequestScope {
-        private final ConcurrentMap<Gav, Runnable> analysisEndCallbacks = new ConcurrentHashMap<>();
+        private final ConcurrentMap<Gav, List<Runnable>> analysisEndCallbacks = new ConcurrentHashMap<>();
 
         private CompletableFuture<ArtifactTree> analyzeInternal(Gav gav, SequencedSet<Gav> chain) {
             CompletableFuture<ArtifactTree> future = new CompletableFuture<>();
@@ -84,26 +83,23 @@ public class AnalyzeEngine {
             logger.info("START analysis of [{}]", gav);
             AnalysisOutput analysisOutput = doAnalyze(gav);
 
-            List<FlatDependency> cyclicDeps = analysisOutput.dependencies().stream()
+            List<CompletableFuture<DependencyInfo>> depFutures = new ArrayList<>(analysisOutput.dependencies().size());
+            analysisOutput.dependencies().stream()
                     .map(DependencyNode::getDependency)
-                    .map(dep -> new FlatDependency(new Gav(dep.getArtifact().getGroupId(), dep.getArtifact().getArtifactId(),
-                            dep.getArtifact().getVersion(), StringUtils.stripToNull(dep.getArtifact().getClassifier())), dep.isOptional(), dep.getScope()))
-                    .filter(dep -> chain.contains(dep.gav()))
-                    .toList();
-            logger.info("Cyclic dependencies of [{}]: {}", gav, cyclicDeps);
-            for (FlatDependency cyclicDep : cyclicDeps) {
-                analysisEndCallbacks.put(cyclicDep.gav(), () -> artifactRepository.saveDependency(gav, cyclicDep));
-            }
-            List<CompletableFuture<DependencyInfo>> futures = analysisOutput.dependencies().stream()
-                    .map(DependencyNode::getDependency)
-                    .filter(dep -> !cyclicDeps.contains(new FlatDependency(new Gav(dep.getArtifact().getGroupId(), dep.getArtifact().getArtifactId(),
-                            dep.getArtifact().getVersion(), StringUtils.stripToNull(dep.getArtifact().getClassifier())), dep.isOptional(), dep.getScope())))
-                    .map(dependency -> computeDependencyInfo(dependency, chain))
-                    .toList();
+                    .map(RequestScope::toFlatDependency)
+                    .forEach(dep -> {
+                        if (chain.contains(dep.gav())) {
+                            logger.warn("CYCLE found, chain: {}, dependency: {}", chain, gav);
+                            analysisEndCallbacks.computeIfAbsent(dep.gav(), k -> new ArrayList<>())
+                                    .add(() -> artifactRepository.saveDependency(gav, dep));
+                        } else {
+                            depFutures.add(computeDependencyInfo(dep, chain));
+                        }
+                    });
 
-            return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+            return CompletableFuture.allOf(depFutures.toArray(CompletableFuture[]::new))
                     .thenApply(nothing ->
-                            futures.stream()
+                            depFutures.stream()
                                     .map(CompletableFuture::join)
                                     .toList()
                     )
@@ -111,10 +107,10 @@ public class AnalyzeEngine {
                         ArtifactTree artifactTree = new ArtifactTree(analysisOutput.artifactInfo(), deps);
                         Long totalSize = analyzer.calculateTotalSize(artifactTree);
                         artifactRepository.save(artifactTree.withTotalSize(totalSize));
-                        analysisEndCallbacks.computeIfPresent(gav, (k, callback) -> {
-                            callback.run();
-                            return null;
-                        });
+                        List<Runnable> callbacks = analysisEndCallbacks.computeIfAbsent(gav, k -> new ArrayList<>());
+                        callbacks.forEach(Runnable::run);
+                        analysisEndCallbacks.remove(gav);
+
                         long timeElapsed = Duration.between(start, Instant.now()).toMillis();
                         logger.info("END analysis of [{}] - completed in {}ms", gav, timeElapsed);
                         return artifactTree;
@@ -139,11 +135,8 @@ public class AnalyzeEngine {
             }
         }
 
-        private CompletableFuture<DependencyInfo> computeDependencyInfo(Dependency dep, SequencedSet<Gav> chain) {
-            Artifact artifact = dep.getArtifact();
-            Gav depGav = new Gav(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(), StringUtils.stripToNull(artifact.getClassifier()));
-            String scope = dep.getScope().isBlank() ? "compile" : dep.getScope();
-            return analyzeInternal(depGav, chained(chain, depGav)).thenApply(at -> new DependencyInfo(at, dep.getOptional(), scope));
+        private CompletableFuture<DependencyInfo> computeDependencyInfo(FlatDependency dep, SequencedSet<Gav> chain) {
+            return analyzeInternal(dep.gav(), chained(chain, dep.gav())).thenApply(at -> new DependencyInfo(at, dep.optional(), dep.scope()));
         }
 
         private record AnalysisOutput(ArtifactInfo artifactInfo, List<DependencyNode> dependencies) {}
@@ -152,6 +145,13 @@ public class AnalyzeEngine {
             SequencedSet<Gav> res = new LinkedHashSet<>(chain);
             res.add(gav);
             return Collections.unmodifiableSequencedSet(res);
+        }
+
+        private static FlatDependency toFlatDependency(Dependency dep) {
+            Artifact artifact = dep.getArtifact();
+            Gav gav = new Gav(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(), artifact.getClassifier());
+            String scope = dep.getScope().isBlank() ? "compile" : dep.getScope();
+            return new FlatDependency(gav, dep.isOptional(), scope);
         }
     }
 }
