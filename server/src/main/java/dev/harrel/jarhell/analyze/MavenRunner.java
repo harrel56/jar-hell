@@ -55,9 +55,6 @@ class MavenRunner {
                                     !gav.equals(new Gav(child.getArtifact().getGroupId(), child.getArtifact().getArtifactId(), child.getArtifact().getVersion())))
                             .toList();
                     collectResult.getRoot().setChildren(filteredChildren);
-                } else {
-                    throw new IllegalArgumentException(
-                            "Cycles detected in artifact [%s] deps: %s".formatted(gavWithClassifier, collectResult.getCycles()));
                 }
             }
             if (!collectResult.getExceptions().isEmpty()) {

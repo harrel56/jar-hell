@@ -3,10 +3,7 @@ package dev.harrel.jarhell.repo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.harrel.jarhell.model.ArtifactInfo;
-import dev.harrel.jarhell.model.ArtifactTree;
-import dev.harrel.jarhell.model.DependencyInfo;
-import dev.harrel.jarhell.model.Gav;
+import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.model.descriptor.Licence;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.*;
@@ -148,37 +145,52 @@ public class ArtifactRepository {
                     )
             );
 
-            Map<String, Object> parentGav = toGavMap(artifactTree.artifactInfo());
-            parentGav.computeIfAbsent("classifier", k -> "");
+            Gav parentGav = toGav(artifactTree.artifactInfo());
             artifactTree.dependencies().forEach(dep -> {
-                        Map<String, Object> depProps = Map.of("optional", dep.optional(), "scope", dep.scope());
-                        Map<String, Object> depGav = toGavMap(dep.artifact().artifactInfo());
-                        depGav.computeIfAbsent("classifier", k -> "");
-                        session.executeWriteWithoutResult(tx -> tx.run(new Query("""
-                                MATCH (a:Artifact), (d:Artifact)
-                                WHERE
-                                    a.groupId = $parentGav.groupId
-                                    AND a.artifactId = $parentGav.artifactId
-                                    AND a.version = $parentGav.version
-                                    AND a.classifier = $parentGav.classifier
-                                    AND d.groupId = $depGav.groupId
-                                    AND d.artifactId = $depGav.artifactId
-                                    AND d.version = $depGav.version
-                                    AND d.classifier = $depGav.classifier
-                                CREATE (a)-[:DEPENDS_ON $depProps]->(d)""",
-                                parameters("parentGav", parentGav, "depGav", depGav, "depProps", depProps))));
+                        Gav depGav = toGav(dep.artifact().artifactInfo());
+                        saveDependency(session, parentGav, new FlatDependency(depGav, dep.optional(), dep.scope()));
                     }
             );
         }
+    }
+
+    public void saveDependency(Gav parent, FlatDependency dep) {
+        try (var session = driver.session()) {
+            saveDependency(session, parent, dep);
+        }
+    }
+
+    private void saveDependency(Session session, Gav parent, FlatDependency dep) {
+        Map<String, Object> parentGav = toGavMap(parent);
+        Map<String, Object> depGav = toGavMap(dep.gav());
+        Map<String, Object> depProps = Map.of("optional", dep.optional(), "scope", dep.scope());
+        session.executeWriteWithoutResult(tx -> tx.run(new Query("""
+                        MATCH (a:Artifact), (d:Artifact)
+                        WHERE
+                            a.groupId = $parentGav.groupId
+                            AND a.artifactId = $parentGav.artifactId
+                            AND a.version = $parentGav.version
+                            AND a.classifier = $parentGav.classifier
+                            AND d.groupId = $depGav.groupId
+                            AND d.artifactId = $depGav.artifactId
+                            AND d.version = $depGav.version
+                            AND d.classifier = $depGav.classifier
+                        CREATE (a)-[:DEPENDS_ON $depProps]->(d)""",
+                parameters("parentGav", parentGav, "depGav", depGav, "depProps", depProps))));
     }
 
     private Gav toGav(ArtifactProps artifactProps) {
         return new Gav(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version());
     }
 
-    private Map<String, Object> toGavMap(ArtifactInfo info) {
-        Gav gav = new Gav(info.groupId(), info.artifactId(), info.version(), info.classifier());
-        return objectMapper.convertValue(gav, new TypeReference<>() {});
+    private Gav toGav(ArtifactInfo artifactInfo) {
+        return new Gav(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier());
+    }
+
+    private Map<String, Object> toGavMap(Gav gav) {
+        Map<String, Object> gavMap = objectMapper.convertValue(gav, new TypeReference<>() {});
+        gavMap.computeIfAbsent("classifier", k -> "");
+        return gavMap;
     }
 
     private ArtifactInfo toArtifactInfo(ArtifactProps artifactProps) {
