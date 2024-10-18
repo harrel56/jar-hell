@@ -139,44 +139,45 @@ public class ArtifactRepository {
         ArtifactProps artifactProps = toArtifactProps(artifactTree.artifactInfo());
         Map<String, Object> propsMap = objectMapper.convertValue(artifactProps, new TypeReference<>() {});
         propsMap.computeIfAbsent("classifier", k -> "");
-        try (var session = driver.session()) {
-            session.executeWriteWithoutResult(tx -> tx.run(new Query("CREATE (a:Artifact $props) SET a.created = datetime()",
-                            parameters("props", propsMap))
-                    )
-            );
 
-            Gav parentGav = toGav(artifactTree.artifactInfo());
-            artifactTree.dependencies().forEach(dep -> {
-                        Gav depGav = toGav(dep.artifact().artifactInfo());
-                        saveDependency(session, parentGav, new FlatDependency(depGav, dep.optional(), dep.scope()));
-                    }
-            );
+        List<FlatDependency> deps = artifactTree.dependencies().stream()
+                .map(dep -> new FlatDependency(toGav(dep.artifact().artifactInfo()), dep.optional(), dep.scope()))
+                .toList();
+        try (var session = driver.session()) {
+            session.executeWriteWithoutResult(tx -> {
+                tx.run(new Query("CREATE (a:Artifact $props) SET a.created = datetime()", parameters("props", propsMap)));
+                saveDependency(tx, toGav(artifactTree.artifactInfo()), deps);
+            });
         }
     }
 
     public void saveDependency(Gav parent, FlatDependency dep) {
         try (var session = driver.session()) {
-            saveDependency(session, parent, dep);
+            session.executeWriteWithoutResult(tx -> saveDependency(tx, parent, List.of(dep)));
         }
     }
 
-    private void saveDependency(Session session, Gav parent, FlatDependency dep) {
-        Map<String, Object> parentGav = toGavMap(parent);
-        Map<String, Object> depGav = toGavMap(dep.gav());
-        Map<String, Object> depProps = Map.of("optional", dep.optional(), "scope", dep.scope());
-        session.executeWriteWithoutResult(tx -> tx.run(new Query("""
-                        MATCH (a:Artifact), (d:Artifact)
-                        WHERE
-                            a.groupId = $parentGav.groupId
-                            AND a.artifactId = $parentGav.artifactId
-                            AND a.version = $parentGav.version
-                            AND a.classifier = $parentGav.classifier
-                            AND d.groupId = $depGav.groupId
-                            AND d.artifactId = $depGav.artifactId
-                            AND d.version = $depGav.version
-                            AND d.classifier = $depGav.classifier
-                        CREATE (a)-[:DEPENDS_ON $depProps]->(d)""",
-                parameters("parentGav", parentGav, "depGav", depGav, "depProps", depProps))));
+    private void saveDependency(TransactionContext tx, Gav parent, List<FlatDependency> deps) {
+        Map<String, Object> parentGavMap = toGavMap(parent);
+        List<Map<String, Map<String, Object>>> dependencies = deps.stream().map(dep -> {
+            Map<String, Object> depGavMap = toGavMap(dep.gav());
+            Map<String, Object> depProps = Map.of("optional", dep.optional(), "scope", dep.scope());
+            return Map.of("parentGav", parentGavMap, "depGav", depGavMap, "depProps", depProps);
+        }).toList();
+        tx.run(new Query("""
+                UNWIND $dependencies AS dep
+                MATCH (a:Artifact), (d:Artifact)
+                WHERE
+                    a.groupId = dep.parentGav.groupId
+                    AND a.artifactId = dep.parentGav.artifactId
+                    AND a.version = dep.parentGav.version
+                    AND a.classifier = dep.parentGav.classifier
+                    AND d.groupId = dep.depGav.groupId
+                    AND d.artifactId = dep.depGav.artifactId
+                    AND d.version = dep.depGav.version
+                    AND d.classifier = dep.depGav.classifier
+                CREATE (a)-[:DEPENDS_ON {optional: dep.depProps.optional, scope: dep.depProps.scope}]->(d)""",
+                parameters("dependencies", dependencies)));
     }
 
     private Gav toGav(ArtifactProps artifactProps) {

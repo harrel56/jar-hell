@@ -128,7 +128,7 @@ class AnalyzeControllerTest {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(host + "/api/v1/analyze"))
                 .POST(HttpUtil.jsonPublisher(
-                        new Gav("org.test", "non-existent", "9.9.9")
+                        new Gav("org.non-existent", "non-existent", "9.9.9")
                 ))
                 .build();
 
@@ -137,7 +137,7 @@ class AnalyzeControllerTest {
         assertThat(response.body()).isEqualTo(
                 new ErrorResponse(host + "/api/v1/analyze",
                         HandlerType.POST,
-                        "Package with coordinates [org.test:non-existent:9.9.9] not found")
+                        "Package with coordinates [org.non-existent:non-existent:9.9.9] not found")
         );
     }
 
