@@ -81,21 +81,48 @@
           "content-type": "application/json"
         },
         "jsonBody": {
-          "responseHeader": {
-            "status": 0,
-            "QTime": 104,
-            "params": {
-              "q": "g:org.test AND a:artifact AND v:3.0.1",
-              "core": "",
-              "indent": "off",
-              "fl": "id,g,a,v,p,ec,timestamp,tags",
-              "start": "",
-              "sort": "score desc,timestamp desc,g asc,a asc,v desc",
-              "rows": "20",
-              "wt": "json",
-              "version": "2.2"
-            }
-          },
+          "responseHeader": {},
+          "response": {
+            "numFound": 1,
+            "start": 0,
+            "docs": [
+              {
+                "id": "org.test:artifact:3.0.1",
+                "g": "org.test",
+                "a": "artifact",
+                "v": "3.0.1",
+                "p": "jar",
+                "timestamp": 1700980879646,
+                "ec": [
+                  "-sources.jar",
+                  ".pom",
+                  "-javadoc.jar",
+                  ".jar"
+                ],
+                "tags": []
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPath": "/solr",
+        "queryParameters": {
+          "q": {
+            "contains": "g:org.test AND a:"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "jsonBody": {
+          "responseHeader": {},
           "response": {
             "numFound": 1,
             "start": 0,

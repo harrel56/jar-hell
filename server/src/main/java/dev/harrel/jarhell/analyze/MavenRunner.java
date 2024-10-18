@@ -79,7 +79,8 @@ class MavenRunner {
                     .map(license -> new Licence(license.getName(), license.getUrl()))
                     .toList();
             // todo: url seems to be resolved incorrectly sometimes :(
-            return new DescriptorInfo(model.getPackaging(), model.getName(), model.getDescription(), model.getUrl(), model.getInceptionYear(), licenses);
+            return new DescriptorInfo(model.getPackaging(), model.getName(), model.getDescription(),
+                    model.getUrl(), model.getInceptionYear(), licenses, result.getDependencies());
         } catch (ArtifactDescriptorException e) {
             throw new IllegalArgumentException(e);
         }

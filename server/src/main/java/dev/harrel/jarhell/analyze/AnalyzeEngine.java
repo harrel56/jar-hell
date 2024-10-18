@@ -1,11 +1,11 @@
 package dev.harrel.jarhell.analyze;
 
+import dev.harrel.jarhell.analyze.Analyzer.AnalysisOutput;
 import dev.harrel.jarhell.error.ResourceNotFoundException;
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.repo.ArtifactRepository;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.graph.DependencyNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,11 +81,10 @@ public class AnalyzeEngine {
         private CompletableFuture<ArtifactTree> computeArtifactTree(Gav gav, AnalysisChain chain) {
             Instant start = Instant.now();
             logger.info("START analysis of [{}]", gav);
-            AnalysisOutput analysisOutput = doAnalyze(gav);
+            AnalysisOutput analysisOutput = analyzer.analyze(gav);
 
             List<CompletableFuture<DependencyInfo>> depFutures = new ArrayList<>(analysisOutput.dependencies().size());
             analysisOutput.dependencies().stream()
-                    .map(DependencyNode::getDependency)
                     .map(RequestScope::toFlatDependency)
                     .forEach(dep -> {
                         AnalysisChain newChain = chain.nextNode(dep);
@@ -125,25 +124,23 @@ public class AnalyzeEngine {
                     });
         }
 
-        private AnalysisOutput doAnalyze(Gav gav) {
-            try {
-                var artifactInfo = analyzer.analyze(gav);
-                var dependencyNodes = mavenRunner.resolveDependencies(gav).getChildren();
-                List<Gav> depGavs = dependencyNodes.stream()
-                        .map(DependencyNode::getDependency)
-                        .map(Dependency::getArtifact)
-                        .map(a -> new Gav(a.getGroupId(), a.getArtifactId(), a.getVersion(), a.getClassifier()))
-                        .toList();
-                logger.info("Direct dependencies of [{}]: {}", gav, depGavs);
-                return new AnalysisOutput(artifactInfo, dependencyNodes);
-            } catch (ArtifactNotFoundException e) {
-                logger.warn("Artifact not found: {}", e.getMessage());
-                var artifactInfo = new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier());
-                return new AnalysisOutput(artifactInfo, List.of());
-            }
-        }
-
-        private record AnalysisOutput(ArtifactInfo artifactInfo, List<DependencyNode> dependencies) {}
+//        private AnalysisOutput doAnalyze(Gav gav) {
+//            try {
+//                var artifactInfo = analyzer.analyze(gav);
+//                var dependencyNodes = mavenRunner.resolveDependencies(gav).getChildren();
+//                List<Gav> depGavs = dependencyNodes.stream()
+//                        .map(DependencyNode::getDependency)
+//                        .map(Dependency::getArtifact)
+//                        .map(a -> new Gav(a.getGroupId(), a.getArtifactId(), a.getVersion(), a.getClassifier()))
+//                        .toList();
+//                logger.info("Direct dependencies of [{}]: {}", gav, depGavs);
+//                return new AnalysisOutput(artifactInfo, dependencyNodes);
+//            } catch (ArtifactNotFoundException e) {
+//                logger.warn("Artifact not found: {}", e.getMessage());
+//                var artifactInfo = new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier());
+//                return new AnalysisOutput(artifactInfo, List.of());
+//            }
+//        }
 
         private static FlatDependency toFlatDependency(Dependency dep) {
             Artifact artifact = dep.getArtifact();

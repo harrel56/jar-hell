@@ -10,6 +10,9 @@ public record Gav(String groupId, String artifactId, String version, String clas
         Objects.requireNonNull(groupId, "Field 'groupId' is required");
         Objects.requireNonNull(artifactId, "Field 'artifactId' is required");
         Objects.requireNonNull(version, "Field 'version' is required");
+        if (classifier != null && classifier.isEmpty()) {
+            classifier = null;
+        }
     }
 
     public Gav(String groupId, String artifactId, String version) {

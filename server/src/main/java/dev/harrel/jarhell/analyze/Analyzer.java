@@ -3,6 +3,7 @@ package dev.harrel.jarhell.analyze;
 import dev.harrel.jarhell.MavenApiClient;
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.model.descriptor.DescriptorInfo;
+import org.eclipse.aether.graph.Dependency;
 
 import javax.inject.Singleton;
 import java.util.HashSet;
@@ -26,17 +27,17 @@ class Analyzer {
         return mavenApiClient.checkIfArtifactExists(gav);
     }
 
-    public ArtifactInfo analyze(String groupId, String artifactId) {
+    public AnalysisOutput analyze(String groupId, String artifactId) {
         String version = mavenApiClient.fetchLatestVersion(groupId, artifactId);
         return analyze(new Gav(groupId, artifactId, version));
     }
 
-    public ArtifactInfo analyze(Gav gav) {
+    public AnalysisOutput analyze(Gav gav) {
         FilesInfo filesInfo = mavenApiClient.fetchFilesInfo(gav);
         DescriptorInfo descriptorInfo = mavenRunner.resolveDescriptor(gav);
         PackageInfo packageInfo = packageAnalyzer.analyzePackage(gav, filesInfo, descriptorInfo.packaging());
 
-        return createArtifactInfo(gav, filesInfo, packageInfo, descriptorInfo);
+        return new AnalysisOutput(createArtifactInfo(gav, filesInfo, packageInfo, descriptorInfo), descriptorInfo.dependencies());
     }
 
     public Long calculateTotalSize(ArtifactTree at) {
@@ -67,5 +68,7 @@ class Analyzer {
                 .mapToLong(d -> traverseTotalSize(d, visited))
                 .sum();
     }
+
+    public record AnalysisOutput(ArtifactInfo artifactInfo, List<Dependency> dependencies) {}
 }
 
