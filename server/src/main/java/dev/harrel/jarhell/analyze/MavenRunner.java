@@ -11,24 +11,19 @@ import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.collection.CollectRequest;
-import org.eclipse.aether.collection.CollectResult;
-import org.eclipse.aether.collection.DependencyCollectionException;
 import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
 import org.eclipse.aether.resolution.ArtifactDescriptorResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
 import java.util.List;
+import java.util.Set;
 
 @Singleton
 class MavenRunner {
-    private static final Logger logger = LoggerFactory.getLogger(MavenRunner.class);
+    private static final Set<String> SCOPE_FILTER = Set.of("compile", "runtime");
 
     private static final String MAVEN_CENTRAL = Config.get("maven.repo-url");
 
@@ -40,31 +35,6 @@ class MavenRunner {
         this.repoSystem = repoSystem;
         this.session = session;
         this.remoteRepos = List.of(new RemoteRepository.Builder("central", "default", MAVEN_CENTRAL).build());
-    }
-
-    // todo: this resolves all deps when only first level of deps is needed
-    public DependencyNode resolveDependencies(Gav gavWithClassifier) {
-        Gav gav = gavWithClassifier.stripClassifier();
-        CollectRequest request = createCollectRequest(gav);
-        try {
-            CollectResult collectResult = repoSystem.collectDependencies(session, request);
-            if (!collectResult.getCycles().isEmpty()) {
-                logger.warn("Cycles detected in artifact [{}] deps: {}", gavWithClassifier, collectResult.getCycles());
-                if (gavWithClassifier.classifier() != null) {
-                    List<DependencyNode> filteredChildren = collectResult.getRoot().getChildren().stream()
-                            .filter(child ->
-                                    !gav.equals(new Gav(child.getArtifact().getGroupId(), child.getArtifact().getArtifactId(), child.getArtifact().getVersion())))
-                            .toList();
-                    collectResult.getRoot().setChildren(filteredChildren);
-                }
-            }
-            if (!collectResult.getExceptions().isEmpty()) {
-                throw new IllegalArgumentException("Errors found in: " + gav);
-            }
-            return collectResult.getRoot();
-        } catch (DependencyCollectionException e) {
-            throw new IllegalArgumentException(e);
-        }
     }
 
     public DescriptorInfo resolveDescriptor(Gav gavWithClassifier) {
@@ -81,6 +51,7 @@ class MavenRunner {
                     .toList();
             List<FlatDependency> deps = result.getDependencies().stream()
                     .map(MavenRunner::toFlatDependency)
+                    .filter(dep -> SCOPE_FILTER.contains(dep.scope()))
                     .toList();
 
             // todo: url seems to be resolved incorrectly sometimes :(
@@ -89,14 +60,6 @@ class MavenRunner {
         } catch (ArtifactDescriptorException e) {
             throw new IllegalArgumentException(e);
         }
-    }
-
-    private CollectRequest createCollectRequest(Gav gav) {
-        Artifact artifact = new DefaultArtifact(gav.toString());
-        CollectRequest collectRequest = new CollectRequest();
-        collectRequest.setRoot(new Dependency(artifact, ""));
-        collectRequest.setRepositories(remoteRepos);
-        return collectRequest;
     }
 
     private static FlatDependency toFlatDependency(Dependency dep) {
