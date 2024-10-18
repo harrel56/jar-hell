@@ -180,7 +180,7 @@ public class ArtifactRepository {
     }
 
     private Gav toGav(ArtifactProps artifactProps) {
-        return new Gav(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version());
+        return new Gav(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier());
     }
 
     private Gav toGav(ArtifactInfo artifactInfo) {
@@ -257,9 +257,19 @@ public class ArtifactRepository {
         }
 
         ArtifactTree toArtifactTree() {
-            List<DependencyInfo> depsList = deps.values().stream()
-                    .map(data -> new DependencyInfo(data.toArtifactTree(), data.relationProps.optional(), data.relationProps.scope()))
-                    .toList();
+            return toArtifactTree(Set.of());
+        }
+
+        private ArtifactTree toArtifactTree(Set<Gav> visited) {
+            Gav gav = toGav(artifactProps);
+            List<DependencyInfo> depsList = null;
+            if (!visited.contains(gav)) {
+                Set<Gav> newVisited = new HashSet<>(visited);
+                newVisited.add(gav);
+                depsList = deps.values().stream()
+                        .map(data -> new DependencyInfo(data.toArtifactTree(newVisited), data.relationProps.optional(), data.relationProps.scope()))
+                        .toList();
+            }
             return new ArtifactTree(toArtifactInfo(artifactProps), depsList);
         }
     }

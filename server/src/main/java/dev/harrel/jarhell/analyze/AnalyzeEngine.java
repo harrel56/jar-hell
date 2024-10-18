@@ -4,8 +4,6 @@ import dev.harrel.jarhell.analyze.Analyzer.AnalysisOutput;
 import dev.harrel.jarhell.error.ResourceNotFoundException;
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.repo.ArtifactRepository;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.graph.Dependency;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,12 +22,10 @@ public class AnalyzeEngine {
     private final ConcurrentHashMap<Gav, CompletableFuture<ArtifactTree>> processingMap = new ConcurrentHashMap<>();
 
     private final ArtifactRepository artifactRepository;
-    private final MavenRunner mavenRunner;
     private final Analyzer analyzer;
 
-    AnalyzeEngine(ArtifactRepository artifactRepository, MavenRunner mavenRunner, Analyzer analyzer) {
+    AnalyzeEngine(ArtifactRepository artifactRepository, Analyzer analyzer) {
         this.artifactRepository = artifactRepository;
-        this.mavenRunner = mavenRunner;
         this.analyzer = analyzer;
     }
 
@@ -82,27 +78,26 @@ public class AnalyzeEngine {
             Instant start = Instant.now();
             logger.info("START analysis of [{}]", gav);
             AnalysisOutput analysisOutput = analyzer.analyze(gav);
+            logger.info("Direct dependencies of {}: {}", gav, analysisOutput.dependencies());
 
             List<CompletableFuture<DependencyInfo>> depFutures = new ArrayList<>(analysisOutput.dependencies().size());
-            analysisOutput.dependencies().stream()
-                    .map(RequestScope::toFlatDependency)
-                    .forEach(dep -> {
-                        AnalysisChain newChain = chain.nextNode(dep);
-                        AnalysisChain.CycleData cycleData = newChain.checkCycle();
-                        if (cycleData == null) {
-                            var depFuture = analyzeInternal(dep.gav(), newChain).thenApply(at -> new DependencyInfo(at, dep.optional(), dep.scope()));
-                            depFutures.add(depFuture);
-                        } else {
-                            if (cycleData.hard()) {
-                                String msg = "HARD CYCLE found, preceding: %s, cycle: %s".formatted(cycleData.preceding(), cycleData.cycle());
-                                logger.error(msg);
-                                throw new IllegalArgumentException(msg);
-                            }
-                            logger.warn("SOFT CYCLE found, preceding: {}, cycle: {}", cycleData.preceding(), cycleData.cycle());
-                            analysisEndCallbacks.computeIfAbsent(dep.gav(), k -> new ArrayList<>())
-                                    .add(() -> artifactRepository.saveDependency(gav, dep));
-                        }
-                    });
+            for (FlatDependency dep : analysisOutput.dependencies()) {
+                AnalysisChain newChain = chain.nextNode(dep);
+                AnalysisChain.CycleData cycleData = newChain.checkCycle();
+                if (cycleData == null) {
+                    var depFuture = analyzeInternal(dep.gav(), newChain).thenApply(at -> new DependencyInfo(at, dep.optional(), dep.scope()));
+                    depFutures.add(depFuture);
+                } else {
+                    if (cycleData.hard()) {
+                        String msg = "HARD CYCLE found, preceding: %s, cycle: %s".formatted(cycleData.preceding(), cycleData.cycle());
+                        logger.error(msg);
+                        throw new IllegalArgumentException(msg);
+                    }
+                    logger.warn("SOFT CYCLE found, preceding: {}, cycle: {}", cycleData.preceding(), cycleData.cycle());
+                    analysisEndCallbacks.computeIfAbsent(dep.gav(), k -> new ArrayList<>())
+                            .add(() -> artifactRepository.saveDependency(gav, dep));
+                }
+            }
 
             return CompletableFuture.allOf(depFutures.toArray(CompletableFuture[]::new))
                     .thenApply(nothing ->
@@ -122,31 +117,6 @@ public class AnalyzeEngine {
                         logger.info("END analysis of [{}] - completed in {}ms", gav, timeElapsed);
                         return artifactTree;
                     });
-        }
-
-//        private AnalysisOutput doAnalyze(Gav gav) {
-//            try {
-//                var artifactInfo = analyzer.analyze(gav);
-//                var dependencyNodes = mavenRunner.resolveDependencies(gav).getChildren();
-//                List<Gav> depGavs = dependencyNodes.stream()
-//                        .map(DependencyNode::getDependency)
-//                        .map(Dependency::getArtifact)
-//                        .map(a -> new Gav(a.getGroupId(), a.getArtifactId(), a.getVersion(), a.getClassifier()))
-//                        .toList();
-//                logger.info("Direct dependencies of [{}]: {}", gav, depGavs);
-//                return new AnalysisOutput(artifactInfo, dependencyNodes);
-//            } catch (ArtifactNotFoundException e) {
-//                logger.warn("Artifact not found: {}", e.getMessage());
-//                var artifactInfo = new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier());
-//                return new AnalysisOutput(artifactInfo, List.of());
-//            }
-//        }
-
-        private static FlatDependency toFlatDependency(Dependency dep) {
-            Artifact artifact = dep.getArtifact();
-            Gav gav = new Gav(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(), artifact.getClassifier());
-            String scope = dep.getScope().isBlank() ? "compile" : dep.getScope();
-            return new FlatDependency(gav, dep.isOptional(), scope);
         }
     }
 }

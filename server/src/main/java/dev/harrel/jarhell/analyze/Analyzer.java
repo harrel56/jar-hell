@@ -3,7 +3,6 @@ package dev.harrel.jarhell.analyze;
 import dev.harrel.jarhell.MavenApiClient;
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.model.descriptor.DescriptorInfo;
-import org.eclipse.aether.graph.Dependency;
 
 import javax.inject.Singleton;
 import java.util.HashSet;
@@ -69,6 +68,6 @@ class Analyzer {
                 .sum();
     }
 
-    public record AnalysisOutput(ArtifactInfo artifactInfo, List<Dependency> dependencies) {}
+    public record AnalysisOutput(ArtifactInfo artifactInfo, List<FlatDependency> dependencies) {}
 }
 

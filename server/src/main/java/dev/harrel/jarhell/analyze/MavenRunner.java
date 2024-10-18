@@ -1,6 +1,7 @@
 package dev.harrel.jarhell.analyze;
 
 import dev.harrel.jarhell.maven.CustomDescriptorReaderDelegate;
+import dev.harrel.jarhell.model.FlatDependency;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.descriptor.DescriptorInfo;
 import dev.harrel.jarhell.model.descriptor.Licence;
@@ -73,14 +74,18 @@ class MavenRunner {
             ArtifactDescriptorResult result = repoSystem.readArtifactDescriptor(session, request);
             Model model = (Model) result.getProperties().get(CustomDescriptorReaderDelegate.MODEL_KEY);
             if (model == null) {
-                throw new IllegalArgumentException("Descriptor was not parsed into a model: " + gav);
+                throw new IllegalArgumentException("Descriptor was not parsed into a model (couldn't retrieve pom?): " + gav);
             }
             List<Licence> licenses = model.getLicenses().stream()
                     .map(license -> new Licence(license.getName(), license.getUrl()))
                     .toList();
+            List<FlatDependency> deps = result.getDependencies().stream()
+                    .map(MavenRunner::toFlatDependency)
+                    .toList();
+
             // todo: url seems to be resolved incorrectly sometimes :(
             return new DescriptorInfo(model.getPackaging(), model.getName(), model.getDescription(),
-                    model.getUrl(), model.getInceptionYear(), licenses, result.getDependencies());
+                    model.getUrl(), model.getInceptionYear(), licenses, deps);
         } catch (ArtifactDescriptorException e) {
             throw new IllegalArgumentException(e);
         }
@@ -92,5 +97,12 @@ class MavenRunner {
         collectRequest.setRoot(new Dependency(artifact, ""));
         collectRequest.setRepositories(remoteRepos);
         return collectRequest;
+    }
+
+    private static FlatDependency toFlatDependency(Dependency dep) {
+        Artifact artifact = dep.getArtifact();
+        Gav gav = new Gav(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(), artifact.getClassifier());
+        String scope = dep.getScope().isBlank() ? "compile" : dep.getScope();
+        return new FlatDependency(gav, dep.isOptional(), scope);
     }
 }
