@@ -23,7 +23,7 @@ import java.util.Set;
 
 @Singleton
 class MavenRunner {
-    private static final Set<String> SCOPE_FILTER = Set.of("compile", "runtime");
+    private static final Set<String> SCOPE_FILTER = Set.of("compile", "runtime", "system");
 
     private static final String MAVEN_CENTRAL = Config.get("maven.repo-url");
 
