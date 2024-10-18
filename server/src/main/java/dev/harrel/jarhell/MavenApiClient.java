@@ -130,7 +130,7 @@ public class MavenApiClient {
         StringJoiner joiner = new StringJoiner("-")
                 .add(gav.artifactId())
                 .add(gav.version());
-        if (gav.classifier() != null) {
+        if (gav.classifier() != null && !gav.classifier().isEmpty()) {
             joiner.add(gav.classifier());
         }
         String fileName = "%s.%s".formatted(joiner, fileExtension);

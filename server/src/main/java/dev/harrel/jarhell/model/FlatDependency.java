@@ -1,3 +1,3 @@
 package dev.harrel.jarhell.model;
 
-public record FlatDependency(Gav gav, Boolean optional, String scope) {}
+public record FlatDependency(Gav gav, boolean optional, String scope) {}

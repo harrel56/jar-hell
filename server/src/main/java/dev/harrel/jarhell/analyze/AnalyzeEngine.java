@@ -43,7 +43,7 @@ public class AnalyzeEngine {
             throw new ResourceNotFoundException(gav);
         }
 
-        return new RequestScope().analyzeInternal(gav, new LinkedHashSet<>(Set.of(gav))).whenComplete((value, ex) -> {
+        return new RequestScope().analyzeInternal(gav, AnalysisChain.start(gav)).whenComplete((value, ex) -> {
             if (ex != null) {
                 logger.error("Error occurred during analysis of [{}]", gav, ex);
             }
@@ -53,7 +53,7 @@ public class AnalyzeEngine {
     private class RequestScope {
         private final ConcurrentMap<Gav, List<Runnable>> analysisEndCallbacks = new ConcurrentHashMap<>();
 
-        private CompletableFuture<ArtifactTree> analyzeInternal(Gav gav, SequencedSet<Gav> chain) {
+        private CompletableFuture<ArtifactTree> analyzeInternal(Gav gav, AnalysisChain chain) {
             CompletableFuture<ArtifactTree> future = new CompletableFuture<>();
             CompletableFuture<ArtifactTree> currentFuture = processingMap.putIfAbsent(gav, future);
             if (currentFuture != null) {
@@ -72,13 +72,13 @@ public class AnalyzeEngine {
             return future;
         }
 
-        private CompletableFuture<ArtifactTree> getArtifactTree(Gav gav, SequencedSet<Gav> chain) {
+        private CompletableFuture<ArtifactTree> getArtifactTree(Gav gav, AnalysisChain chain) {
             return artifactRepository.find(gav)
                     .map(CompletableFuture::completedFuture)
                     .orElseGet(() -> computeArtifactTree(gav, chain));
         }
 
-        private CompletableFuture<ArtifactTree> computeArtifactTree(Gav gav, SequencedSet<Gav> chain) {
+        private CompletableFuture<ArtifactTree> computeArtifactTree(Gav gav, AnalysisChain chain) {
             Instant start = Instant.now();
             logger.info("START analysis of [{}]", gav);
             AnalysisOutput analysisOutput = doAnalyze(gav);
@@ -88,12 +88,20 @@ public class AnalyzeEngine {
                     .map(DependencyNode::getDependency)
                     .map(RequestScope::toFlatDependency)
                     .forEach(dep -> {
-                        if (chain.contains(dep.gav())) {
-                            logger.warn("CYCLE found, chain: {}, dependency: {}", chain, gav);
+                        AnalysisChain newChain = chain.nextNode(dep);
+                        AnalysisChain.CycleData cycleData = newChain.checkCycle();
+                        if (cycleData == null) {
+                            var depFuture = analyzeInternal(dep.gav(), newChain).thenApply(at -> new DependencyInfo(at, dep.optional(), dep.scope()));
+                            depFutures.add(depFuture);
+                        } else {
+                            if (cycleData.hard()) {
+                                String msg = "HARD CYCLE found, preceding: %s, cycle: %s".formatted(cycleData.preceding(), cycleData.cycle());
+                                logger.error(msg);
+                                throw new IllegalArgumentException(msg);
+                            }
+                            logger.warn("SOFT CYCLE found, preceding: {}, cycle: {}", cycleData.preceding(), cycleData.cycle());
                             analysisEndCallbacks.computeIfAbsent(dep.gav(), k -> new ArrayList<>())
                                     .add(() -> artifactRepository.saveDependency(gav, dep));
-                        } else {
-                            depFutures.add(computeDependencyInfo(dep, chain));
                         }
                     });
 
@@ -135,17 +143,7 @@ public class AnalyzeEngine {
             }
         }
 
-        private CompletableFuture<DependencyInfo> computeDependencyInfo(FlatDependency dep, SequencedSet<Gav> chain) {
-            return analyzeInternal(dep.gav(), chained(chain, dep.gav())).thenApply(at -> new DependencyInfo(at, dep.optional(), dep.scope()));
-        }
-
         private record AnalysisOutput(ArtifactInfo artifactInfo, List<DependencyNode> dependencies) {}
-
-        private static SequencedSet<Gav> chained(SequencedSet<Gav> chain, Gav gav) {
-            SequencedSet<Gav> res = new LinkedHashSet<>(chain);
-            res.add(gav);
-            return Collections.unmodifiableSequencedSet(res);
-        }
 
         private static FlatDependency toFlatDependency(Dependency dep) {
             Artifact artifact = dep.getArtifact();
