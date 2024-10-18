@@ -72,4 +72,66 @@ class CyclicAnalysisTest {
                 .containsEntry("artifactId", "cycle-self-soft")
                 .doesNotContainKey("dependencies");
     }
+
+    @Test
+    void hardCycleWithThreeArtifactsFails() throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(host + "/api/v1/analyze-and-wait"))
+                .POST(HttpUtil.jsonPublisher(
+                        new Gav("org.test", "cycle1", "1.0.0")
+                ))
+                .build();
+
+        HttpResponse<ErrorResponse> response = httpClient.send(request, HttpUtil.jsonHandler(ErrorResponse.class));
+        assertThat(response.statusCode()).isEqualTo(500);
+        assertThat(response.body()).isEqualTo(
+                new ErrorResponse(host + "/api/v1/analyze-and-wait",
+                        HandlerType.POST,
+                        "HARD CYCLE found, preceding: [], cycle: [org.test:cycle1:1.0.0, org.test:cycle2:1.0.0, org.test:cycle3:1.0.0, org.test:cycle1:1.0.0]")
+        );
+    }
+
+    @Test
+    void hardCycleWithFourArtifactsFails() throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(host + "/api/v1/analyze-and-wait"))
+                .POST(HttpUtil.jsonPublisher(
+                        new Gav("org.test", "pre-cycle", "1.0.0")
+                ))
+                .build();
+
+        HttpResponse<ErrorResponse> response = httpClient.send(request, HttpUtil.jsonHandler(ErrorResponse.class));
+        assertThat(response.statusCode()).isEqualTo(500);
+        assertThat(response.body()).isEqualTo(
+                new ErrorResponse(host + "/api/v1/analyze-and-wait",
+                        HandlerType.POST,
+                        "HARD CYCLE found, preceding: [org.test:pre-cycle:1.0.0], cycle: [org.test:cycle3:1.0.0, org.test:cycle1:1.0.0, org.test:cycle2:1.0.0, org.test:cycle3:1.0.0]")
+        );
+    }
+
+//    @Test
+//    @SuppressWarnings("unchecked")
+//    void softCycleWithThreeArtifactsPasses() throws IOException, InterruptedException {
+//        HttpRequest request = HttpRequest.newBuilder()
+//                .uri(URI.create(host + "/api/v1/analyze-and-wait"))
+//                .POST(HttpUtil.jsonPublisher(
+//                        new Gav("org.test", "cycle1-soft", "1.0.0")
+//                ))
+//                .build();
+//
+//        HttpResponse<Map<String, Object>> response = httpClient.send(request, HttpUtil.jsonHandler(new TypeReference<>() {}));
+//        assertThat(response.statusCode()).isEqualTo(200);
+//        Map<String, Object> properties = response.body();
+//        assertThat(properties).containsEntry("artifactId", "cycle1-soft");
+//        List<Map<String, Object>> deps = (List<Map<String, Object>>) properties.get("dependencies");
+//        assertThat(deps).hasSize(2);
+//        assertThat(deps.get(0))
+//                .containsEntry("optional", true)
+//                .containsEntry("scope", "compile");
+//        assertThat(deps.get(1))
+//                .containsEntry("optional", true)
+//                .containsEntry("scope", "compile");
+//        Map<String, Object> depProps1 = (Map<String, Object>) deps.get(0).get("artifact");
+//        Map<String, Object> depProps2 = (Map<String, Object>) deps.get(1).get("artifact");
+//    }
 }
