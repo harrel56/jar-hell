@@ -78,10 +78,10 @@ public class AnalyzeEngine {
             Instant start = Instant.now();
             logger.info("START analysis of [{}]", gav);
             AnalysisOutput analysisOutput = analyzer.analyze(gav);
-            logger.info("Direct dependencies of {}: {}", gav, analysisOutput.dependencies());
+            logger.info("Direct dependencies of {}: {}", gav, analysisOutput.dependencies().directDependencies());
 
-            List<CompletableFuture<DependencyInfo>> depFutures = new ArrayList<>(analysisOutput.dependencies().size());
-            for (FlatDependency dep : analysisOutput.dependencies()) {
+            List<CompletableFuture<DependencyInfo>> depFutures = new ArrayList<>(analysisOutput.dependencies().directDependencies().size());
+            for (FlatDependency dep : analysisOutput.dependencies().directDependencies()) {
                 AnalysisChain newChain = chain.nextNode(dep);
                 AnalysisChain.CycleData cycleData = newChain.checkCycle();
                 if (cycleData == null) {

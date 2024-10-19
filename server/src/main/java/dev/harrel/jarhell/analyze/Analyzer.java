@@ -34,9 +34,10 @@ class Analyzer {
     public AnalysisOutput analyze(Gav gav) {
         FilesInfo filesInfo = mavenApiClient.fetchFilesInfo(gav);
         DescriptorInfo descriptorInfo = mavenRunner.resolveDescriptor(gav);
+        CollectedDependencies dependencies = mavenRunner.collectDependencies(gav);
         PackageInfo packageInfo = packageAnalyzer.analyzePackage(gav, filesInfo, descriptorInfo.packaging());
 
-        return new AnalysisOutput(createArtifactInfo(gav, filesInfo, packageInfo, descriptorInfo), descriptorInfo.dependencies());
+        return new AnalysisOutput(createArtifactInfo(gav, filesInfo, packageInfo, descriptorInfo), dependencies);
     }
 
     public Long calculateTotalSize(ArtifactTree at) {
@@ -68,6 +69,6 @@ class Analyzer {
                 .sum();
     }
 
-    public record AnalysisOutput(ArtifactInfo artifactInfo, List<FlatDependency> dependencies) {}
+    public record AnalysisOutput(ArtifactInfo artifactInfo, CollectedDependencies dependencies) {}
 }
 
