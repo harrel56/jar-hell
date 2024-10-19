@@ -25,6 +25,5 @@ class MavenRunnerTest {
 //        DependencyNode node = mavenRunner.collectDependencies(
 //                new Gav("org.apache.hadoop", "hadoop-mapreduce-client-core", "2.6.5"));
 //        DependencyNode node = mavenRunner.collectDependencies(new Gav("dev.harrel", "json-schema", "1.7.1"));
-        System.out.println(node);
     }
 }
