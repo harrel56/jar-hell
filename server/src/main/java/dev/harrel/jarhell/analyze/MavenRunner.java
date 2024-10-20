@@ -17,7 +17,6 @@ import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
-import org.eclipse.aether.graph.DependencyVisitor;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
@@ -26,7 +25,6 @@ import org.eclipse.aether.util.graph.visitor.PreorderNodeListGenerator;
 
 import javax.inject.Singleton;
 import java.util.List;
-import java.util.Set;
 
 @Singleton
 class MavenRunner {
@@ -59,6 +57,7 @@ class MavenRunner {
             collectResult.getRoot().accept(visitor);
             List<FlatDependency> allDependencies = visitor.getDependencies(true).stream()
                     .map(MavenRunner::toFlatDependency)
+                    .filter(dep -> !dep.gav().equals(gav))
                     .toList();
 
             return new CollectedDependencies(directDependencies, allDependencies);
@@ -90,7 +89,7 @@ class MavenRunner {
     }
 
     private CollectRequest createCollectRequest(Gav gav) {
-        Artifact artifact = new DefaultArtifact(gav.toString());
+        Artifact artifact = new DefaultArtifact(gav.groupId(), gav.artifactId(), gav.classifier(), "jar", gav.version());
         CollectRequest collectRequest = new CollectRequest();
         collectRequest.setRoot(new Dependency(artifact, ""));
         collectRequest.setRepositories(remoteRepos);
