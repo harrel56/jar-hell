@@ -16,6 +16,7 @@ import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.DependencyCycle;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
@@ -24,7 +25,8 @@ import org.eclipse.aether.resolution.ArtifactDescriptorResult;
 import org.eclipse.aether.util.graph.visitor.PreorderNodeListGenerator;
 
 import javax.inject.Singleton;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Singleton
 class MavenRunner {
@@ -60,7 +62,21 @@ class MavenRunner {
                     .filter(dep -> !dep.gav().equals(gav))
                     .toList();
 
-            return new CollectedDependencies(directDependencies, allDependencies);
+            Map<Gav, Set<Gav>> cyclesToBreak = new HashMap<>();
+            collectResult.getCycles().stream()
+                    .map(DependencyCycle::getCyclicDependencies)
+                    .forEach(cycles -> {
+                        List<Gav> cyclicList = cycles.stream()
+                                .map(MavenRunner::toGav)
+                                .limit(cycles.size() - 1L)
+                                .toList();
+                        Gav nodeToBreak = Collections.min(cyclicList);
+                        int index = cyclicList.indexOf(nodeToBreak);
+                        cyclesToBreak.computeIfAbsent(nodeToBreak.stripClassifier(), key -> new HashSet<>())
+                                .add(cyclicList.get((index + 1) % cyclicList.size()));
+                    });
+
+            return new CollectedDependencies(directDependencies, allDependencies, cyclesToBreak);
         } catch (DependencyCollectionException e) {
             throw new IllegalArgumentException(e);
         }
@@ -96,10 +112,13 @@ class MavenRunner {
         return collectRequest;
     }
 
-    private static FlatDependency toFlatDependency(Dependency dep) {
+    private static Gav toGav(Dependency dep) {
         Artifact artifact = dep.getArtifact();
-        Gav gav = new Gav(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(), artifact.getClassifier());
+        return new Gav(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(), artifact.getClassifier());
+    }
+
+    private static FlatDependency toFlatDependency(Dependency dep) {
         String scope = dep.getScope().isBlank() ? "compile" : dep.getScope();
-        return new FlatDependency(gav, dep.isOptional(), scope);
+        return new FlatDependency(toGav(dep), dep.isOptional(), scope);
     }
 }

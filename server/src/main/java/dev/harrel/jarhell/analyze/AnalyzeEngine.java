@@ -13,6 +13,8 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Singleton
 public class AnalyzeEngine {
@@ -58,12 +60,22 @@ public class AnalyzeEngine {
             CompletableFuture.supplyAsync(() -> getArtifactTree(gav, chain), executorService)
                     .thenCompose(Function.identity()) // flatMap
                     .whenComplete((value, ex) -> {
-                        if (ex == null) {
-                            future.complete(value);
-                        } else {
+                        try {
+                            if (ex == null) {
+                                future.complete(value);
+                                // todo: arraylist is not thread-safe, use locks?
+                                List<Runnable> callbacks = analysisEndCallbacks.computeIfAbsent(gav, k -> new ArrayList<>());
+                                callbacks.forEach(Runnable::run);
+                                analysisEndCallbacks.remove(gav);
+                            } else {
+                                future.completeExceptionally(ex);
+                            }
+                        } catch (Exception e) {
+                            logger.error("Error occurred when calling callbacks of [{}]", gav, e);
                             future.completeExceptionally(ex);
+                        } finally {
+                            processingMap.remove(gav, future);
                         }
-                        processingMap.remove(gav, future);
                     });
             return future;
         }
@@ -78,40 +90,72 @@ public class AnalyzeEngine {
             Instant start = Instant.now();
             logger.info("START analysis of [{}]", gav);
             AnalysisOutput analysisOutput = analyzer.analyze(gav);
+            Set<Gav> depsToBreak = analysisOutput.dependencies().cyclesToBreak().getOrDefault(gav.stripClassifier(), Set.of());
             logger.info("Direct dependencies of {}: {}", gav, analysisOutput.dependencies().directDependencies());
 
-            List<CompletableFuture<DependencyInfo>> depFutures = new ArrayList<>(analysisOutput.dependencies().directDependencies().size());
+            List<CompletableFuture<DependencyInfo>> directDepFutures = new ArrayList<>(analysisOutput.dependencies().directDependencies().size());
             for (FlatDependency dep : analysisOutput.dependencies().directDependencies()) {
-                AnalysisChain newChain = chain.nextNode(dep);
-                AnalysisChain.CycleData cycleData = newChain.checkCycle();
-                if (cycleData == null) {
-                    var depFuture = analyzeInternal(dep.gav(), newChain).thenApply(at -> new DependencyInfo(at, dep.optional(), dep.scope()));
-                    depFutures.add(depFuture);
-                } else {
-                    if (cycleData.hard()) {
-                        String msg = "HARD CYCLE found, preceding: %s, cycle: %s".formatted(cycleData.preceding(), cycleData.cycle());
-                        logger.error(msg);
-                        throw new IllegalArgumentException(msg);
-                    }
-                    logger.warn("SOFT CYCLE found, preceding: {}, cycle: {}", cycleData.preceding(), cycleData.cycle());
+                if (depsToBreak.contains(dep.gav())) {
+                    logger.warn("CYCLE found, breaking dependency: {}", dep.gav());
+                    CompletableFuture<DependencyInfo> cyclicDep = CompletableFuture.supplyAsync(() -> {
+                        ArtifactInfo depInfo = analyzer.analyzeWithoutDeps(dep.gav());
+                        return new DependencyInfo(new ArtifactTree(depInfo, List.of()), dep.optional(), dep.scope());
+                    }, executorService);
+                    directDepFutures.add(cyclicDep);
+                    // trigger analysis of the dependency as it might get never triggered
+                    analysisEndCallbacks.computeIfAbsent(gav, k -> new ArrayList<>())
+                            .add(() -> analyzeInternal(dep.gav(), AnalysisChain.start(dep.gav())).join());
+                    // restore the relation when dependency is analyzed
                     analysisEndCallbacks.computeIfAbsent(dep.gav(), k -> new ArrayList<>())
                             .add(() -> artifactRepository.saveDependency(gav, dep));
+                } else {
+                    var depFuture = analyzeInternal(dep.gav(), chain.nextNode(dep)).thenApply(at -> new DependencyInfo(at, dep.optional(), dep.scope()));
+                    directDepFutures.add(depFuture);
                 }
+//                AnalysisChain newChain = chain.nextNode(dep);
+//                AnalysisChain.CycleData cycleData = newChain.checkCycle();
+//                if (cycleData == null) {
+//                    var depFuture = analyzeInternal(dep.gav(), newChain).thenApply(at -> new DependencyInfo(at, dep.optional(), dep.scope()));
+//                    directDepFutures.add(depFuture);
+//                } else {
+//                    logger.warn("{} CYCLE found, preceding: {}, cycle: {}", cycleData.hard() ? "HARD" : "SOFT", cycleData.preceding(), cycleData.cycle());
+//                    analysisEndCallbacks.computeIfAbsent(dep.gav(), k -> new ArrayList<>())
+//                            .add(() -> artifactRepository.saveDependency(gav, dep));
+//                    ArtifactInfo info = new ArtifactInfo(dep.gav().groupId(), dep.gav().artifactId(), dep.gav().version(), dep.gav().classifier());
+//                    DependencyInfo di = new DependencyInfo(new ArtifactTree(info, List.of()), dep.optional(), dep.scope());
+//                    directDepFutures.add(CompletableFuture.completedFuture(di));
+//                }
             }
 
-            return CompletableFuture.allOf(depFutures.toArray(CompletableFuture[]::new))
-                    .thenApply(nothing ->
-                            depFutures.stream()
-                                    .map(CompletableFuture::join)
-                                    .toList()
-                    )
-                    .thenApply(deps -> {
-                        ArtifactTree artifactTree = new ArtifactTree(analysisOutput.artifactInfo(), deps);
-                        Long totalSize = analyzer.calculateTotalSize(artifactTree);
-                        artifactRepository.save(artifactTree.withTotalSize(totalSize));
-                        List<Runnable> callbacks = analysisEndCallbacks.computeIfAbsent(gav, k -> new ArrayList<>());
-                        callbacks.forEach(Runnable::run);
-                        analysisEndCallbacks.remove(gav);
+            return CompletableFuture.allOf(directDepFutures.toArray(CompletableFuture[]::new))
+                    .thenApply(ignored -> {
+                        Map<Gav, ArtifactTree> directDeps = directDepFutures.stream().map(CompletableFuture::join)
+                                        .collect(Collectors.toMap(di -> new Gav(di.artifact().artifactInfo().groupId(),
+                                                di.artifact().artifactInfo().artifactId(), di.artifact().artifactInfo().version(),
+                                                di.artifact().artifactInfo().classifier()), DependencyInfo::artifact));
+//                        return List.of();
+                        return analysisOutput.dependencies().allDependencies().stream()
+                                .map(dep -> Optional.ofNullable(directDeps.get(dep.gav()))
+                                        .map(CompletableFuture::completedFuture)
+                                        .orElseGet(() -> analyzeInternal(dep.gav(), AnalysisChain.start(dep.gav()))))
+                                .map(CompletableFuture::join)
+                                .toList();
+
+//                        return analysisOutput.dependencies().allDependencies().stream()
+//                                .map(dep -> analyzeInternal(dep.gav(), AnalysisChain.start(dep.gav())))
+//                                .map(CompletableFuture::join)
+//                                .toList();
+                    })
+                    .thenApply(allDeps -> {
+                        List<DependencyInfo> directDeps = directDepFutures.stream().map(CompletableFuture::join).collect(Collectors.toCollection(ArrayList::new));
+
+                        ArtifactTree artifactTree = new ArtifactTree(analysisOutput.artifactInfo(), directDeps);
+//                        Analyzer.TraversalOutput to = analyzer.adjustArtifactTree(artifactTree, allDeps);
+//                        logger.warn("Traversal output: {}", to);
+
+                        Long totalSize = allDeps.stream().reduce(0L, (acc, dep) -> acc + (dep.artifactInfo().packageSize() == null ? 0 : dep.artifactInfo().packageSize()), Long::sum);
+//                        Long totalSize = analyzer.calculateTotalSize(artifactTree);
+                        artifactRepository.save(artifactTree.withTotalSize(totalSize + artifactTree.artifactInfo().packageSize()));
 
                         long timeElapsed = Duration.between(start, Instant.now()).toMillis();
                         logger.info("END analysis of [{}] - completed in {}ms", gav, timeElapsed);

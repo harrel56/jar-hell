@@ -45,8 +45,21 @@ class Analyzer {
         } catch (Exception e) {
             logger.warn("Failed to analyze artifact: {}, marking it as unresolved", gav, e);
             return new AnalysisOutput(new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier()),
-                    new CollectedDependencies(List.of(), List.of()));
+                    new CollectedDependencies(List.of(), List.of(), Map.of()));
 
+        }
+    }
+
+    public ArtifactInfo analyzeWithoutDeps(Gav gav) {
+        try {
+            FilesInfo filesInfo = mavenApiClient.fetchFilesInfo(gav);
+            DescriptorInfo descriptorInfo = mavenRunner.resolveDescriptor(gav);
+            PackageInfo packageInfo = packageAnalyzer.analyzePackage(gav, filesInfo, descriptorInfo.packaging());
+
+            return createArtifactInfo(gav, filesInfo, packageInfo, descriptorInfo);
+        } catch (Exception e) {
+            logger.warn("Failed to analyze artifact (without deps): {}, marking it as unresolved", gav, e);
+            return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier());
         }
     }
 
