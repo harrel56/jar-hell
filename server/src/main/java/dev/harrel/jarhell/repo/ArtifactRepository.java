@@ -176,7 +176,7 @@ public class ArtifactRepository {
                     AND d.artifactId = dep.depGav.artifactId
                     AND d.version = dep.depGav.version
                     AND d.classifier = dep.depGav.classifier
-                CREATE (a)-[:DEPENDS_ON {optional: dep.depProps.optional, scope: dep.depProps.scope}]->(d)""",
+                MERGE (a)-[:DEPENDS_ON {optional: dep.depProps.optional, scope: dep.depProps.scope}]->(d)""",
                 parameters("dependencies", dependencies)));
     }
 

@@ -49,7 +49,7 @@ public class AnalyzeEngine {
     }
 
     private class RequestScope {
-        private final ConcurrentMap<Gav, List<Runnable>> analysisEndCallbacks = new ConcurrentHashMap<>();
+        private final ConcurrentMap<Gav, ConcurrentLinkedQueue<Runnable>> analysisEndCallbacks = new ConcurrentHashMap<>();
 
         private CompletableFuture<ArtifactTree> analyzeInternal(Gav gav, AnalysisChain chain) {
             CompletableFuture<ArtifactTree> future = new CompletableFuture<>();
@@ -64,7 +64,7 @@ public class AnalyzeEngine {
                             if (ex == null) {
                                 future.complete(value);
                                 // todo: arraylist is not thread-safe, use locks?
-                                List<Runnable> callbacks = analysisEndCallbacks.computeIfAbsent(gav, k -> new ArrayList<>());
+                                ConcurrentLinkedQueue<Runnable> callbacks = analysisEndCallbacks.computeIfAbsent(gav, k -> new ConcurrentLinkedQueue<>());
                                 callbacks.forEach(Runnable::run);
                                 analysisEndCallbacks.remove(gav);
                             } else {
@@ -103,10 +103,10 @@ public class AnalyzeEngine {
                     }, executorService);
                     directDepFutures.add(cyclicDep);
                     // trigger analysis of the dependency as it might get never triggered
-                    analysisEndCallbacks.computeIfAbsent(gav, k -> new ArrayList<>())
+                    analysisEndCallbacks.computeIfAbsent(gav, k -> new ConcurrentLinkedQueue<>())
                             .add(() -> analyzeInternal(dep.gav(), AnalysisChain.start(dep.gav())).join());
                     // restore the relation when dependency is analyzed
-                    analysisEndCallbacks.computeIfAbsent(dep.gav(), k -> new ArrayList<>())
+                    analysisEndCallbacks.computeIfAbsent(dep.gav(), k -> new ConcurrentLinkedQueue<>())
                             .add(() -> artifactRepository.saveDependency(gav, dep));
                 } else {
                     var depFuture = analyzeInternal(dep.gav(), chain.nextNode(dep)).thenApply(at -> new DependencyInfo(at, dep.optional(), dep.scope()));
