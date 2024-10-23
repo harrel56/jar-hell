@@ -14,13 +14,12 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Singleton
 public class AnalyzeEngine {
     private static final Logger logger = LoggerFactory.getLogger(AnalyzeEngine.class);
 
-    private final ExecutorService executorService = Executors.newFixedThreadPool(32);
+    private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
     private final ConcurrentHashMap<Gav, CompletableFuture<ArtifactTree>> processingMap = new ConcurrentHashMap<>();
 
     private final ArtifactRepository artifactRepository;
@@ -41,7 +40,7 @@ public class AnalyzeEngine {
             throw new ResourceNotFoundException(gav);
         }
 
-        return new RequestScope().analyzeInternal(gav, AnalysisChain.start(gav)).whenComplete((value, ex) -> {
+        return new RequestScope().analyzeInternal(gav).whenComplete((value, ex) -> {
             if (ex != null) {
                 logger.error("Error occurred during analysis of [{}]", gav, ex);
             }
@@ -51,20 +50,22 @@ public class AnalyzeEngine {
     private class RequestScope {
         private final ConcurrentMap<Gav, ConcurrentLinkedQueue<Runnable>> analysisEndCallbacks = new ConcurrentHashMap<>();
 
-        private CompletableFuture<ArtifactTree> analyzeInternal(Gav gav, AnalysisChain chain) {
+        private CompletableFuture<ArtifactTree> analyzeInternal(Gav gav) {
             CompletableFuture<ArtifactTree> future = new CompletableFuture<>();
             CompletableFuture<ArtifactTree> currentFuture = processingMap.putIfAbsent(gav, future);
             if (currentFuture != null) {
                 return currentFuture;
             }
-            CompletableFuture.supplyAsync(() -> getArtifactTree(gav, chain), executorService)
+            CompletableFuture.supplyAsync(() -> getArtifactTree(gav), executorService)
                     .thenCompose(Function.identity()) // flatMap
                     .whenComplete((value, ex) -> {
                         try {
                             if (ex == null) {
                                 future.complete(value);
-                                // todo: arraylist is not thread-safe, use locks?
                                 ConcurrentLinkedQueue<Runnable> callbacks = analysisEndCallbacks.computeIfAbsent(gav, k -> new ConcurrentLinkedQueue<>());
+                                if (!callbacks.isEmpty()) {
+                                    logger.warn("Analysis of [{}] is completed, but there are still {} callbacks to be called", gav, callbacks.size());
+                                }
                                 callbacks.forEach(Runnable::run);
                                 analysisEndCallbacks.remove(gav);
                             } else {
@@ -80,13 +81,13 @@ public class AnalyzeEngine {
             return future;
         }
 
-        private CompletableFuture<ArtifactTree> getArtifactTree(Gav gav, AnalysisChain chain) {
+        private CompletableFuture<ArtifactTree> getArtifactTree(Gav gav) {
             return artifactRepository.find(gav)
                     .map(CompletableFuture::completedFuture)
-                    .orElseGet(() -> computeArtifactTree(gav, chain));
+                    .orElseGet(() -> computeArtifactTree(gav));
         }
 
-        private CompletableFuture<ArtifactTree> computeArtifactTree(Gav gav, AnalysisChain chain) {
+        private CompletableFuture<ArtifactTree> computeArtifactTree(Gav gav) {
             Instant start = Instant.now();
             logger.info("START analysis of [{}]", gav);
             AnalysisOutput analysisOutput = analyzer.analyze(gav);
@@ -104,12 +105,12 @@ public class AnalyzeEngine {
                     directDepFutures.add(cyclicDep);
                     // trigger analysis of the dependency as it might get never triggered
                     analysisEndCallbacks.computeIfAbsent(gav, k -> new ConcurrentLinkedQueue<>())
-                            .add(() -> analyzeInternal(dep.gav(), AnalysisChain.start(dep.gav())).join());
+                            .add(() -> analyzeInternal(dep.gav()).join());
                     // restore the relation when dependency is analyzed
                     analysisEndCallbacks.computeIfAbsent(dep.gav(), k -> new ConcurrentLinkedQueue<>())
                             .add(() -> artifactRepository.saveDependency(gav, dep));
                 } else {
-                    var depFuture = analyzeInternal(dep.gav(), chain.nextNode(dep)).thenApply(at -> new DependencyInfo(at, dep.optional(), dep.scope()));
+                    var depFuture = analyzeInternal(dep.gav()).thenApply(at -> new DependencyInfo(at, dep.optional(), dep.scope()));
                     directDepFutures.add(depFuture);
                 }
 //                AnalysisChain newChain = chain.nextNode(dep);
@@ -137,7 +138,7 @@ public class AnalyzeEngine {
                         return analysisOutput.dependencies().allDependencies().stream()
                                 .map(dep -> Optional.ofNullable(directDeps.get(dep.gav()))
                                         .map(CompletableFuture::completedFuture)
-                                        .orElseGet(() -> analyzeInternal(dep.gav(), AnalysisChain.start(dep.gav()))))
+                                        .orElseGet(() -> analyzeInternal(dep.gav())))
                                 .map(CompletableFuture::join)
                                 .toList();
 
@@ -153,9 +154,9 @@ public class AnalyzeEngine {
 //                        Analyzer.TraversalOutput to = analyzer.adjustArtifactTree(artifactTree, allDeps);
 //                        logger.warn("Traversal output: {}", to);
 
-                        Long totalSize = allDeps.stream().reduce(0L, (acc, dep) -> acc + (dep.artifactInfo().packageSize() == null ? 0 : dep.artifactInfo().packageSize()), Long::sum);
+                        Long totalSize = allDeps.stream().reduce(0L, (acc, dep) -> acc + dep.artifactInfo().getPackageSize(), Long::sum);
 //                        Long totalSize = analyzer.calculateTotalSize(artifactTree);
-                        artifactRepository.save(artifactTree.withTotalSize(totalSize + artifactTree.artifactInfo().packageSize()));
+                        artifactRepository.save(artifactTree.withTotalSize(totalSize + artifactTree.artifactInfo().getPackageSize()));
 
                         long timeElapsed = Duration.between(start, Instant.now()).toMillis();
                         logger.info("END analysis of [{}] - completed in {}ms", gav, timeElapsed);

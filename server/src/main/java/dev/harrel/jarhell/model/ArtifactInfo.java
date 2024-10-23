@@ -24,4 +24,8 @@ public record ArtifactInfo(String groupId,
     public ArtifactInfo(String groupId, String artifactId, String version, String classifier) {
         this(groupId, artifactId, version, classifier, true, null, null, null, null, null, null, null, null, null, null, null);
     }
+
+    public long getPackageSize() {
+        return packageSize == null ? 0 : packageSize;
+    }
 }
