@@ -53,6 +53,7 @@ public class AnalyzeEngine {
         if (currentFuture != null) {
             return currentFuture;
         }
+
         CompletableFuture.supplyAsync(() -> getArtifactTree(gav), executorService)
                 .thenCompose(Function.identity()) // flatMap
                 .whenComplete((value, ex) -> {
@@ -61,7 +62,7 @@ public class AnalyzeEngine {
                             future.complete(value);
                             ConcurrentLinkedQueue<Runnable> callbacks = analysisEndCallbacks.computeIfAbsent(gav, k -> new ConcurrentLinkedQueue<>());
                             if (!callbacks.isEmpty()) {
-                                logger.warn("Analysis of [{}] is completed, but there are still {} callbacks to be called", gav, callbacks.size());
+                                logger.debug("Analysis of [{}] is completed, but there are still {} callbacks to be called", gav, callbacks.size());
                             }
                             callbacks.forEach(Runnable::run);
                             analysisEndCallbacks.remove(gav);
@@ -70,7 +71,7 @@ public class AnalyzeEngine {
                         }
                     } catch (Exception e) {
                         logger.error("Error occurred when calling callbacks of [{}]", gav, e);
-                        future.completeExceptionally(ex);
+                        future.completeExceptionally(e);
                     } finally {
                         processingMap.remove(gav, future);
                     }
@@ -88,24 +89,15 @@ public class AnalyzeEngine {
         Instant start = Instant.now();
         logger.info("START analysis of [{}]", gav);
         AnalysisOutput analysisOutput = analyzer.analyze(gav);
-        Set<Gav> depsToBreak = analysisOutput.dependencies().cyclesToBreak().getOrDefault(gav.stripClassifier(), Set.of());
-        logger.trace("Direct dependencies of {}: {}", gav, analysisOutput.dependencies().directDependencies());
+        logger.debug("Direct dependencies of {}: {}", gav, analysisOutput.dependencies().directDependencies());
 
+        Set<Gav> depsToBreak = analysisOutput.dependencies().cyclesToBreak().getOrDefault(gav.stripClassifier(), Set.of());
         Map<Gav, CompletableFuture<DependencyInfo>> directDepFutures = HashMap.newHashMap(analysisOutput.dependencies().directDependencies().size());
         for (FlatDependency dep : analysisOutput.dependencies().directDependencies()) {
             if (depsToBreak.contains(dep.gav())) {
                 logger.warn("CYCLE found, breaking dependency: {}", dep.gav());
-                CompletableFuture<DependencyInfo> cyclicDep = CompletableFuture.supplyAsync(() -> {
-                    ArtifactInfo depInfo = analyzer.analyzeWithoutDeps(dep.gav());
-                    return new DependencyInfo(new ArtifactTree(depInfo, List.of()), dep.optional(), dep.scope());
-                }, executorService);
-                directDepFutures.put(dep.gav(), cyclicDep);
-                // trigger analysis of the dependency as it might get never triggered
-                analysisEndCallbacks.computeIfAbsent(gav, k -> new ConcurrentLinkedQueue<>())
-                        .add(() -> analyzeInternal(dep.gav()).join());
-                // restore the relation when dependency is analyzed
-                analysisEndCallbacks.computeIfAbsent(dep.gav(), k -> new ConcurrentLinkedQueue<>())
-                        .add(() -> artifactRepository.saveDependency(gav, dep));
+                var depFuture = analyzeCyclicDep(gav, dep);
+                directDepFutures.put(dep.gav(), depFuture);
             } else {
                 var depFuture = analyzeInternal(dep.gav()).thenApply(at -> new DependencyInfo(at, dep.optional(), dep.scope()));
                 directDepFutures.put(dep.gav(), depFuture);
@@ -132,5 +124,19 @@ public class AnalyzeEngine {
                     logger.info("END analysis of [{}] - completed in {}ms", gav, timeElapsed);
                     return artifactTree;
                 });
+    }
+
+    private CompletableFuture<DependencyInfo> analyzeCyclicDep(Gav parentGav, FlatDependency dep) {
+        // trigger analysis of the dependency as it might get never triggered
+        analysisEndCallbacks.computeIfAbsent(parentGav, k -> new ConcurrentLinkedQueue<>())
+                .add(() -> analyzeInternal(dep.gav()).join());
+        // restore the relation when dependency is analyzed
+        analysisEndCallbacks.computeIfAbsent(dep.gav(), k -> new ConcurrentLinkedQueue<>())
+                .add(() -> artifactRepository.saveDependency(parentGav, dep));
+
+        return CompletableFuture.supplyAsync(() -> {
+            ArtifactInfo depInfo = analyzer.analyzeWithoutDeps(dep.gav());
+            return new DependencyInfo(new ArtifactTree(depInfo, List.of()), dep.optional(), dep.scope());
+        }, executorService);
     }
 }
