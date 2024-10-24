@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.StructuredTaskScope.Subtask;
 import java.util.function.Function;
 
 @Singleton
@@ -20,6 +21,7 @@ public class AnalyzeEngine {
 
     private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
     private final ConcurrentHashMap<Gav, CompletableFuture<ArtifactTree>> processingMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Gav, ArtifactInfo> partialAnalysis = new ConcurrentHashMap<>();
     private final ConcurrentMap<Gav, ConcurrentLinkedQueue<Runnable>> analysisEndCallbacks = new ConcurrentHashMap<>();
 
     private final ArtifactRepository artifactRepository;
@@ -40,11 +42,87 @@ public class AnalyzeEngine {
             throw new ResourceNotFoundException(gav);
         }
 
-        return analyzeInternal(gav).whenComplete((value, ex) -> {
-            if (ex != null) {
-                logger.error("Error occurred during analysis of [{}]", gav, ex);
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return analyze2(gav);
+            } catch (InterruptedException | ExecutionException e) {
+                throw new CompletionException(e);
             }
-        });
+        }, executorService);
+//        return analyzeInternal(gav).whenComplete((value, ex) -> {
+//            if (ex != null) {
+//                logger.error("Error occurred during analysis of [{}]", gav, ex);
+//            }
+//        });
+    }
+
+    private ArtifactTree analyze2(Gav gav) throws InterruptedException, ExecutionException {
+        Optional<ArtifactTree> packageTree = artifactRepository.find(gav);
+        if (packageTree.isPresent()) {
+            logger.info("Analysis of [{}] is not necessary", gav);
+            return packageTree.get();
+        }
+//        if (!analyzer.checkIfArtifactExists(gav)) {
+//            throw new ResourceNotFoundException(gav);
+//        }
+//        try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+//            Subtask<ArtifactInfo> fork = scope.fork(() -> {
+//                return null;
+//            });
+//            fork.state().
+//        }
+
+        // 1. partial analysis
+        ArtifactInfo info = analyzePartially(gav);
+
+        // 2. all deps partial analysis
+        List<ArtifactInfo> partialDeps;
+        CollectedDependencies deps = analyzer.analyzeDeps(gav);
+        try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+            List<Subtask<ArtifactInfo>> partialDepTasks = deps.allDependencies().stream()
+                    .filter(dep -> !dep.optional())
+                    .map(dep -> scope.fork(() -> analyzePartially(dep.gav())))
+                    .toList();
+            scope.join().throwIfFailed();
+            partialDeps = partialDepTasks.stream().map(Subtask::get).toList();
+        }
+
+        // 3. effective values computation todo: omit optional deps
+        Long totalSize = partialDeps.stream().reduce(0L, (acc, dep) -> acc + dep.getPackageSize(), Long::sum);
+
+        // 4. save to repository (no relations)
+        ArtifactTree artifactTree = new ArtifactTree(info, List.of()).withTotalSize(totalSize + info.getPackageSize());
+        artifactRepository.save(artifactTree);
+
+        // 5. full analysis of deps
+        List<DependencyInfo> directDeps;
+        try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+            List<Subtask<DependencyInfo>> partialDepTasks = deps.directDependencies().stream()
+                    .map(dep -> scope.fork(() -> {
+                        ArtifactTree depTree = analyze2(dep.gav());
+                        return new DependencyInfo(depTree, dep.optional(), dep.scope());
+                    }))
+                    .toList();
+            scope.join().throwIfFailed();
+            directDeps = partialDepTasks.stream().map(Subtask::get).toList();
+        }
+
+        // 6. save relations todo: save all at once
+        for (FlatDependency directDep : deps.directDependencies()) {
+            artifactRepository.saveDependency(gav,directDep);
+        }
+
+        return new ArtifactTree(info, directDeps).withTotalSize(totalSize + info.getPackageSize());
+    }
+    
+    private ArtifactInfo analyzePartially(Gav gav) {
+        // is computeIfAbsent viable here?
+        ArtifactInfo info = partialAnalysis.get(gav);
+        if (info == null) {
+            info = analyzer.analyzeWithoutDeps(gav);
+            partialAnalysis.put(gav, info);
+        }
+        return info;
     }
 
     private CompletableFuture<ArtifactTree> analyzeInternal(Gav gav) {
@@ -92,29 +170,31 @@ public class AnalyzeEngine {
         logger.debug("Direct dependencies of {}: {}", gav, analysisOutput.dependencies().directDependencies());
 
         Set<Gav> depsToBreak = analysisOutput.dependencies().cyclesToBreak().getOrDefault(gav.stripClassifier(), Set.of());
-        Map<Gav, CompletableFuture<DependencyInfo>> directDepFutures = HashMap.newHashMap(analysisOutput.dependencies().directDependencies().size());
-        for (FlatDependency dep : analysisOutput.dependencies().directDependencies()) {
+        Map<Gav, CompletableFuture<DependencyInfo>> allDepFutures = HashMap.newHashMap(analysisOutput.dependencies().allDependencies().size());
+        for (FlatDependency dep : analysisOutput.dependencies().allDependencies()) {
             if (depsToBreak.contains(dep.gav())) {
                 logger.warn("CYCLE found, breaking dependency: {}", dep.gav());
                 var depFuture = analyzeCyclicDep(gav, dep);
-                directDepFutures.put(dep.gav(), depFuture);
+                allDepFutures.put(dep.gav(), depFuture);
             } else {
                 var depFuture = analyzeInternal(dep.gav()).thenApply(at -> new DependencyInfo(at, dep.optional(), dep.scope()));
-                directDepFutures.put(dep.gav(), depFuture);
+                allDepFutures.put(dep.gav(), depFuture);
             }
         }
 
-        return CompletableFuture.allOf(directDepFutures.values().toArray(CompletableFuture[]::new))
+        logger.info("Waiting for direct dependencies {}", analysisOutput.dependencies().directDependencies());
+        logger.info("Waiting for all dependencies {}", analysisOutput.dependencies().allDependencies());
+        return CompletableFuture.allOf(allDepFutures.values().toArray(CompletableFuture[]::new))
                 .thenApply(ignored ->
-                        analysisOutput.dependencies().allDependencies().stream()
+                        analysisOutput.dependencies().directDependencies().stream()
                                 .map(dep ->
-                                        Optional.ofNullable(directDepFutures.get(dep.gav()))
+                                        Optional.ofNullable(allDepFutures.get(dep.gav()))
                                                 .orElseGet(() -> analyzeInternal(dep.gav()).thenApply(at -> new DependencyInfo(at, dep.optional(), dep.scope()))))
                                 .map(CompletableFuture::join)
                                 .toList()
                 )
-                .thenApply(allDeps -> {
-                    List<DependencyInfo> directDeps = directDepFutures.values().stream().map(CompletableFuture::join).toList();
+                .thenApply(directDeps -> {
+                    List<DependencyInfo> allDeps = allDepFutures.values().stream().map(CompletableFuture::join).toList();
                     ArtifactTree artifactTree = new ArtifactTree(analysisOutput.artifactInfo(), directDeps);
 
                     Long totalSize = allDeps.stream().reduce(0L, (acc, dep) -> acc + dep.artifact().artifactInfo().getPackageSize(), Long::sum);

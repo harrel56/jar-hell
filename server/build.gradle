@@ -12,6 +12,10 @@ java {
     targetCompatibility JavaVersion.VERSION_21
 }
 
+tasks.withType(JavaCompile).each {
+    it.options.compilerArgs.add('--enable-preview')
+}
+
 configurations {
     web
     output

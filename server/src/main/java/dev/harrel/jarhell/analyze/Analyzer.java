@@ -50,6 +50,10 @@ class Analyzer {
         }
     }
 
+    public CollectedDependencies analyzeDeps(Gav gav) {
+        return mavenRunner.collectDependencies(gav);
+    }
+
     public ArtifactInfo analyzeWithoutDeps(Gav gav) {
         try {
             FilesInfo filesInfo = mavenApiClient.fetchFilesInfo(gav);

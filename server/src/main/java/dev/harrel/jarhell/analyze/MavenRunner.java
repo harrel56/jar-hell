@@ -26,7 +26,6 @@ import org.eclipse.aether.util.graph.visitor.PreorderNodeListGenerator;
 
 import javax.inject.Singleton;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Singleton
 class MavenRunner {
@@ -71,9 +70,11 @@ class MavenRunner {
                                 .limit(cycles.size() - 1L)
                                 .toList();
                         Gav nodeToBreak = Collections.min(cyclicList);
-                        int index = cyclicList.indexOf(nodeToBreak);
                         cyclesToBreak.computeIfAbsent(nodeToBreak.stripClassifier(), key -> new HashSet<>())
-                                .add(cyclicList.get((index + 1) % cyclicList.size()));
+                                .addAll(cyclicList);
+//                        int index = cyclicList.indexOf(nodeToBreak);
+//                        cyclesToBreak.computeIfAbsent(nodeToBreak.stripClassifier(), key -> new HashSet<>())
+//                                .add(cyclicList.get((index + 1) % cyclicList.size()));
                     });
 
             return new CollectedDependencies(directDependencies, allDependencies, cyclesToBreak);
