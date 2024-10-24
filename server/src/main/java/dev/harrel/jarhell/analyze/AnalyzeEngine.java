@@ -13,6 +13,8 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.StructuredTaskScope.Subtask;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 @Singleton
@@ -23,6 +25,7 @@ public class AnalyzeEngine {
     private final ConcurrentHashMap<Gav, CompletableFuture<ArtifactTree>> processingMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Gav, ArtifactInfo> partialAnalysis = new ConcurrentHashMap<>();
     private final ConcurrentMap<Gav, ConcurrentLinkedQueue<Runnable>> analysisEndCallbacks = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Gav, Lock> lockMap = new ConcurrentHashMap<>();
 
     private final ArtifactRepository artifactRepository;
     private final Analyzer analyzer;
@@ -56,12 +59,26 @@ public class AnalyzeEngine {
 //        });
     }
 
+    private void lock(Gav gav) {
+        lockMap.computeIfAbsent(gav, k -> new ReentrantLock()).lock();
+    }
+
+    private void unlock(Gav gav) {
+        lockMap.get(gav).unlock();
+    }
+
     private ArtifactTree analyze2(Gav gav) throws InterruptedException, ExecutionException {
-        Optional<ArtifactTree> packageTree = artifactRepository.find(gav);
-        if (packageTree.isPresent()) {
-            logger.info("Analysis of [{}] is not necessary", gav);
-            return packageTree.get();
-        }
+        CollectedDependencies deps = null;
+        ArtifactInfo info = null;
+        Long totalSize = null;
+
+        lock(gav);
+        try {
+            Optional<ArtifactTree> packageTree = artifactRepository.find(gav);
+            if (packageTree.isPresent()) {
+                logger.info("Analysis of [{}] is not necessary", gav);
+                return packageTree.get();
+            }
 //        if (!analyzer.checkIfArtifactExists(gav)) {
 //            throw new ResourceNotFoundException(gav);
 //        }
@@ -72,27 +89,30 @@ public class AnalyzeEngine {
 //            fork.state().
 //        }
 
-        // 1. partial analysis
-        ArtifactInfo info = analyzePartially(gav);
+            // 1. partial analysis
+            info = analyzePartially(gav);
 
-        // 2. all deps partial analysis
-        List<ArtifactInfo> partialDeps;
-        CollectedDependencies deps = analyzer.analyzeDeps(gav);
-        try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
-            List<Subtask<ArtifactInfo>> partialDepTasks = deps.allDependencies().stream()
-                    .filter(dep -> !dep.optional())
-                    .map(dep -> scope.fork(() -> analyzePartially(dep.gav())))
-                    .toList();
-            scope.join().throwIfFailed();
-            partialDeps = partialDepTasks.stream().map(Subtask::get).toList();
+            // 2. all deps partial analysis
+            List<ArtifactInfo> partialDeps;
+            deps = analyzer.analyzeDeps(gav);
+            try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+                List<Subtask<ArtifactInfo>> partialDepTasks = deps.allDependencies().stream()
+                        .filter(dep -> !dep.optional())
+                        .map(dep -> scope.fork(() -> analyzePartially(dep.gav())))
+                        .toList();
+                scope.join().throwIfFailed();
+                partialDeps = partialDepTasks.stream().map(Subtask::get).toList();
+            }
+
+            // 3. effective values computation
+            totalSize = partialDeps.stream().reduce(0L, (acc, dep) -> acc + dep.getPackageSize(), Long::sum);
+
+            // 4. save to repository (no relations)
+            ArtifactTree artifactTree = new ArtifactTree(info, List.of()).withTotalSize(totalSize + info.getPackageSize());
+            artifactRepository.save(artifactTree);
+        } finally {
+            unlock(gav);
         }
-
-        // 3. effective values computation todo: omit optional deps
-        Long totalSize = partialDeps.stream().reduce(0L, (acc, dep) -> acc + dep.getPackageSize(), Long::sum);
-
-        // 4. save to repository (no relations)
-        ArtifactTree artifactTree = new ArtifactTree(info, List.of()).withTotalSize(totalSize + info.getPackageSize());
-        artifactRepository.save(artifactTree);
 
         // 5. full analysis of deps
         List<DependencyInfo> directDeps;
