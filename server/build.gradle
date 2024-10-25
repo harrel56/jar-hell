@@ -40,7 +40,6 @@ dependencies {
     implementation 'org.tinylog:tinylog-impl:2.7.0'
     implementation 'io.javalin:javalin:6.3.0'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.0'
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.18.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.0'
 
     implementation 'org.apache.maven:maven-resolver-provider:3.9.9'

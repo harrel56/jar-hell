@@ -8,8 +8,11 @@ import dev.harrel.jarhell.model.descriptor.DescriptorInfo;
 import dev.harrel.jarhell.model.descriptor.Licence;
 import io.avaje.config.Config;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.building.DefaultModelBuildingRequest;
+import org.apache.maven.model.building.ModelBuilder;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectRequest;
@@ -31,17 +34,18 @@ class MavenRunner {
     private static final String MAVEN_CENTRAL = Config.get("maven.repo-url");
 
     private final RepositorySystem repoSystem;
-    private final DefaultRepositorySystemSession session;
+    private final RepositorySystemSession session;
+    private final ModelBuilder modelBuilder;
     private final List<RemoteRepository> remoteRepos;
 
-    MavenRunner(RepositorySystem repoSystem, DefaultRepositorySystemSession session) {
+    MavenRunner(RepositorySystem repoSystem, RepositorySystemSession session, ModelBuilder modelBuilder) {
         this.repoSystem = repoSystem;
         this.session = session;
+        this.modelBuilder = modelBuilder;
         this.remoteRepos = List.of(new RemoteRepository.Builder("central", "default", MAVEN_CENTRAL).build());
     }
 
-    public CollectedDependencies collectDependencies(Gav gavWithClassifier) {
-        Gav gav = gavWithClassifier.stripClassifier();
+    public CollectedDependencies collectDependencies(Gav gav) {
         CollectRequest request = createCollectRequest(gav);
         try {
             CollectResult collectResult = repoSystem.collectDependencies(session, request);

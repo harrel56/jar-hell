@@ -1,20 +1,16 @@
 package dev.harrel.jarhell;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import dev.harrel.jarhell.analyze.ArtifactNotFoundException;
 import dev.harrel.jarhell.analyze.FilesInfo;
 import dev.harrel.jarhell.error.BadRequestException;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.central.ArtifactDoc;
-import dev.harrel.jarhell.model.central.MavenMetadata;
 import dev.harrel.jarhell.model.central.SelectResponse;
 import dev.harrel.jarhell.model.central.VersionDoc;
 import io.avaje.config.Config;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
 import java.io.IOException;
@@ -33,21 +29,17 @@ import java.util.stream.Collectors;
 
 @Singleton
 public class MavenApiClient {
-    private static final Logger logger = LoggerFactory.getLogger(MavenApiClient.class);
-
     private static final String SEARCH_URL = Config.get("maven.search-url");
     private static final String CONTENT_URL = Config.get("maven.repo-url");
 
     private static final Pattern SANITIZATION_PATTERN = Pattern.compile("[^\\w\\.-]");
+    private static final Pattern VERSIONS_PATTERN = Pattern.compile("href=\"(\\d+\\.[^\"]+)\"");
 
     private final ObjectMapper objectMapper;
-    private final XmlMapper xmlMapper;
     private final HttpClient httpClient;
 
     MavenApiClient(ObjectMapper objectMapper, HttpClient httpClient) {
         this.objectMapper = objectMapper;
-        this.xmlMapper = new XmlMapper();
-        this.xmlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.httpClient = httpClient;
     }
 
@@ -65,11 +57,14 @@ public class MavenApiClient {
     }
 
     public List<String> fetchArtifactVersions(String groupId, String artifactId) {
-        String groupPath = groupId.replace('.', '/');
-        String resource = "%s/%s/maven-metadata.xml".formatted(groupPath, artifactId);
-        String encodedResource = URLEncoder.encode(resource, StandardCharsets.UTF_8);
-        MavenMetadata metadata = fetch(CONTENT_URL + "/" + encodedResource, xmlMapper, new TypeReference<>() {});
-        return metadata.versioning().versions();
+        String encodedPath = URLEncoder.encode(groupId.replace('.', '/') + "/" + artifactId, StandardCharsets.UTF_8);
+        HttpResponse<String> res = fetchRaw(CONTENT_URL + "/" + encodedPath);
+        return VERSIONS_PATTERN.matcher(res.body())
+                .results()
+                .map(m -> m.group(1))
+                .filter(v -> v.endsWith("/"))
+                .map(v -> v.substring(0, v.length() - 1))
+                .toList();
     }
 
     public String fetchLatestVersion(String groupId, String artifactId) {
@@ -82,9 +77,8 @@ public class MavenApiClient {
     }
 
     public boolean checkIfArtifactExists(Gav gav) {
-        String query = "?q=g:%s+AND+a:%s+AND+v:%s".formatted(gav.groupId(), gav.artifactId(), gav.version());
-        SelectResponse<VersionDoc> selectResponse = fetch(SEARCH_URL + query, objectMapper, new TypeReference<>() {});
-        return selectResponse.response().numFound() > 0;
+        HttpResponse<String> res = fetchRaw(createFileUrl(gav, "pom"));
+        return res.statusCode() == 200;
     }
 
     public FilesInfo fetchFilesInfo(Gav gav) {
@@ -107,18 +101,25 @@ public class MavenApiClient {
 
     private <T> T fetch(String url, ObjectMapper objectMapper, TypeReference<T> type) {
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .GET()
-                    .build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = fetchRaw(url);
             if (response.statusCode() >= 400) {
                 throw new BadRequestException("HTTP call failed [%s] for url [%s]".formatted(response.statusCode(), url));
             }
             return objectMapper.readValue(response.body(), type);
+        } catch (JsonProcessingException e) {
+            throw new UncheckedIOException("HTTP fetch deserialization failed for url [%s]".formatted(url), e);
+        }
+    }
+
+    private HttpResponse<String> fetchRaw(String url) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET()
+                    .build();
+            return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException e) {
-            logger.error("HTTP fetch failed for url [{}]", url, e);
-            throw new UncheckedIOException(e);
+            throw new UncheckedIOException("HTTP fetch failed for url [%s]".formatted(url), e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalArgumentException(e);
