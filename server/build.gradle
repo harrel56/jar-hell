@@ -12,10 +12,6 @@ java {
     targetCompatibility JavaVersion.VERSION_21
 }
 
-tasks.withType(JavaCompile).each {
-    it.options.compilerArgs.add('--enable-preview')
-}
-
 configurations {
     web
     output
@@ -109,11 +105,16 @@ tasks.register('playwright', JavaExec) {
     mainClass = 'com.microsoft.playwright.CLI'
 }
 
+tasks.withType(JavaCompile).configureEach {
+    it.options.compilerArgs.add('--enable-preview')
+}
+
 tasks.withType(JavaExec).configureEach {
     environment.putAll(project.getProperties())
 }
 
 tasks.withType(Test).configureEach {
+    jvmArgs '--enable-preview'
     environment 'AVAJE_PROFILES', 'dev'
     testLogging {
         events TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED
