@@ -29,32 +29,11 @@ class Analyzer {
         return mavenApiClient.checkIfArtifactExists(gav);
     }
 
-    public AnalysisOutput analyze(String groupId, String artifactId) {
-        String version = mavenApiClient.fetchLatestVersion(groupId, artifactId);
-        return analyze(new Gav(groupId, artifactId, version));
-    }
-
-    public AnalysisOutput analyze(Gav gav) {
-        try {
-            FilesInfo filesInfo = mavenApiClient.fetchFilesInfo(gav);
-            DescriptorInfo descriptorInfo = mavenRunner.resolveDescriptor(gav);
-            CollectedDependencies dependencies = mavenRunner.collectDependencies(gav);
-            PackageInfo packageInfo = packageAnalyzer.analyzePackage(gav, filesInfo, descriptorInfo.packaging());
-
-            return new AnalysisOutput(createArtifactInfo(gav, filesInfo, packageInfo, descriptorInfo), dependencies);
-        } catch (Exception e) {
-            logger.warn("Failed to analyze artifact: {}, marking it as unresolved", gav, e);
-            return new AnalysisOutput(new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier()),
-                    new CollectedDependencies(List.of(), List.of(), Map.of()));
-
-        }
-    }
-
     public CollectedDependencies analyzeDeps(Gav gav) {
         return mavenRunner.collectDependencies(gav);
     }
 
-    public ArtifactInfo analyzeWithoutDeps(Gav gav) {
+    public ArtifactInfo analyzePackage(Gav gav) {
         try {
             FilesInfo filesInfo = mavenApiClient.fetchFilesInfo(gav);
             DescriptorInfo descriptorInfo = mavenRunner.resolveDescriptor(gav);
@@ -62,7 +41,7 @@ class Analyzer {
 
             return createArtifactInfo(gav, filesInfo, packageInfo, descriptorInfo);
         } catch (Exception e) {
-            logger.warn("Failed to analyze artifact (without deps): {}, marking it as unresolved", gav, e);
+            logger.warn("Failed to analyze artifact: {}, marking it as unresolved", gav, e);
             return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier());
         }
     }
@@ -151,8 +130,6 @@ class Analyzer {
     private static Ga treeToGa(ArtifactTree at) {
         return new Ga(at.artifactInfo().groupId(), at.artifactInfo().artifactId());
     }
-
-    public record AnalysisOutput(ArtifactInfo artifactInfo, CollectedDependencies dependencies) {}
 
     public record TraversalOutput(ArtifactTree artifactTree, Set<Ga> excluded, Set<Gav> conflicted) {}
 

@@ -28,4 +28,11 @@ public record ArtifactInfo(String groupId,
     public long getPackageSize() {
         return packageSize == null ? 0 : packageSize;
     }
+
+    public ArtifactInfo withEffectiveValues(EffectiveValues effectiveValues) {
+        return new ArtifactInfo(groupId, artifactId, version, classifier, unresolved, packageSize, effectiveValues.totalSize(),
+                bytecodeVersion, packaging, name, description, url, inceptionYear, licenses, classifiers, created);
+    }
+
+    public record EffectiveValues(Long totalSize) {}
 }
