@@ -135,29 +135,24 @@ public class ArtifactRepository {
         }
     }
 
-    public void save(ArtifactTree artifactTree) {
-        ArtifactProps artifactProps = toArtifactProps(artifactTree.artifactInfo());
+    public void saveArtifact(ArtifactInfo artifactInfo) {
+        ArtifactProps artifactProps = toArtifactProps(artifactInfo);
         Map<String, Object> propsMap = objectMapper.convertValue(artifactProps, new TypeReference<>() {});
         propsMap.computeIfAbsent("classifier", k -> "");
-
-        List<FlatDependency> deps = artifactTree.dependencies().stream()
-                .map(dep -> new FlatDependency(toGav(dep.artifact().artifactInfo()), dep.optional(), dep.scope()))
-                .toList();
         try (var session = driver.session()) {
-            session.executeWriteWithoutResult(tx -> {
-                tx.run(new Query("CREATE (a:Artifact $props) SET a.created = datetime()", parameters("props", propsMap)));
-                saveDependency(tx, toGav(artifactTree.artifactInfo()), deps);
-            });
+            session.executeWriteWithoutResult(tx ->
+                tx.run(new Query("CREATE (a:Artifact $props) SET a.created = datetime()", parameters("props", propsMap)))
+            );
         }
     }
 
-    public void saveDependency(Gav parent, FlatDependency dep) {
+    public void saveDependencies(Gav parent, List<FlatDependency> deps) {
         try (var session = driver.session()) {
-            session.executeWriteWithoutResult(tx -> saveDependency(tx, parent, List.of(dep)));
+            session.executeWriteWithoutResult(tx -> saveDependencies(tx, parent, deps));
         }
     }
 
-    private void saveDependency(TransactionContext tx, Gav parent, List<FlatDependency> deps) {
+    private void saveDependencies(TransactionContext tx, Gav parent, List<FlatDependency> deps) {
         Map<String, Object> parentGavMap = toGavMap(parent);
         List<Map<String, Map<String, Object>>> dependencies = deps.stream().map(dep -> {
             Map<String, Object> depGavMap = toGavMap(dep.gav());

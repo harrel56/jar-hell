@@ -16,7 +16,6 @@ import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
 import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.graph.DependencyCycle;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
@@ -25,7 +24,7 @@ import org.eclipse.aether.resolution.ArtifactDescriptorResult;
 import org.eclipse.aether.util.graph.visitor.PreorderNodeListGenerator;
 
 import javax.inject.Singleton;
-import java.util.*;
+import java.util.List;
 
 @Singleton
 class MavenRunner {
@@ -61,23 +60,7 @@ class MavenRunner {
                     .filter(dep -> !dep.gav().equals(gav))
                     .toList();
 
-            Map<Gav, Set<Gav>> cyclesToBreak = new HashMap<>();
-            collectResult.getCycles().stream()
-                    .map(DependencyCycle::getCyclicDependencies)
-                    .forEach(cycles -> {
-                        List<Gav> cyclicList = cycles.stream()
-                                .map(MavenRunner::toGav)
-                                .limit(cycles.size() - 1L)
-                                .toList();
-                        Gav nodeToBreak = Collections.min(cyclicList);
-                        cyclesToBreak.computeIfAbsent(nodeToBreak.stripClassifier(), key -> new HashSet<>())
-                                .addAll(cyclicList);
-//                        int index = cyclicList.indexOf(nodeToBreak);
-//                        cyclesToBreak.computeIfAbsent(nodeToBreak.stripClassifier(), key -> new HashSet<>())
-//                                .add(cyclicList.get((index + 1) % cyclicList.size()));
-                    });
-
-            return new CollectedDependencies(directDependencies, allDependencies, cyclesToBreak);
+            return new CollectedDependencies(directDependencies, allDependencies);
         } catch (DependencyCollectionException e) {
             throw new IllegalArgumentException(e);
         }

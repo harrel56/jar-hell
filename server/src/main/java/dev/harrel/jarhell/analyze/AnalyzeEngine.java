@@ -55,7 +55,6 @@ public class AnalyzeEngine {
             lock.unlock(gav);
         }
 
-        // 5. full analysis of deps
         List<DependencyInfo> directDeps;
         try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
             List<Subtask<DependencyInfo>> partialDepTasks = output.dependencies().directDependencies().stream()
@@ -68,14 +67,8 @@ public class AnalyzeEngine {
             directDeps = partialDepTasks.stream().map(Subtask::get).toList();
         }
 
-        // 6. save relations todo: save all at once
-        for (FlatDependency directDep : output.dependencies().directDependencies()) {
-            artifactRepository.saveDependency(gav, directDep);
-        }
-
-        // 7. clean partial analysis
+        artifactRepository.saveDependencies(gav, output.dependencies().directDependencies());
         partialAnalysis.remove(gav);
-
         logger.info("END FULL analysis of [{}]", gav);
         return new ArtifactTree(output.artifactInfo(), directDeps);
     }
@@ -95,14 +88,11 @@ public class AnalyzeEngine {
             partialDeps = partialDepTasks.stream().map(Subtask::get).toList();
         }
 
-        // 3. effective values computation
         Long totalSize = info.getPackageSize() + partialDeps.stream().reduce(0L, (acc, dep) -> acc + dep.getPackageSize(), Long::sum);
         ArtifactInfo.EffectiveValues effectiveValues = new ArtifactInfo.EffectiveValues(totalSize);
         info = info.withEffectiveValues(effectiveValues);
 
-        // 4. save to repository (no relations)
-        // todo specialised repo method to save without deps
-        artifactRepository.save(new ArtifactTree(info, List.of()));
+        artifactRepository.saveArtifact(info);
 
         logger.info("END BASE analysis of [{}]", gav);
         return new AnalysisOutput(info, deps, effectiveValues);
