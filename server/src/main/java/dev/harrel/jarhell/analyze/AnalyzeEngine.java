@@ -42,6 +42,7 @@ public class AnalyzeEngine {
     }
 
     private ArtifactTree doFullAnalysis(Gav gav) {
+        logger.info("START FULL analysis of [{}]", gav);
         AnalysisOutput output;
         lock.lock(gav);
         try {
@@ -75,10 +76,12 @@ public class AnalyzeEngine {
         // 7. clean partial analysis
         partialAnalysis.remove(gav);
 
+        logger.info("END FULL analysis of [{}]", gav);
         return new ArtifactTree(output.artifactInfo(), directDeps);
     }
 
     private AnalysisOutput doBaseAnalysis(Gav gav) {
+        logger.info("START BASE analysis of [{}]", gav);
         ArtifactInfo info = analyzePartially(gav);
 
         List<ArtifactInfo> partialDeps;
@@ -93,7 +96,7 @@ public class AnalyzeEngine {
         }
 
         // 3. effective values computation
-        Long totalSize = partialDeps.stream().reduce(0L, (acc, dep) -> acc + dep.getPackageSize(), Long::sum);
+        Long totalSize = info.getPackageSize() + partialDeps.stream().reduce(0L, (acc, dep) -> acc + dep.getPackageSize(), Long::sum);
         ArtifactInfo.EffectiveValues effectiveValues = new ArtifactInfo.EffectiveValues(totalSize);
         info = info.withEffectiveValues(effectiveValues);
 
@@ -101,6 +104,7 @@ public class AnalyzeEngine {
         // todo specialised repo method to save without deps
         artifactRepository.save(new ArtifactTree(info, List.of()));
 
+        logger.info("END BASE analysis of [{}]", gav);
         return new AnalysisOutput(info, deps, effectiveValues);
     }
 
