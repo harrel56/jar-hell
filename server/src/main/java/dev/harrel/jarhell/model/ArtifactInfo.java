@@ -30,9 +30,9 @@ public record ArtifactInfo(String groupId,
     }
 
     public ArtifactInfo withEffectiveValues(EffectiveValues effectiveValues) {
-        return new ArtifactInfo(groupId, artifactId, version, classifier, unresolved, packageSize, effectiveValues.totalSize(),
+        return new ArtifactInfo(groupId, artifactId, version, classifier, unresolved, packageSize, effectiveValues.size(),
                 bytecodeVersion, packaging, name, description, url, inceptionYear, licenses, classifiers, created);
     }
 
-    public record EffectiveValues(Long totalSize) {}
+    public record EffectiveValues(Long size) {}
 }

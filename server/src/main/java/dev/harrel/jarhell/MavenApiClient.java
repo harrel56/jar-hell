@@ -7,7 +7,6 @@ import dev.harrel.jarhell.analyze.ArtifactNotFoundException;
 import dev.harrel.jarhell.analyze.FilesInfo;
 import dev.harrel.jarhell.error.BadRequestException;
 import dev.harrel.jarhell.model.Gav;
-import dev.harrel.jarhell.model.central.ArtifactDoc;
 import dev.harrel.jarhell.model.central.SelectResponse;
 import dev.harrel.jarhell.model.central.VersionDoc;
 import dev.harrel.jarhell.util.ConcurrentUtil;
@@ -79,15 +78,6 @@ public class MavenApiClient {
             }
             return result;
         }
-    }
-
-    public String fetchLatestVersion(String groupId, String artifactId) {
-        String query = "?q=g:%s+AND+a:%s".formatted(groupId, artifactId);
-        SelectResponse<ArtifactDoc> selectResponse = fetch(SEARCH_URL + query, objectMapper, new TypeReference<>() {});
-        if (selectResponse.response().numFound() < 1) {
-            throw new ArtifactNotFoundException("%s:%s".formatted(groupId, artifactId));
-        }
-        return selectResponse.response().docs().getFirst().latestVersion();
     }
 
     public boolean checkIfArtifactExists(Gav gav) {
