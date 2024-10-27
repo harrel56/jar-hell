@@ -1,4 +1,4 @@
-package dev.harrel.jarhell.analyze;
+package dev.harrel.jarhell.util;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;

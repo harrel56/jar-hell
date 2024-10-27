@@ -33,7 +33,8 @@ public class MavenApiClient {
     private static final String CONTENT_URL = Config.get("maven.repo-url");
 
     private static final Pattern SANITIZATION_PATTERN = Pattern.compile("[^\\w\\.-]");
-    private static final Pattern VERSIONS_PATTERN = Pattern.compile("href=\"(\\d+\\.[^\"]+)\"");
+    private static final Pattern HTML_VERSIONS_PATTERN = Pattern.compile("href=\"(\\d+\\.[^\"]+)\"");
+    private static final Pattern XML_VERSIONS_PATTERN = Pattern.compile("<version>(.+)<\\/version>");
 
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
@@ -57,14 +58,28 @@ public class MavenApiClient {
     }
 
     public List<String> fetchArtifactVersions(String groupId, String artifactId) {
-        String encodedPath = URLEncoder.encode(groupId.replace('.', '/') + "/" + artifactId, StandardCharsets.UTF_8);
+        String groupPath = groupId.replace('.', '/');
+        String encodedPath = URLEncoder.encode(groupPath + "/" + artifactId, StandardCharsets.UTF_8);
         HttpResponse<String> res = fetchRaw(CONTENT_URL + "/" + encodedPath);
-        return VERSIONS_PATTERN.matcher(res.body())
-                .results()
-                .map(m -> m.group(1))
-                .filter(v -> v.endsWith("/"))
-                .map(v -> v.substring(0, v.length() - 1))
-                .toList();
+        if (res.statusCode() < 400) {
+            return HTML_VERSIONS_PATTERN.matcher(res.body())
+                    .results()
+                    .map(m -> m.group(1))
+                    .filter(v -> v.endsWith("/"))
+                    .map(v -> v.substring(0, v.length() - 1))
+                    .toList();
+        }
+        // fallback to metadata.xml
+        String metadataPath = "%s/%s/maven-metadata.xml".formatted(groupPath, artifactId);
+        String encodedMetadataPath = URLEncoder.encode(metadataPath, StandardCharsets.UTF_8);
+        HttpResponse<String> metadataRes = fetchRaw(CONTENT_URL + "/" + encodedMetadataPath);
+        if (metadataRes.statusCode() < 400) {
+            return XML_VERSIONS_PATTERN.matcher(metadataRes.body())
+                    .results()
+                    .map(m -> m.group(1))
+                    .toList();
+        }
+        throw new IllegalArgumentException("Failed to fetch versions for %s:%s".formatted(groupId, artifactId));
     }
 
     public String fetchLatestVersion(String groupId, String artifactId) {

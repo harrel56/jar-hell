@@ -3,6 +3,8 @@ package dev.harrel.jarhell.analyze;
 import dev.harrel.jarhell.error.ResourceNotFoundException;
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.repo.ArtifactRepository;
+import dev.harrel.jarhell.util.ConcurrentUtil;
+import dev.harrel.jarhell.util.ParametrizedLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,7 +18,6 @@ import java.util.concurrent.StructuredTaskScope.Subtask;
 public class AnalyzeEngine {
     private static final Logger logger = LoggerFactory.getLogger(AnalyzeEngine.class);
 
-    private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
     private final ParametrizedLock<Gav> lock = new ParametrizedLock<>();
     private final ConcurrentHashMap<Gav, ArtifactInfo> partialAnalysis = new ConcurrentHashMap<>();
 
@@ -38,7 +39,7 @@ public class AnalyzeEngine {
             throw new ResourceNotFoundException(gav);
         }
 
-        return CompletableFuture.supplyAsync(() -> doFullAnalysis(gav), executorService);
+        return CompletableFuture.supplyAsync(() -> doFullAnalysis(gav), Executors.newVirtualThreadPerTaskExecutor());
     }
 
     private ArtifactTree doFullAnalysis(Gav gav) {
@@ -63,7 +64,7 @@ public class AnalyzeEngine {
                         return new DependencyInfo(depTree, dep.optional(), dep.scope());
                     }))
                     .toList();
-            joinScope(scope);
+            ConcurrentUtil.joinScope(scope);
             directDeps = partialDepTasks.stream().map(Subtask::get).toList();
         }
 
@@ -84,7 +85,7 @@ public class AnalyzeEngine {
                     .filter(dep -> !dep.optional())
                     .map(dep -> scope.fork(() -> analyzePartially(dep.gav())))
                     .toList();
-            joinScope(scope);
+            ConcurrentUtil.joinScope(scope);
             partialDeps = partialDepTasks.stream().map(Subtask::get).toList();
         }
 
@@ -96,15 +97,6 @@ public class AnalyzeEngine {
 
         logger.info("END BASE analysis of [{}]", gav);
         return new AnalysisOutput(info, deps, effectiveValues);
-    }
-
-    private void joinScope(StructuredTaskScope.ShutdownOnFailure scope) {
-        try {
-            scope.join().throwIfFailed(CompletionException::new);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new CompletionException(e);
-        }
     }
 
     private ArtifactInfo analyzePartially(Gav gav) {
