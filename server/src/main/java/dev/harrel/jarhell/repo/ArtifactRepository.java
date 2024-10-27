@@ -214,10 +214,14 @@ public class ArtifactRepository {
             if (artifactInfo.licenses() != null && !artifactInfo.licenses().isEmpty()) {
                 licenses = objectMapper.writeValueAsString(artifactInfo.licenses());
             }
+            Long effectiveSize = null;
+            if (artifactInfo.effectiveValues() != null) {
+                effectiveSize = artifactInfo.effectiveValues().size();
+            }
             return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(),
                     artifactInfo.unresolved(), artifactInfo.packageSize(), artifactInfo.bytecodeVersion(),
                     artifactInfo.packaging(), artifactInfo.name(), artifactInfo.description(), artifactInfo.url(),
-                    artifactInfo.inceptionYear(), licenses, artifactInfo.classifiers(), artifactInfo.effectiveValues().size(), null);
+                    artifactInfo.inceptionYear(), licenses, artifactInfo.classifiers(), effectiveSize, null);
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }

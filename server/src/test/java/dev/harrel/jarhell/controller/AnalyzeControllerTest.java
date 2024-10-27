@@ -51,9 +51,16 @@ class AnalyzeControllerTest {
 
         await().atMost(Duration.ofSeconds(5)).until(() -> !fetchByArtifactId("jmail").records().isEmpty());
 
-        EagerResult eagerResult = fetchByArtifactId("jmail");
-        Map<String, Object> properties = eagerResult.records().getFirst().get("n").asMap();
-        assertThat(properties).containsEntry("licenses", "[{\"name\":\"MIT License\",\"url\":\"https://opensource.org/licenses/mit-license.php\"}]");
+        HttpRequest packageReq = HttpRequest.newBuilder().uri(URI.create(host + "/api/v1/packages/com.sanctionco.jmail:jmail:1.6.2")).GET().build();
+        HttpResponse<Map<String, Object>> packageRes = httpClient.send(packageReq, HttpUtil.jsonHandler(new TypeReference<>() {}));
+        assertThat(packageRes.statusCode()).isEqualTo(200);
+        Map<String, Object> properties = packageRes.body();
+        assertThat(properties).isNotNull();
+        assertThat(properties).containsEntry("licenses", List.of(Map.of(
+                "name", "MIT License",
+                "url", "https://opensource.org/licenses/mit-license.php"
+        )));
+        assertThat(properties).containsEntry("dependencies", List.of());
         assertJmailArtifactInfo(properties);
     }
 
@@ -72,11 +79,17 @@ class AnalyzeControllerTest {
 
         await().atMost(Duration.ofSeconds(5)).until(() -> !fetchByArtifactId("artifact").records().isEmpty());
 
-        Map<String, Object> jmailProperties = fetchByArtifactId("jmail").records().getFirst().get("n").asMap();
-        assertThat(jmailProperties).containsEntry("licenses", "[{\"name\":\"MIT License\",\"url\":\"https://opensource.org/licenses/mit-license.php\"}]");
-        assertJmailArtifactInfo(jmailProperties);
-        Map<String, Object> testProperties = fetchByArtifactId("artifact").records().getFirst().get("n").asMap();
-        assertTestArtifactInfo(testProperties);
+        HttpRequest packageReq = HttpRequest.newBuilder().uri(URI.create(host + "/api/v1/packages/com.sanctionco.jmail:jmail:1.6.2")).GET().build();
+        HttpResponse<Map<String, Object>> packageRes = httpClient.send(packageReq, HttpUtil.jsonHandler(new TypeReference<>() {}));
+        assertThat(packageRes.statusCode()).isEqualTo(200);
+        Map<String, Object> properties = packageRes.body();
+        assertThat(properties).isNotNull();
+        assertThat(properties).containsEntry("licenses", List.of(Map.of(
+                "name", "MIT License",
+                "url", "https://opensource.org/licenses/mit-license.php"
+        )));
+        assertThat(properties).containsEntry("dependencies", List.of());
+        assertJmailArtifactInfo(properties);
     }
 
     @Test
@@ -156,8 +169,8 @@ class AnalyzeControllerTest {
                 Map.entry("version", "1.6.2"),
                 Map.entry("url", "https://github.com/RohanNagar/jmail"),
                 Map.entry("bytecodeVersion", "52.0"),
-                Map.entry("totalSize", 30629L),
-                Map.entry("classifiers", List.of("javadoc", "sources"))
+                Map.entry("classifiers", List.of("javadoc", "sources")),
+                Map.entry("effectiveValues", Map.of("size", 30629L))
         );
     }
 
@@ -170,9 +183,9 @@ class AnalyzeControllerTest {
                 Map.entry("description", "Artifact for tests"),
                 Map.entry("packaging", "jar"),
                 Map.entry("packageSize", 2105L),
-                Map.entry("totalSize", 32734L),
                 Map.entry("bytecodeVersion", "65.0"),
-                Map.entry("classifiers", List.of("javadoc", "sources"))
+                Map.entry("classifiers", List.of("javadoc", "sources")),
+                Map.entry("effectiveValues", Map.of("size", 32734L))
         );
     }
 }

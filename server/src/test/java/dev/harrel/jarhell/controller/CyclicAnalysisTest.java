@@ -44,7 +44,7 @@ class CyclicAnalysisTest {
         assertThat(properties)
                 .containsEntry("artifactId", "cycle-self")
                 .containsEntry("packageSize", 2105L)
-                .containsEntry("totalSize", 2105L);
+                .containsEntry("effectiveValues", Map.of("size", 2105L));
         List<Map<String, Object>> deps = (List<Map<String, Object>>) properties.get("dependencies");
         assertThat(deps).isEmpty();
     }
@@ -63,7 +63,7 @@ class CyclicAnalysisTest {
         Map<String, Object> properties = response.body();
         assertThat(properties).containsEntry("artifactId", "cycle-self-soft")
                 .containsEntry("packageSize", 2105L)
-                .containsEntry("totalSize", 2105L);
+                .containsEntry("effectiveValues", Map.of("size", 2105L));
         List<Map<String, Object>> deps = (List<Map<String, Object>>) properties.get("dependencies");
         assertThat(deps).isEmpty();
     }
@@ -83,7 +83,7 @@ class CyclicAnalysisTest {
         assertThat(properties)
                 .containsEntry("artifactId", "cycle1")
                 .containsEntry("packageSize", 2105L)
-                .containsEntry("totalSize", 6315L);
+                .containsEntry("effectiveValues", Map.of("size", 6315L));
         List<Map<String, Object>> deps = (List<Map<String, Object>>) properties.get("dependencies");
         assertThat(deps).hasSize(1);
         assertThat(deps.getFirst())
@@ -92,7 +92,7 @@ class CyclicAnalysisTest {
         assertThat((Map<String, Object>) deps.getFirst().get("artifact"))
                 .containsEntry("artifactId", "cycle2")
                 .containsEntry("packageSize", 2105L)
-                .containsEntry("totalSize", 6315L);
+                .containsEntry("effectiveValues", Map.of("size", 6315L));
     }
 
     @Test
@@ -110,7 +110,7 @@ class CyclicAnalysisTest {
         assertThat(properties)
                 .containsEntry("artifactId", "pre-cycle")
                 .containsEntry("packageSize", 2105L)
-                .containsEntry("totalSize", 2105L); // all deps are optional
+                .containsEntry("effectiveValues", Map.of("size", 2105L));// all deps are optional
         List<Map<String, Object>> deps = (List<Map<String, Object>>) properties.get("dependencies");
         assertThat(deps).hasSize(1);
         assertThat(deps.getFirst())
@@ -119,6 +119,6 @@ class CyclicAnalysisTest {
         assertThat((Map<String, Object>) deps.getFirst().get("artifact"))
                 .containsEntry("artifactId", "cycle3")
                 .containsEntry("packageSize", 2105L)
-                .containsEntry("totalSize", 6315L);
+                .containsEntry("effectiveValues", Map.of("size", 6315L));
     }
 }
