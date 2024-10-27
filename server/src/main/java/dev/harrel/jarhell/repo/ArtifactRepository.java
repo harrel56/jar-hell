@@ -179,10 +179,6 @@ public class ArtifactRepository {
         return new Gav(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier());
     }
 
-    private Gav toGav(ArtifactInfo artifactInfo) {
-        return new Gav(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier());
-    }
-
     private Map<String, Object> toGavMap(Gav gav) {
         Map<String, Object> gavMap = objectMapper.convertValue(gav, new TypeReference<>() {});
         gavMap.computeIfAbsent("classifier", k -> "");
@@ -195,10 +191,14 @@ public class ArtifactRepository {
             if (artifactProps.licenses() != null) {
                 licences = objectMapper.readValue(artifactProps.licenses(), new TypeReference<>() {});
             }
+            ArtifactInfo.EffectiveValues effectiveValues = null;
+            if (artifactProps.effectiveSize() != null) {
+                effectiveValues = new ArtifactInfo.EffectiveValues(artifactProps.effectiveSize());
+            }
             return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier(),
-                    artifactProps.unresolved(), artifactProps.packageSize(), artifactProps.totalSize(), artifactProps.bytecodeVersion(),
+                    artifactProps.unresolved(), artifactProps.packageSize(), artifactProps.bytecodeVersion(),
                     artifactProps.packaging(), artifactProps.name(), artifactProps.description(), artifactProps.url(),
-                    artifactProps.inceptionYear(), licences, artifactProps.classifiers(), artifactProps.created());
+                    artifactProps.inceptionYear(), licences, artifactProps.classifiers(), effectiveValues, artifactProps.created());
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
@@ -215,9 +215,9 @@ public class ArtifactRepository {
                 licenses = objectMapper.writeValueAsString(artifactInfo.licenses());
             }
             return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(),
-                    artifactInfo.unresolved(), artifactInfo.packageSize(), artifactInfo.totalSize(), artifactInfo.bytecodeVersion(),
+                    artifactInfo.unresolved(), artifactInfo.packageSize(), artifactInfo.bytecodeVersion(),
                     artifactInfo.packaging(), artifactInfo.name(), artifactInfo.description(), artifactInfo.url(),
-                    artifactInfo.inceptionYear(), licenses, artifactInfo.classifiers(), null);
+                    artifactInfo.inceptionYear(), licenses, artifactInfo.classifiers(), artifactInfo.effectiveValues().size(), null);
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
@@ -231,7 +231,6 @@ public class ArtifactRepository {
                                  String classifier,
                                  Boolean unresolved,
                                  Long packageSize,
-                                 Long totalSize,
                                  String bytecodeVersion,
                                  String packaging,
                                  String name,
@@ -240,6 +239,7 @@ public class ArtifactRepository {
                                  String inceptionYear,
                                  String licenses,
                                  List<String> classifiers,
+                                 Long effectiveSize,
                                  ZonedDateTime created) {}
 
     private class AggregateTree {

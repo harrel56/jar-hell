@@ -39,9 +39,9 @@ export const ArtifactInfo = () => {
   if (error) {
     return <p className='text-destructive'>Error occurred: {error.data?.message}</p>
   }
-  if (packageData?.totalSize && !loading && !error) {
+  if (packageData?.effectiveValues.size && !loading && !error) {
     return (
-      <ByteCount bytes={packageData.totalSize}/>
+      <ByteCount bytes={packageData.effectiveValues.size}/>
     )
   }
 }

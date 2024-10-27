@@ -23,12 +23,14 @@ export interface License {
   url: string
 }
 
+export interface UnresolvedPackage extends Gav {
+  unresolved: true
+}
+
 export interface Package extends Gav {
-  unresolved?: boolean
-  packageSize?: number
-  totalSize?: number
-  bytecodeVersion?: string
-  packaging?: string
+  packageSize: number
+  bytecodeVersion: string
+  packaging: string
   name?: string
   description?: string
   url?: string
@@ -36,5 +38,8 @@ export interface Package extends Gav {
   licenses: License[]
   classifiers: string[]
   created: string
-  dependencies?: Package[]
+  dependencies: Package[]
+  effectiveValues: {
+    size: number
+  }
 }

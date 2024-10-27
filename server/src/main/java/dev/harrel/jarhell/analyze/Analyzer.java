@@ -42,7 +42,7 @@ class Analyzer {
             return createArtifactInfo(gav, filesInfo, packageInfo, descriptorInfo);
         } catch (Exception e) {
             logger.warn("Failed to analyze artifact: {}, marking it as unresolved", gav, e);
-            return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier());
+            return ArtifactInfo.unresolved(gav);
         }
     }
 
@@ -65,9 +65,9 @@ class Analyzer {
 
     private ArtifactInfo createArtifactInfo(Gav gav, FilesInfo filesInfo, PackageInfo packageInfo, DescriptorInfo descriptorInfo) {
         return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), null,
-                packageInfo.size(), null, packageInfo.bytecodeVersion(), descriptorInfo.packaging(),
+                packageInfo.size(), packageInfo.bytecodeVersion(), descriptorInfo.packaging(),
                 descriptorInfo.name(), descriptorInfo.description(), descriptorInfo.url(), descriptorInfo.inceptionYear(),
-                descriptorInfo.licences(), List.copyOf(filesInfo.classifiers()), null);
+                descriptorInfo.licences(), List.copyOf(filesInfo.classifiers()), null, null);
     }
 
     private void traverseDeps(ArtifactTree at,
