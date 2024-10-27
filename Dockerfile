@@ -1,4 +1,4 @@
-FROM bellsoft/liberica-openjdk-alpine:21
+FROM eclipse-temurin:23-alpine
 COPY build/*.jar app.jar
 
 EXPOSE 8060
