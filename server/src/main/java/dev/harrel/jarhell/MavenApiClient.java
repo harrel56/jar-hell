@@ -10,7 +10,9 @@ import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.central.ArtifactDoc;
 import dev.harrel.jarhell.model.central.SelectResponse;
 import dev.harrel.jarhell.model.central.VersionDoc;
+import dev.harrel.jarhell.util.ConcurrentUtil;
 import io.avaje.config.Config;
+import org.apache.maven.artifact.versioning.ComparableVersion;
 
 import javax.inject.Singleton;
 import java.io.IOException;
@@ -24,8 +26,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.concurrent.StructuredTaskScope;
+import java.util.concurrent.StructuredTaskScope.Subtask;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Singleton
 public class MavenApiClient {
@@ -58,28 +63,22 @@ public class MavenApiClient {
     }
 
     public List<String> fetchArtifactVersions(String groupId, String artifactId) {
-        String groupPath = groupId.replace('.', '/');
-        String encodedPath = URLEncoder.encode(groupPath + "/" + artifactId, StandardCharsets.UTF_8);
-        HttpResponse<String> res = fetchRaw(CONTENT_URL + "/" + encodedPath);
-        if (res.statusCode() < 400) {
-            return HTML_VERSIONS_PATTERN.matcher(res.body())
-                    .results()
-                    .map(m -> m.group(1))
-                    .filter(v -> v.endsWith("/"))
-                    .map(v -> v.substring(0, v.length() - 1))
+        try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+            Subtask<List<String>> dirVersions = scope.fork(() -> fetchVersionsFromDir(groupId, artifactId));
+            Subtask<List<String>> metadataVersions = scope.fork(() -> fetchVersionsFromMetadata(groupId, artifactId));
+            ConcurrentUtil.joinScope(scope);
+
+            List<String> result = Stream.concat(dirVersions.get().stream(), metadataVersions.get().stream())
+                    .distinct()
+                    .map(ComparableVersion::new)
+                    .sorted()
+                    .map(ComparableVersion::toString)
                     .toList();
+            if (result.isEmpty()) {
+                throw new IllegalArgumentException("Failed to fetch versions for %s:%s".formatted(groupId, artifactId));
+            }
+            return result;
         }
-        // fallback to metadata.xml
-        String metadataPath = "%s/%s/maven-metadata.xml".formatted(groupPath, artifactId);
-        String encodedMetadataPath = URLEncoder.encode(metadataPath, StandardCharsets.UTF_8);
-        HttpResponse<String> metadataRes = fetchRaw(CONTENT_URL + "/" + encodedMetadataPath);
-        if (metadataRes.statusCode() < 400) {
-            return XML_VERSIONS_PATTERN.matcher(metadataRes.body())
-                    .results()
-                    .map(m -> m.group(1))
-                    .toList();
-        }
-        throw new IllegalArgumentException("Failed to fetch versions for %s:%s".formatted(groupId, artifactId));
     }
 
     public String fetchLatestVersion(String groupId, String artifactId) {
@@ -112,6 +111,35 @@ public class MavenApiClient {
                 .map(f -> f.substring(1, f.indexOf(".")))
                 .collect(Collectors.toSet());
         return new FilesInfo(extensions, classifiers);
+    }
+
+    private List<String> fetchVersionsFromDir(String groupId, String artifactId) {
+        String groupPath = groupId.replace('.', '/');
+        String encodedPath = URLEncoder.encode(groupPath + "/" + artifactId, StandardCharsets.UTF_8);
+        HttpResponse<String> res = fetchRaw(CONTENT_URL + "/" + encodedPath);
+        if (res.statusCode() >= 400) {
+            return List.of();
+        }
+        return HTML_VERSIONS_PATTERN.matcher(res.body())
+                .results()
+                .map(m -> m.group(1))
+                .filter(v -> v.endsWith("/"))
+                .map(v -> v.substring(0, v.length() - 1))
+                .toList();
+    }
+
+    private List<String> fetchVersionsFromMetadata(String groupId, String artifactId) {
+        String groupPath = groupId.replace('.', '/');
+        String metadataPath = "%s/%s/maven-metadata.xml".formatted(groupPath, artifactId);
+        String encodedPath = URLEncoder.encode(metadataPath, StandardCharsets.UTF_8);
+        HttpResponse<String> res = fetchRaw(CONTENT_URL + "/" + encodedPath);
+        if (res.statusCode() >= 400) {
+            return List.of();
+        }
+        return XML_VERSIONS_PATTERN.matcher(res.body())
+                .results()
+                .map(m -> m.group(1))
+                .toList();
     }
 
     private <T> T fetch(String url, ObjectMapper objectMapper, TypeReference<T> type) {
