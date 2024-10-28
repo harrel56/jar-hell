@@ -25,14 +25,14 @@ public record ArtifactInfo(String groupId,
         return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), true, null, null, null, null, null, null, null, null, null, null, null);
     }
 
-    public long getPackageSize() {
-        return packageSize == null ? 0 : packageSize;
-    }
-
     public ArtifactInfo withEffectiveValues(EffectiveValues effectiveValues) {
         return new ArtifactInfo(groupId, artifactId, version, classifier, unresolved, packageSize, bytecodeVersion,
                 packaging, name, description, url, inceptionYear, licenses, classifiers, effectiveValues, created);
     }
 
-    public record EffectiveValues(Long size) {}
+    public record EffectiveValues(Integer dependencies,
+                                  Integer unresolvedDependencies,
+                                  Integer optionalDependencies,
+                                  Long size,
+                                  String bytecodeVersion) {}
 }
