@@ -10,6 +10,7 @@ import javax.inject.Singleton;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Singleton
 class Analyzer {
@@ -44,6 +45,30 @@ class Analyzer {
             logger.warn("Failed to analyze artifact: {}, marking it as unresolved", gav, e);
             return ArtifactInfo.unresolved(gav);
         }
+    }
+
+    public ArtifactInfo.EffectiveValues computeEffectiveValues(ArtifactInfo info, List<DependencyInfo> partialDeps) {
+        if (Boolean.TRUE.equals(info.unresolved())) {
+            return null;
+        }
+
+        List<ArtifactInfo> requiredDeps = partialDeps.stream()
+                .filter(d -> !d.optional())
+                .map(DependencyInfo::artifact)
+                .map(ArtifactTree::artifactInfo)
+                .toList();
+        int optionalDeps = partialDeps.size() - requiredDeps.size();
+        int unresolvedDeps = Math.toIntExact(requiredDeps.stream().filter(ArtifactInfo::unresolved).count());
+        long totalSize = Objects.requireNonNullElse(info.packageSize(), 0L) +
+                requiredDeps.stream()
+                        .mapToLong(a -> Objects.requireNonNullElse(a.packageSize(), 0L))
+                        .sum();
+        String bytecodeVersion = Stream.concat(Stream.of(info), requiredDeps.stream())
+                .map(ArtifactInfo::bytecodeVersion)
+                .filter(Objects::nonNull)
+                .max(Comparator.naturalOrder())
+                .orElseThrow();
+        return new ArtifactInfo.EffectiveValues(requiredDeps.size(), unresolvedDeps, optionalDeps, totalSize, bytecodeVersion);
     }
 
     public TraversalOutput adjustArtifactTree(ArtifactTree artifactTree, List<ArtifactTree> allDependenciesList) {

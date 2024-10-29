@@ -49,7 +49,7 @@ dependencies {
 
     implementation 'org.neo4j.driver:neo4j-java-driver:5.11.0'
 
-    testImplementation platform('org.junit:junit-bom:5.10.3')
+    testImplementation platform('org.junit:junit-bom:5.11.3')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core:3.26.3'
     testImplementation 'org.awaitility:awaitility:4.2.1'
