@@ -191,10 +191,13 @@ public class ArtifactRepository {
             if (artifactProps.licenses() != null) {
                 licences = objectMapper.readValue(artifactProps.licenses(), new TypeReference<>() {});
             }
-            ArtifactInfo.EffectiveValues effectiveValues = null;
-            if (artifactProps.effectiveSize() != null) {
-                effectiveValues = new ArtifactInfo.EffectiveValues(artifactProps.effectiveSize());
-            }
+            ArtifactInfo.EffectiveValues effectiveValues = new ArtifactInfo.EffectiveValues(
+                    artifactProps.effectiveDependencies(),
+                    artifactProps.effectiveUnresolvedDependencies(),
+                    artifactProps.effectiveOptionalDependencies(),
+                    artifactProps.effectiveSize(),
+                    artifactProps.effectiveBytecodeVersion());
+
             return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier(),
                     artifactProps.unresolved(), artifactProps.packageSize(), artifactProps.bytecodeVersion(),
                     artifactProps.packaging(), artifactProps.name(), artifactProps.description(), artifactProps.url(),
@@ -214,14 +217,24 @@ public class ArtifactRepository {
             if (artifactInfo.licenses() != null && !artifactInfo.licenses().isEmpty()) {
                 licenses = objectMapper.writeValueAsString(artifactInfo.licenses());
             }
+            Integer effectiveDependencies = null;
+            Integer effectiveUnresolvedDependencies = null;
+            Integer effectiveOptionalDependencies = null;
             Long effectiveSize = null;
+            String effectiveBytecodeVersion = null;
             if (artifactInfo.effectiveValues() != null) {
+                effectiveDependencies = artifactInfo.effectiveValues().dependencies();
+                effectiveUnresolvedDependencies = artifactInfo.effectiveValues().unresolvedDependencies();
+                effectiveOptionalDependencies = artifactInfo.effectiveValues().optionalDependencies();
                 effectiveSize = artifactInfo.effectiveValues().size();
+                effectiveBytecodeVersion = artifactInfo.effectiveValues().bytecodeVersion();
             }
             return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(),
                     artifactInfo.unresolved(), artifactInfo.packageSize(), artifactInfo.bytecodeVersion(),
                     artifactInfo.packaging(), artifactInfo.name(), artifactInfo.description(), artifactInfo.url(),
-                    artifactInfo.inceptionYear(), licenses, artifactInfo.classifiers(), effectiveSize, null);
+                    artifactInfo.inceptionYear(), licenses, artifactInfo.classifiers(), effectiveDependencies,
+                    effectiveUnresolvedDependencies, effectiveOptionalDependencies,  effectiveSize,
+                    effectiveBytecodeVersion, null);
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
@@ -243,7 +256,11 @@ public class ArtifactRepository {
                                  String inceptionYear,
                                  String licenses,
                                  List<String> classifiers,
+                                 Integer effectiveDependencies,
+                                 Integer effectiveUnresolvedDependencies,
+                                 Integer effectiveOptionalDependencies,
                                  Long effectiveSize,
+                                 String effectiveBytecodeVersion,
                                  ZonedDateTime created) {}
 
     private class AggregateTree {
