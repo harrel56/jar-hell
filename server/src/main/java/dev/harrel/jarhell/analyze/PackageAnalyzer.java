@@ -76,7 +76,7 @@ class PackageAnalyzer {
                     .map(Long::valueOf)
                     .orElseThrow();
             try {
-                String byteCodeVersion = "jar".equals(packaging) ? parseByteCodeVersion(streamResponse) : null;
+                String byteCodeVersion = "jar".equals(packageExtension) ? parseByteCodeVersion(streamResponse) : null;
                 return new PackageInfo(packageSize, byteCodeVersion);
             } catch (IOException e) {
                 logger.info("Parsing jar failed for [{}] and range [{}]. Retrying with bigger range...", gav, rangeStep);

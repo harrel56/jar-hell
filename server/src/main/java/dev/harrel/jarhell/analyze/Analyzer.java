@@ -67,10 +67,11 @@ class Analyzer {
                 .map(ArtifactInfo::bytecodeVersion)
                 .filter(Objects::nonNull)
                 .max(Comparator.naturalOrder())
-                .orElseThrow();
+                .orElse(null);
         return new ArtifactInfo.EffectiveValues(requiredDeps.size(), unresolvedDeps, optionalDeps, totalSize, bytecodeVersion);
     }
 
+    // todo: maybe actually save excluded and conflicted deps
     public TraversalOutput adjustArtifactTree(ArtifactTree artifactTree, List<ArtifactTree> allDependenciesList) {
         Map<Ga, ArtifactTree> allDeps = allDependenciesList.stream()
                 .collect(Collectors.toMap(at -> new Ga(at.artifactInfo().groupId(), at.artifactInfo().artifactId()), Function.identity()));
@@ -79,13 +80,6 @@ class Analyzer {
         Set<Gav> conflicted = new HashSet<>();
         traverseDeps(artifactTree, allDeps, excluded, conflicted, new HashSet<>());
         return new TraversalOutput(artifactTree, excluded, conflicted);
-    }
-
-    public Long calculateTotalSize(ArtifactTree at) {
-        if (at.artifactInfo().packageSize() == null) {
-            return null;
-        }
-        return traverseTotalSize(at, new HashSet<>());
     }
 
     private ArtifactInfo createArtifactInfo(Gav gav, FilesInfo filesInfo, PackageInfo packageInfo, DescriptorInfo descriptorInfo) {
@@ -131,20 +125,6 @@ class Analyzer {
                 at.dependencies().set(i, new DependencyInfo(depAt, di.optional(), di.scope()));
             }
         }
-    }
-
-    private long traverseTotalSize(ArtifactTree at, Set<Gav> visited) {
-        Gav gav = treeToGav(at);
-        if (visited.contains(gav)) {
-            return 0;
-        }
-
-        Long size = Optional.ofNullable(at.artifactInfo().packageSize()).orElse(0L);
-        return size + at.dependencies().stream()
-                .filter(d -> !Boolean.TRUE.equals(d.optional()))
-                .map(DependencyInfo::artifact)
-                .mapToLong(d -> traverseTotalSize(d, visited))
-                .sum();
     }
 
     private static Gav treeToGav(ArtifactTree at) {
