@@ -58,7 +58,7 @@ class Analyzer {
                 .map(ArtifactTree::artifactInfo)
                 .toList();
         int optionalDeps = partialDeps.size() - requiredDeps.size();
-        int unresolvedDeps = Math.toIntExact(requiredDeps.stream().filter(ArtifactInfo::unresolved).count());
+        int unresolvedDeps = Math.toIntExact(requiredDeps.stream().filter(dep -> Boolean.TRUE.equals(dep.unresolved())).count());
         long totalSize = Objects.requireNonNullElse(info.packageSize(), 0L) +
                 requiredDeps.stream()
                         .mapToLong(a -> Objects.requireNonNullElse(a.packageSize(), 0L))

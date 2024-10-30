@@ -61,7 +61,44 @@ class AnalyzerTest {
                 ),
                 argumentSet("1 required unresolved, 2 optional unresolved deps",
                         resolved(1000L, "52.0"), List.of(unresolvedDep(true), unresolvedDep(false), unresolvedDep(true)),
-                        new EffectiveValues(3, 3, 2, 1000L, "52.0")
+                        new EffectiveValues(1, 1, 2, 1000L, "52.0")
+                ),
+                argumentSet("3 required resolved deps - size is calculated properly",
+                        resolved(1000L, "52.0"), List.of(
+                                resolvedDep(1L, "52.0", false),
+                                resolvedDep(10L, "52.0", false),
+                                resolvedDep(100L, "52.0", false)
+                        ),
+                        new EffectiveValues(3, 0, 0, 1111L, "52.0")
+                ),
+                argumentSet("3 required, 1 optional resolved deps - size is calculated properly",
+                        resolved(1000L, "52.0"), List.of(
+                                resolvedDep(1L, "52.0", false),
+                                resolvedDep(10L, "52.0", false),
+                                resolvedDep(9999L, "52.0", true),
+                                resolvedDep(100L, "52.0", false)
+                        ),
+                        new EffectiveValues(3, 0, 1, 1111L, "52.0")
+                ),
+                argumentSet("3 required, 1 optional resolved deps - bytecode version is calculated properly",
+                        resolved(1000L, "52.0"), List.of(
+                                resolvedDep(10L, "65.0", true),
+                                resolvedDep(1L, "61.0", false),
+                                resolvedDep(10L, "61.65536", false),
+                                resolvedDep(100L, "52.0", false)
+                        ),
+                        new EffectiveValues(3, 0, 1, 1111L, "61.65536")
+                ),
+                argumentSet("All cases combined",
+                        resolved(1000L, "68.0"), List.of(
+                                unresolvedDep(true),
+                                resolvedDep(10L, "65.0", true),
+                                unresolvedDep(false),
+                                resolvedDep(1L, "61.0", false),
+                                resolvedDep(10L, "61.65536", false),
+                                resolvedDep(100L, "52.0", false)
+                        ),
+                        new EffectiveValues(4, 1, 2, 1111L, "68.0")
                 )
         );
     }

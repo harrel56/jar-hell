@@ -30,7 +30,7 @@ public record ArtifactInfo(String groupId,
                 packaging, name, description, url, inceptionYear, licenses, classifiers, effectiveValues, created);
     }
 
-    public record EffectiveValues(Integer dependencies,
+    public record EffectiveValues(Integer requiredDependencies,
                                   Integer unresolvedDependencies,
                                   Integer optionalDependencies,
                                   Long size,

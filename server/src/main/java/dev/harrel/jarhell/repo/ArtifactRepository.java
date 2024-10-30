@@ -192,7 +192,7 @@ public class ArtifactRepository {
                 licences = objectMapper.readValue(artifactProps.licenses(), new TypeReference<>() {});
             }
             ArtifactInfo.EffectiveValues effectiveValues = new ArtifactInfo.EffectiveValues(
-                    artifactProps.effectiveDependencies(),
+                    artifactProps.effectiveRequiredDependencies(),
                     artifactProps.effectiveUnresolvedDependencies(),
                     artifactProps.effectiveOptionalDependencies(),
                     artifactProps.effectiveSize(),
@@ -223,7 +223,7 @@ public class ArtifactRepository {
             Long effectiveSize = null;
             String effectiveBytecodeVersion = null;
             if (artifactInfo.effectiveValues() != null) {
-                effectiveDependencies = artifactInfo.effectiveValues().dependencies();
+                effectiveDependencies = artifactInfo.effectiveValues().requiredDependencies();
                 effectiveUnresolvedDependencies = artifactInfo.effectiveValues().unresolvedDependencies();
                 effectiveOptionalDependencies = artifactInfo.effectiveValues().optionalDependencies();
                 effectiveSize = artifactInfo.effectiveValues().size();
@@ -256,7 +256,7 @@ public class ArtifactRepository {
                                  String inceptionYear,
                                  String licenses,
                                  List<String> classifiers,
-                                 Integer effectiveDependencies,
+                                 Integer effectiveRequiredDependencies,
                                  Integer effectiveUnresolvedDependencies,
                                  Integer effectiveOptionalDependencies,
                                  Long effectiveSize,
