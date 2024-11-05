@@ -170,7 +170,13 @@ class AnalyzeControllerTest {
                 Map.entry("url", "https://github.com/RohanNagar/jmail"),
                 Map.entry("bytecodeVersion", "52.0"),
                 Map.entry("classifiers", List.of("javadoc", "sources")),
-                Map.entry("effectiveValues", Map.of("size", 30629L))
+                Map.entry("effectiveValues", Map.of(
+                        "requiredDependencies", 0L,
+                        "unresolvedDependencies", 0L,
+                        "optionalDependencies", 0L,
+                        "size", 30629L,
+                        "bytecodeVersion", "52.0"
+                ))
         );
     }
 
@@ -185,7 +191,13 @@ class AnalyzeControllerTest {
                 Map.entry("packageSize", 2105L),
                 Map.entry("bytecodeVersion", "65.0"),
                 Map.entry("classifiers", List.of("javadoc", "sources")),
-                Map.entry("effectiveValues", Map.of("size", 32734L))
+                Map.entry("effectiveValues", Map.of(
+                        "requiredDependencies", 1L,
+                        "unresolvedDependencies", 0L,
+                        "optionalDependencies", 0L,
+                        "size", 32734L,
+                        "bytecodeVersion", "65.0"
+                ))
         );
     }
 }
