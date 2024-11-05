@@ -1,7 +1,10 @@
 ### dev.harrel:json-schema
 GET https://search.maven.org/solrsearch/select?q=dev.harrel
 
-### any
+### group + artifact
 GET https://search.maven.org/solrsearch/select?q=g:dev.harrel*+AND+a:json-schema*
+
+### full gav
+GET https://search.maven.org/solrsearch/select?q=g:dev.harrel+AND+a:json-schema+AND+v:1.7.1
 
 
