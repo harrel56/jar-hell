@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
 import java.io.UncheckedIOException;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -141,7 +141,7 @@ public class ArtifactRepository {
         propsMap.computeIfAbsent("classifier", k -> "");
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(tx ->
-                tx.run(new Query("CREATE (a:Artifact $props) SET a.created = datetime()", parameters("props", propsMap)))
+                tx.run(new Query("CREATE (a:Artifact $props) SET a.created = localdatetime()", parameters("props", propsMap)))
             );
         }
     }
@@ -261,7 +261,7 @@ public class ArtifactRepository {
                                  Integer effectiveOptionalDependencies,
                                  Long effectiveSize,
                                  String effectiveBytecodeVersion,
-                                 ZonedDateTime created) {}
+                                 LocalDateTime created) {}
 
     private class AggregateTree {
         private final ArtifactProps artifactProps;

@@ -2,7 +2,7 @@ package dev.harrel.jarhell.model;
 
 import dev.harrel.jarhell.model.descriptor.Licence;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record ArtifactInfo(String groupId,
@@ -20,7 +20,7 @@ public record ArtifactInfo(String groupId,
                            List<Licence> licenses,
                            List<String> classifiers,
                            EffectiveValues effectiveValues,
-                           ZonedDateTime created) {
+                           LocalDateTime created) {
     public static ArtifactInfo unresolved(Gav gav) {
         return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), true, null, null, null, null, null, null, null, null, null, null, null);
     }
