@@ -141,7 +141,7 @@ public class ArtifactRepository {
         propsMap.computeIfAbsent("classifier", k -> "");
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(tx ->
-                tx.run(new Query("CREATE (a:Artifact $props) SET a.created = localdatetime()", parameters("props", propsMap)))
+                tx.run(new Query("CREATE (a:Artifact $props) SET a.analyzed = localdatetime()", parameters("props", propsMap)))
             );
         }
     }
@@ -199,9 +199,9 @@ public class ArtifactRepository {
                     artifactProps.effectiveBytecodeVersion());
 
             return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier(),
-                    artifactProps.unresolved(), artifactProps.packageSize(), artifactProps.bytecodeVersion(),
+                    artifactProps.unresolved(), artifactProps.created(), artifactProps.packageSize(), artifactProps.bytecodeVersion(),
                     artifactProps.packaging(), artifactProps.name(), artifactProps.description(), artifactProps.url(),
-                    artifactProps.inceptionYear(), licences, artifactProps.classifiers(), effectiveValues, artifactProps.created());
+                    artifactProps.inceptionYear(), licences, artifactProps.classifiers(), effectiveValues, artifactProps.analyzed());
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
@@ -230,7 +230,7 @@ public class ArtifactRepository {
                 effectiveBytecodeVersion = artifactInfo.effectiveValues().bytecodeVersion();
             }
             return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(),
-                    artifactInfo.unresolved(), artifactInfo.packageSize(), artifactInfo.bytecodeVersion(),
+                    artifactInfo.unresolved(), artifactInfo.created(), artifactInfo.packageSize(), artifactInfo.bytecodeVersion(),
                     artifactInfo.packaging(), artifactInfo.name(), artifactInfo.description(), artifactInfo.url(),
                     artifactInfo.inceptionYear(), licenses, artifactInfo.classifiers(), effectiveDependencies,
                     effectiveUnresolvedDependencies, effectiveOptionalDependencies,  effectiveSize,
@@ -247,6 +247,7 @@ public class ArtifactRepository {
                                  String version,
                                  String classifier,
                                  Boolean unresolved,
+                                 LocalDateTime created,
                                  Long packageSize,
                                  String bytecodeVersion,
                                  String packaging,
@@ -261,7 +262,7 @@ public class ArtifactRepository {
                                  Integer effectiveOptionalDependencies,
                                  Long effectiveSize,
                                  String effectiveBytecodeVersion,
-                                 LocalDateTime created) {}
+                                 LocalDateTime analyzed) {}
 
     private class AggregateTree {
         private final ArtifactProps artifactProps;

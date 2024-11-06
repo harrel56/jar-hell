@@ -10,6 +10,7 @@ public record ArtifactInfo(String groupId,
                            String version,
                            String classifier,
                            Boolean unresolved,
+                           LocalDateTime created,
                            Long packageSize,
                            String bytecodeVersion,
                            String packaging,
@@ -20,14 +21,14 @@ public record ArtifactInfo(String groupId,
                            List<Licence> licenses,
                            List<String> classifiers,
                            EffectiveValues effectiveValues,
-                           LocalDateTime created) {
+                           LocalDateTime analyzed) {
     public static ArtifactInfo unresolved(Gav gav) {
-        return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), true, null, null, null, null, null, null, null, null, null, null, null);
+        return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), true, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     public ArtifactInfo withEffectiveValues(EffectiveValues effectiveValues) {
-        return new ArtifactInfo(groupId, artifactId, version, classifier, unresolved, packageSize, bytecodeVersion,
-                packaging, name, description, url, inceptionYear, licenses, classifiers, effectiveValues, created);
+        return new ArtifactInfo(groupId, artifactId, version, classifier, unresolved, created, packageSize, bytecodeVersion,
+                packaging, name, description, url, inceptionYear, licenses, classifiers, effectiveValues, analyzed);
     }
 
     public record EffectiveValues(Integer requiredDependencies,

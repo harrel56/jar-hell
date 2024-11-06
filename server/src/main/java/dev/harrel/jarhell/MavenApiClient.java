@@ -22,7 +22,11 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.StructuredTaskScope;
@@ -91,6 +95,11 @@ public class MavenApiClient {
         if (selectResponse.response().numFound() < 1) {
             throw new ArtifactNotFoundException(gav.toString());
         }
+
+        LocalDateTime created = Optional.ofNullable(selectResponse.response().docs().getFirst().timestamp())
+                .map(Instant::ofEpochMilli)
+                .map(i -> LocalDateTime.ofInstant(i, ZoneId.systemDefault()))
+                .orElse(null);
         List<String> ec = selectResponse.response().docs().getFirst().ec();
         Set<String> extensions = ec.stream()
                 .filter(f -> f.startsWith("."))
@@ -100,7 +109,7 @@ public class MavenApiClient {
                 .filter(f -> f.startsWith("-"))
                 .map(f -> f.substring(1, f.indexOf(".")))
                 .collect(Collectors.toSet());
-        return new FilesInfo(extensions, classifiers);
+        return new FilesInfo(created, extensions, classifiers);
     }
 
     private List<String> fetchVersionsFromDir(String groupId, String artifactId) {

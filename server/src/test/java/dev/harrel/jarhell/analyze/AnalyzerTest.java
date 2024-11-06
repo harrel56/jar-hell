@@ -28,7 +28,7 @@ class AnalyzerTest {
     }
 
     private static ArtifactInfo resolved(Long size, String bytecodeVersion) {
-        return new ArtifactInfo("org.resolved", "resolved", "1.0.0", null, null,
+        return new ArtifactInfo("org.resolved", "resolved", "1.0.0", null, null, null,
                 size, bytecodeVersion, "jar", "resolved", "desc", null, null, List.of(),
                 List.of(), null, null);
     }
