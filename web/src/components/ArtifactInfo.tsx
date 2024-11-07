@@ -2,10 +2,11 @@ import {useOutletContext, useParams} from 'react-router-dom'
 import {useFetch} from '@/hooks/useFetch.ts'
 import {Package, stringToGav} from '@/util.ts'
 import {useLayoutEffect, useMemo} from 'react'
-import {ByteCount} from '@/components/ByteCount.tsx'
+import {MetricDisplay} from '@/components/MetricDisplay.tsx'
 import {PendingAnalysis} from '@/components/PendingAnalysis.tsx'
 import {LoadingSpinner} from '@/components/LoadingSpinner.tsx'
 import {OutletContext} from '@/components/PackagePage.tsx'
+import {formatBytes} from '@/lib/utils.ts'
 
 export const ArtifactInfo = () => {
   const ctx = useOutletContext<OutletContext>()
@@ -41,7 +42,10 @@ export const ArtifactInfo = () => {
   }
   if (packageData?.effectiveValues.size && !loading && !error) {
     return (
-      <ByteCount bytes={packageData.effectiveValues.size}/>
+      <MetricDisplay title='Total size'
+                     titleHint='WIP'
+                     value={formatBytes(packageData.effectiveValues.size)}
+                     valueHint={packageData.effectiveValues.size + ' bytes'}/>
     )
   }
 }
