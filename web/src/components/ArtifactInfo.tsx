@@ -1,12 +1,11 @@
 import {useOutletContext, useParams} from 'react-router-dom'
 import {useFetch} from '@/hooks/useFetch.ts'
-import {ResolvedPackage, stringToGav} from '@/util.ts'
+import {ResolvedPackage, stringToGav, formatBytes, formatBytecodeVersion} from '@/util.ts'
 import {useLayoutEffect, useMemo} from 'react'
 import {MetricDisplay} from '@/components/MetricDisplay.tsx'
 import {PendingAnalysis} from '@/components/PendingAnalysis.tsx'
 import {LoadingSpinner} from '@/components/LoadingSpinner.tsx'
 import {OutletContext} from '@/components/PackagePage.tsx'
-import {formatBytes} from '@/lib/utils.ts'
 
 export const ArtifactInfo = () => {
   const ctx = useOutletContext<OutletContext>()
@@ -57,7 +56,7 @@ export const ArtifactInfo = () => {
   }
   const effectiveBytecodeVersion = {
     title: 'Effective bytecode version',
-    value: packageData.effectiveValues.bytecodeVersion,
+    value: formatBytecodeVersion(packageData.effectiveValues.bytecodeVersion),
   }
   const packageSize = {
     title: 'Package size',

@@ -18,6 +18,38 @@ export const stringToGav = (str: string): Gav => {
   return {groupId, artifactId, version, classifier}
 }
 
+export const formatBytes = (bytes: number) => {
+  if (bytes < 1_000) {
+    return bytes + 'B'
+  }
+  if (bytes < 1_000_000) {
+    return (bytes / 1_000).toFixed(2) + 'KB'
+  }
+  if (bytes < 1_000_000_000) {
+    return (bytes / 1_000_000).toFixed(2) + 'MB'
+  } else {
+    return (bytes / 1_000_000_000).toFixed(2) + 'GB'
+  }
+}
+
+export const formatBytecodeVersion = (bytecodeVersion?: string) => {
+  if (!bytecodeVersion) {
+    return 'N/A'
+  }
+  switch (bytecodeVersion) {
+    case '45.0': return 'Java 1.0'
+    case '45.3': return 'Java 1.1'
+    case '46.0': return 'Java 1.2'
+    case '47.0': return 'Java 1.3'
+    case '48.0': return 'Java 1.4'
+  }
+
+  const [major, minor] = bytecodeVersion.split('.')
+  const version = parseInt(major) - 44
+  const preview = parseInt(minor) === 65535
+  return 'Java ' + version + (preview ? ' (preview)' : '')
+}
+
 export interface License {
   name: string
   url: string
