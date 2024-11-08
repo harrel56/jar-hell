@@ -47,7 +47,7 @@ export const formatBytecodeVersion = (bytecodeVersion?: string) => {
   const [major, minor] = bytecodeVersion.split('.')
   const version = parseInt(major) - 44
   const preview = parseInt(minor) === 65535
-  return 'Java ' + version + (preview ? ' (preview)' : '')
+  return 'Java ' + version + (preview ? '*' : '')
 }
 
 export interface License {

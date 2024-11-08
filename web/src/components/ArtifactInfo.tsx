@@ -30,7 +30,7 @@ export const ArtifactInfo = () => {
   }, [postData])
 
   if (getLoading) {
-    return <LoadingSpinner/>
+    return <LoadingSpinner className='w-16 h-16 my-6'/>
   }
   if (postLoading) {
     return <PendingAnalysis/>
@@ -56,7 +56,12 @@ export const ArtifactInfo = () => {
   }
   const effectiveBytecodeVersion = {
     title: 'Effective bytecode version',
+    titleHint:
+      `The maximum bytecode version of the package and its required dependencies.
+        Can be viewed as a minimal Java version required for using this package.
+        '*' symbol means that source code was compiled with preview features enabled.`,
     value: formatBytecodeVersion(packageData.effectiveValues.bytecodeVersion),
+    valueHint: packageData.effectiveValues.bytecodeVersion
   }
   const packageSize = {
     title: 'Package size',
