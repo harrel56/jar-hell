@@ -20,6 +20,7 @@ export default {
   		colors: {
   			hellyeah: 'hsl(var(--hellyeah))',
   			'blue-dim': 'hsl(var(--blue-dim))',
+  			'blue-glass': 'hsl(var(--blue-glass))',
   			faded: 'hsl(var(--faded))',
 
   			background: 'hsl(var(--background))',
