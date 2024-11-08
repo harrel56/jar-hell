@@ -46,18 +46,39 @@ export const ArtifactInfo = () => {
     return <p>This package couldn't be analyzed</p>
   }
 
-  const metrics = [
-    {
-      title: 'Total size',
-      titleHint:
-        `The total (estimated) size of the package with all its required dependencies.
+  const effectiveSize = {
+    title: 'Effective size',
+    titleHint:
+      `The total (estimated) size of the package with all its required dependencies.
         Optional dependencies are not included.
         The resulting installation cost might be lower if some of the package's dependencies are already installed.`,
-      value: formatBytes(packageData?.effectiveValues.size),
-      valueHint: packageData?.effectiveValues.size + ' bytes'
-    }
-  ]
+    value: formatBytes(packageData.effectiveValues.size),
+    valueHint: packageData.effectiveValues.size + ' bytes'
+  }
+  const effectiveBytecodeVersion = {
+    title: 'Effective bytecode version',
+    value: packageData.effectiveValues.bytecodeVersion,
+  }
+  const packageSize = {
+    title: 'Package size',
+    value: formatBytes(packageData.packageSize),
+    valueHint: packageData.packageSize + ' bytes'
+  }
+  const requiredDependencies = {
+    title: 'All required dependencies',
+    value: packageData.effectiveValues.requiredDependencies,
+  }
+  const optionalDependencies = {
+    title: 'All optional dependencies',
+    value: packageData.effectiveValues.optionalDependencies,
+  }
   return (
-    <MetricDisplay {...metrics[0]}/>
+    <div className='grid xl:grid-cols-6 lg:grid-cols-4 grid-cols-2 gap-x-32 gap-y-16 h-fit'>
+        <MetricDisplay className='xl:col-start-2 col-span-2' {...effectiveSize}/>
+        <MetricDisplay className='col-span-2' {...effectiveBytecodeVersion}/>
+        <MetricDisplay className='col-span-2' {...packageSize}/>
+        <MetricDisplay className='col-span-2' {...requiredDependencies}/>
+        <MetricDisplay className='col-span-2' {...optionalDependencies}/>
+    </div>
   )
 }

@@ -34,7 +34,7 @@ export interface UnresolvedPackage extends Package {
 export interface ResolvedPackage extends Package {
   unresolved: false
   packageSize: number
-  bytecodeVersion: string
+  bytecodeVersion?: string
   packaging: string
   name?: string
   description?: string
@@ -43,8 +43,13 @@ export interface ResolvedPackage extends Package {
   licenses: License[]
   classifiers: string[]
   created: string
+  analyzed: string
   dependencies: Package[]
   effectiveValues: {
+    requiredDependencies: number
+    optionalDependencies: number
+    unresolvedDependencies: number
     size: number
+    bytecodeVersion?: string
   }
 }

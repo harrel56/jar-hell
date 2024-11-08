@@ -30,7 +30,7 @@ export const VersionPicker = ({versions, analyzedPackages}: VersionPickerProps) 
 
   return (
     <Accordion type='single' collapsible value={expandedSeries} onValueChange={value => setExpandedSeries(value)}
-               className='w-full min-w-[160px] basis-1/5'>
+               className='w-full min-w-[220px] basis-1/5'>
       <h2 className='mb-4 text-2xl font-bold'>Versions</h2>
       {Array.from(versionNodes.entries()).map(([versionSeries, versions]) => (
         <AccordionItem key={gav + versionSeries} value={versionSeries}>
