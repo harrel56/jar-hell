@@ -1,6 +1,6 @@
 import {CircleHelpIcon} from 'lucide-react'
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shadcn/components/ui/Tooltip.tsx'
-import {cn} from '@/lib/utils.ts'
+import {cn} from '@/shadcn/lib/utils.ts'
 
 export interface ByteDisplayProps {
   className?: string
