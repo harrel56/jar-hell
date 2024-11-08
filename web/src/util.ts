@@ -23,11 +23,16 @@ export interface License {
   url: string
 }
 
-export interface UnresolvedPackage extends Gav {
+export interface Package extends Gav{
+  unresolved: boolean
+}
+
+export interface UnresolvedPackage extends Package {
   unresolved: true
 }
 
-export interface Package extends Gav {
+export interface ResolvedPackage extends Package {
+  unresolved: false
   packageSize: number
   bytecodeVersion: string
   packaging: string

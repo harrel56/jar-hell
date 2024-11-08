@@ -1,4 +1,4 @@
-import {Gav, Package, stringToGav} from './util.ts'
+import {Gav, ResolvedPackage, stringToGav} from './util.ts'
 import {createBrowserRouter} from 'react-router-dom'
 import {App} from './App.tsx'
 import {ClientError, ErrorBoundary, NotFoundError} from './ErrorBoundary.tsx'
@@ -7,7 +7,7 @@ import {ArtifactInfoContainer} from '@/components/ArtifactInfoContainer.tsx'
 
 export interface PackageLoaderData {
   versions: string[]
-  analyzedPackages: Package[]
+  analyzedPackages: ResolvedPackage[]
 }
 
 const serverUrl = import.meta.env.VITE_SERVER_URL
@@ -29,7 +29,7 @@ const loadPackageData = async (gav: Gav): Promise<PackageLoaderData | Response> 
     .then(async res => {
       const json = await res.json()
       if (res.ok) {
-        return json as Package[]
+        return json as ResolvedPackage[]
       } else {
         throw Error(json.message)
       }

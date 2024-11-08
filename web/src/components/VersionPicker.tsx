@@ -2,18 +2,18 @@ import {Separator} from '@/shadcn/components/ui/Separator.tsx'
 import React, {useLayoutEffect, useMemo, useState} from 'react'
 import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from '@/shadcn/components/ui/Accordion.tsx'
 import {Link, useParams} from 'react-router-dom'
-import {Gav, Package, stringToGav} from '@/util.ts'
+import {Gav, ResolvedPackage, stringToGav} from '@/util.ts'
 import clsx from 'clsx'
 import {Badge} from '@/shadcn/components/ui/Badge.tsx'
 
 export interface VersionPickerProps {
   versions: string[]
-  analyzedPackages: Package[]
+  analyzedPackages: ResolvedPackage[]
 }
 
 interface VersionNode {
   version: string
-  package?: Package
+  package?: ResolvedPackage
 }
 
 export const VersionPicker = ({versions, analyzedPackages}: VersionPickerProps) => {
@@ -75,7 +75,7 @@ const calculateExpandedSeries = (gavObject: Gav, versionNodes: Map<string, Versi
  * - in scope of 1 major there is a minor that got >= 10 patch versions
  * otherwise group by major
  * */
-const calculateVersionNodes = (versions: string[], analyzedPackages: Package[]) => {
+const calculateVersionNodes = (versions: string[], analyzedPackages: ResolvedPackage[]) => {
   const byMajor = new Map<string, Map<string, string[]>>()
   versions.forEach(version => {
     const [major, minor] = version.split('.', 2)
@@ -102,6 +102,6 @@ const calculateVersionNodes = (versions: string[], analyzedPackages: Package[]) 
   return nodes
 }
 
-const joinVersionsWithPackages = (versions: string[], analyzedPackages: Package[]) => {
+const joinVersionsWithPackages = (versions: string[], analyzedPackages: ResolvedPackage[]) => {
   return versions.map(version => ({version, package: analyzedPackages.find(pkg => pkg.version === version)}))
 }
