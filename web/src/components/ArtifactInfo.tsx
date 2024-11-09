@@ -8,6 +8,7 @@ import {LoadingSpinner} from '@/components/LoadingSpinner.tsx'
 import {OutletContext} from '@/components/PackagePage.tsx'
 import {Alert, AlertDescription, AlertTitle} from '@/shadcn/components/ui/Alert.tsx'
 import {AlertCircle} from 'lucide-react'
+import {Separator} from '@/shadcn/components/ui/Separator.tsx'
 
 export const ArtifactInfo = () => {
   const ctx = useOutletContext<OutletContext>()
@@ -79,14 +80,19 @@ export const ArtifactInfo = () => {
     value: packageData.effectiveValues.optionalDependencies,
   }
   return (
-    <div>
+    <div className='flex flex-col gap-8 items-center'>
+      <span className='text-5xl font-extrabold font-mono underline' title='Package name'>{packageData.name}</span>
+      <blockquote className='my-6 text-faded' title='Package desription'>{packageData.description}</blockquote>
+      <Separator></Separator>
       {packageData.effectiveValues.unresolvedDependencies > 0 && (
-        <Alert variant='destructive' className='mb-6'>
+        <Alert variant='destructive'>
           <AlertCircle className='h-4 w-4'/>
           <AlertTitle>Analysis was not fully completed</AlertTitle>
           <AlertDescription>
-            A total of <strong>{packageData.effectiveValues.unresolvedDependencies}</strong> required dependencies were not resolved.
-            This may happen if the package is not available in the Maven Central repository or due to intermittent server/network issues.
+            A total of <strong>{packageData.effectiveValues.unresolvedDependencies}</strong> required dependencies were
+            not resolved.
+            This may happen if the package is not available in the Maven Central repository or due to intermittent
+            server/network issues.
             All effective values should be treated only as a rough estimations.
           </AlertDescription>
         </Alert>

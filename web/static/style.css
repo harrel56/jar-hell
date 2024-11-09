@@ -32,7 +32,7 @@
         --radius: 0.5rem;
 
         --hellyeah: 14 79.8% 53.3%;
-        --blue-glass: 47 28% 74%;
+        --yellow-glass: 47 28% 74%;
         --blue-dim: 220 70% 65%;
         --faded: 240 5% 64.9%;
     }
@@ -89,4 +89,31 @@
 
 .rotating {
     animation: rotation 1s linear infinite;
+}
+
+blockquote {
+    position: relative;
+    width: fit-content;
+    margin: 0 3rem;
+    font-style: italic;
+}
+
+blockquote:before {
+    content: '\201C';
+    left: -3rem;
+    top: -2rem;
+}
+
+blockquote:after {
+    content: '\201D';
+    right: -2.5rem;
+    bottom: -3.5rem;
+}
+
+blockquote:before, blockquote:after {
+    position: absolute;
+    font-family: Georgia, serif;
+    font-weight: bold;
+    font-size: 4rem;
+    color: hsl(var(--yellow-glass));
 }
