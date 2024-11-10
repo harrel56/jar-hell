@@ -2,13 +2,13 @@ import {VersionPicker} from '@/components/VersionPicker.tsx'
 import {Outlet, useLoaderData} from 'react-router-dom'
 import {PackageLoaderData} from '@/router.tsx'
 import {Separator} from '@/shadcn/components/ui/Separator.tsx'
-import {ResolvedPackage} from '@/util.ts'
+import {Package, ResolvedPackage} from '@/util.ts'
 import {useCallback, useLayoutEffect, useState} from 'react'
 
 export interface OutletContext {
   versions: string[]
-  analyzedPackages: ResolvedPackage[]
-  markAsAnalyzed: (pkg: ResolvedPackage) => void
+  analyzedPackages: Package[]
+  markAsAnalyzed: (pkg: Package) => void
 }
 
 export const PackagePage = () => {

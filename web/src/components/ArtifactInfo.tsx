@@ -1,6 +1,6 @@
 import {useOutletContext, useParams} from 'react-router-dom'
 import {useFetch} from '@/hooks/useFetch.ts'
-import {ResolvedPackage, stringToGav, formatBytes, formatBytecodeVersion} from '@/util.ts'
+import {stringToGav, formatBytes, formatBytecodeVersion, Package} from '@/util.ts'
 import {useLayoutEffect, useMemo} from 'react'
 import {MetricDisplay} from '@/components/MetricDisplay.tsx'
 import {PendingAnalysis} from '@/components/PendingAnalysis.tsx'
@@ -15,8 +15,8 @@ export const ArtifactInfo = () => {
   const ctx = useOutletContext<OutletContext>()
   const { gav } = useParams()
   const gavObject = useMemo(() => stringToGav(gav!), [gav])
-  const {data: getData, loading: getLoading, error: getError, get} = useFetch<ResolvedPackage>(`/api/v1/packages/${gav}?depth=1`, [gav])
-  const {data: postData, loading: postLoading, error: postError, post} = useFetch<ResolvedPackage>('/api/v1/analyze-and-wait', [gav])
+  const {data: getData, loading: getLoading, error: getError, get} = useFetch<Package>(`/api/v1/packages/${gav}?depth=1`, [gav])
+  const {data: postData, loading: postLoading, error: postError, post} = useFetch<Package>('/api/v1/analyze-and-wait', [gav])
   const packageData = getData ?? postData
   const error = getError ?? postError
 

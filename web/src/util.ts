@@ -87,3 +87,8 @@ export interface ResolvedPackage extends Gav {
     bytecodeVersion?: string
   }
 }
+
+export const isResolvedPackage = (pkg: Package): pkg is ResolvedPackage => !pkg.unresolved
+
+export const getAllDepsCount =
+  (pkg: ResolvedPackage) => pkg.effectiveValues.requiredDependencies + pkg.effectiveValues.optionalDependencies
