@@ -9,6 +9,7 @@ import {OutletContext} from '@/components/PackagePage.tsx'
 import {Alert, AlertDescription, AlertTitle} from '@/shadcn/components/ui/Alert.tsx'
 import {AlertCircle} from 'lucide-react'
 import {Separator} from '@/shadcn/components/ui/Separator.tsx'
+import {ArtifactTree} from '@/components/ArtifactTree.tsx'
 
 export const ArtifactInfo = () => {
   const ctx = useOutletContext<OutletContext>()
@@ -83,7 +84,7 @@ export const ArtifactInfo = () => {
     <div className='flex flex-col gap-8 items-center'>
       <span className='text-5xl font-extrabold font-mono underline' title='Package name'>{packageData.name}</span>
       <blockquote className='my-6 text-faded' title='Package desription'>{packageData.description}</blockquote>
-      <Separator></Separator>
+      <Separator/>
       {packageData.effectiveValues.unresolvedDependencies > 0 && (
         <Alert variant='destructive'>
           <AlertCircle className='h-4 w-4'/>
@@ -104,6 +105,8 @@ export const ArtifactInfo = () => {
         <MetricDisplay className='col-span-2' {...requiredDependencies}/>
         <MetricDisplay className='col-span-2' {...optionalDependencies}/>
       </div>
+      <Separator/>
+      <ArtifactTree artifact={packageData}/>
     </div>
   )
 }

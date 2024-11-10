@@ -55,15 +55,13 @@ export interface License {
   url: string
 }
 
-export interface Package extends Gav{
-  unresolved: boolean
-}
+export type Package = UnresolvedPackage | ResolvedPackage
 
-export interface UnresolvedPackage extends Package {
+export interface UnresolvedPackage extends Gav {
   unresolved: true
 }
 
-export interface ResolvedPackage extends Package {
+export interface ResolvedPackage extends Gav {
   unresolved: false
   packageSize: number
   bytecodeVersion?: string
@@ -76,7 +74,11 @@ export interface ResolvedPackage extends Package {
   classifiers: string[]
   created: string
   analyzed: string
-  dependencies: Package[]
+  dependencies: {
+    artifact: Package
+    scope: string
+    optional: boolean
+  }[]
   effectiveValues: {
     requiredDependencies: number
     optionalDependencies: number
