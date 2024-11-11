@@ -67,7 +67,7 @@ public class ArtifactRepository {
 
             return result.records().stream()
                     .map(rec -> rec.get("root").asNode())
-                    .map(node -> new AggregateTree(toArtifactProps(node)))
+                    .map(node -> new AggregateTree(toArtifactProps(node), 0))
                     .map(AggregateTree::toArtifactTree)
                     .sorted(Comparator.comparing(at -> at.artifactInfo().version()))
                     .toList();
@@ -116,8 +116,8 @@ public class ArtifactRepository {
 
             Node rootNode = rec.get("root").asNode();
             Map<String, AggregateTree> nodes = rec.get("nodes").asList(Value::asEntity).stream()
-                    .collect(Collectors.toMap(Entity::elementId, n -> new AggregateTree(toArtifactProps(n))));
-            AggregateTree rootTree = new AggregateTree(toArtifactProps(rootNode));
+                    .collect(Collectors.toMap(Entity::elementId, n -> new AggregateTree(toArtifactProps(n), depth)));
+            AggregateTree rootTree = new AggregateTree(toArtifactProps(rootNode), depth);
             nodes.put(rootNode.elementId(), rootTree);
 
             List<Relationship> relations = rec.get("relationships").asList(Value::asRelationship);
@@ -266,27 +266,31 @@ public class ArtifactRepository {
 
     private class AggregateTree {
         private final ArtifactProps artifactProps;
+        private final int depth;
         private final SortedMap<Gav, AggregateTree> deps;
         private RelationProps relationProps;
 
-        AggregateTree(ArtifactProps artifactProps) {
+        AggregateTree(ArtifactProps artifactProps, int depth) {
             this.artifactProps = artifactProps;
+            this.depth = depth;
             this.deps = new TreeMap<>();
         }
 
         ArtifactTree toArtifactTree() {
-            return toArtifactTree(Set.of());
+            return toArtifactTree(Set.of(), 0);
         }
 
-        private ArtifactTree toArtifactTree(Set<Gav> visited) {
+        private ArtifactTree toArtifactTree(Set<Gav> visited, int currentDepth) {
             Gav gav = toGav(artifactProps);
             List<DependencyInfo> depsList = null;
             if (!visited.contains(gav)) {
                 Set<Gav> newVisited = new HashSet<>(visited);
                 newVisited.add(gav);
-                depsList = deps.values().stream()
-                        .map(data -> new DependencyInfo(data.toArtifactTree(newVisited), data.relationProps.optional(), data.relationProps.scope()))
-                        .toList();
+                if (currentDepth < depth) {
+                    depsList = deps.values().stream()
+                            .map(data -> new DependencyInfo(data.toArtifactTree(newVisited, currentDepth + 1), data.relationProps.optional(), data.relationProps.scope()))
+                            .toList();
+                }
             }
             return new ArtifactTree(toArtifactInfo(artifactProps), depsList);
         }
