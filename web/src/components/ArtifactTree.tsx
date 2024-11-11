@@ -42,7 +42,7 @@ const DepNode = ({node}: { node: Package }) => {
 
   return (
     <AccordionPrimitive.Root type='multiple' value={openedNodes} onValueChange={onValueChange}
-                             className='tree text-left'>
+                             className='tree text-left text-sm'>
       <AccordionPrimitive.Item value={gav}>
         <AccordionPrimitive.Header className='flex items-center py-3'>
           <AccordionPrimitive.Trigger asChild>
@@ -50,7 +50,7 @@ const DepNode = ({node}: { node: Package }) => {
           </AccordionPrimitive.Trigger>
         </AccordionPrimitive.Header>
         <AccordionPrimitive.Content asChild
-                                    className='overflow-hidden text-sm ml-8 transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down'>
+                                    className='overflow-hidden transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down'>
           <ul>
             {isResolvedPackage(artifact) && artifact.dependencies?.map(dep => (
               <li key={gavToString(dep.artifact)}>
