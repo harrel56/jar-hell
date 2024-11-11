@@ -1,9 +1,10 @@
 import {gavToString, getAllDepsCount, isResolvedPackage, Package} from '@/util.ts'
 import * as AccordionPrimitive from '@radix-ui/react-accordion'
-import {Circle, CircleChevronDown} from 'lucide-react'
+import {Circle, CircleChevronDown, CircleMinus, CirclePlus} from 'lucide-react'
 import {useFetch} from '@/hooks/useFetch.ts'
-import {forwardRef, useState} from 'react'
+import {forwardRef, TransitionEventHandler, useRef, useState} from 'react'
 import {LoadingSpinner} from '@/components/LoadingSpinner.tsx'
+import {clsx} from 'clsx'
 
 export interface PackageTreeProperties {
   artifact: Package
@@ -44,7 +45,7 @@ const DepNode = ({node}: { node: Package }) => {
                              className='tree text-left'>
       <AccordionPrimitive.Item value={gav}>
         <AccordionPrimitive.Header className='flex items-center py-3'>
-          <AccordionPrimitive.Trigger asChild className='flex transition-all [&[data-state=open]>svg]:rotate-180'>
+          <AccordionPrimitive.Trigger asChild>
             <DepHeader node={artifact} loading={loading}/>
           </AccordionPrimitive.Trigger>
         </AccordionPrimitive.Header>
@@ -69,21 +70,29 @@ interface DepHeaderProps {
   leaf?: boolean
 }
 
-const DepHeader = forwardRef<HTMLDivElement, DepHeaderProps>((props, ref) => {
-  const iconClasses = 'h-4 w-4 shrink-0 transition-transform duration-200'
+const DepHeader = forwardRef<HTMLDivElement, DepHeaderProps>(({node, loading, leaf, ...props}, ref) => {
+  const iconClasses = 'h-4 w-4 shrink-0 transition-all duration-700'
   const getIcon = () => {
-    if (props.loading) {
+    if (loading) {
       return <LoadingSpinner className={iconClasses}/>
     }
-    if (props.leaf) {
+    if (leaf) {
       return <Circle className={iconClasses}/>
     }
-    return <CircleChevronDown className={iconClasses}/>
+    return (
+      <>
+        <CirclePlus className={clsx(iconClasses, 'plus')}/>
+        <CircleMinus className={clsx(iconClasses, 'minus absolute')}/>
+      </>
+    )
   }
+
   return (
-    <div ref={ref} {...props} className='flex items-center gap-2 cursor-pointer'>
+    <div ref={ref} {...props} className='relative flex items-center gap-2 cursor-pointer transition-all [&[data-state=open]>svg]:rotate-[360deg]
+     [&[data-state=open]>svg.plus]:opacity-0 [&[data-state=closed]>svg.plus]:opacity-100
+     [&[data-state=open]>svg.minus]:opacity-100 [&[data-state=closed]>svg.minus]:opacity-0'>
       {getIcon()}
-      <span>{gavToString(props.node)}</span>
+      <span>{gavToString(node)}</span>
     </div>
   )
 })
