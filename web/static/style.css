@@ -118,56 +118,55 @@ blockquote:before, blockquote:after {
     color: hsl(var(--yellow-glass));
 }
 
+/* ArtifactTree styling */
 .tree {
     --spacing: 1rem;
+    --color: hsl(var(--faded));
     position: relative;
-}
 
-.tree::before {
-    content: '';
-    position: absolute;
-    left: calc(var(--spacing) / 2 - 1px);
-    top: calc(var(--spacing) * 2 - 2px);
-    background: #ddd;
-    width: 2px;
-    height: 20px;
-    transition: visibility 0.2s;
-}
+    &::before {
+        content: '';
+        position: absolute;
+        left: calc(var(--spacing) / 2 - 1px);
+        top: calc(var(--spacing) * 2 - 1px);
+        background: var(--color);
+        width: 2px;
+        height: 20px;
+        transition: visibility 0.2s;
+    }
 
-.tree:has(>[data-state=open])::before {
-    visibility: visible;
-}
+    &:has(>[data-state=open])::before {
+        visibility: visible;
+    }
 
-.tree:has(>[data-state=closed])::before {
-    visibility: hidden;
-}
+    &:has(>[data-state=closed])::before {
+        visibility: hidden;
+    }
 
-.tree li {
-    display: block;
-    position: relative;
-    padding-left: var(--spacing);
-}
+    ul {
+        margin-left: calc(var(--spacing) / 2 - 1px);
+        padding-left: 0;
+    }
 
-.tree ul {
-    margin-left: calc(var(--spacing) / 2 - 1px);
-    padding-left: 0;
-}
+    li {
+        display: block;
+        position: relative;
+        padding-left: var(--spacing);
+        border-left: 2px solid var(--color);
+    }
 
-.tree ul li {
-    border-left: 2px solid #ddd;
-}
+    li:last-child {
+        border-color: transparent;
+    }
 
-.tree ul li:last-child {
-    border-color: transparent;
-}
-
-.tree ul li::before {
-    content: '';
-    display: block;
-    position: absolute;
-    left: -2px;
-    width: calc(var(--spacing) + 4px);
-    height: 24px;
-    border: solid #ddd;
-    border-width: 0 0 2px 2px;
+    li::before {
+        content: '';
+        display: block;
+        position: absolute;
+        left: -2px;
+        width: calc(var(--spacing) + 4px);
+        height: 24px;
+        border: solid var(--color);
+        border-width: 0 0 2px 2px;
+    }
 }
