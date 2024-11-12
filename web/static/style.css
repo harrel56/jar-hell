@@ -128,7 +128,7 @@ blockquote:before, blockquote:after {
         content: '';
         position: absolute;
         left: calc(var(--spacing) / 2 - 1px);
-        top: calc(var(--spacing) * 2 - 4px);
+        top: calc(var(--spacing) * 2 - 2px);
         background: var(--color);
         width: 2px;
         height: 20px;

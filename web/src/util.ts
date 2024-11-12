@@ -61,6 +61,12 @@ export interface UnresolvedPackage extends Gav {
   unresolved: true
 }
 
+export interface Dependency {
+  artifact: Package
+  scope: string
+  optional: boolean
+}
+
 export interface ResolvedPackage extends Gav {
   unresolved: false
   packageSize: number
@@ -74,11 +80,7 @@ export interface ResolvedPackage extends Gav {
   classifiers: string[]
   created: string
   analyzed: string
-  dependencies: {
-    artifact: Package
-    scope: string
-    optional: boolean
-  }[]
+  dependencies: Dependency[]
   effectiveValues: {
     requiredDependencies: number
     optionalDependencies: number

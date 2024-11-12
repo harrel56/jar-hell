@@ -1,4 +1,4 @@
-import {gavToString, getAllDepsCount, isResolvedPackage, Package} from '@/util.ts'
+import {Dependency, gavToString, getAllDepsCount, isResolvedPackage, Package} from '@/util.ts'
 import * as AccordionPrimitive from '@radix-ui/react-accordion'
 import {Circle, CircleAlert, CircleMinus, CirclePlus} from 'lucide-react'
 import {useFetch} from '@/hooks/useFetch.ts'
@@ -6,22 +6,28 @@ import {forwardRef, useState} from 'react'
 import {LoadingSpinner} from '@/components/LoadingSpinner.tsx'
 import {clsx} from 'clsx'
 import {Link} from 'react-router-dom'
+import {Badge} from '@/shadcn/components/ui/Badge.tsx'
 
 export interface PackageTreeProperties {
   artifact: Package
 }
 
 export const ArtifactTree = ({artifact}: PackageTreeProperties) => {
+  const dummyDep: Dependency = {
+    artifact: artifact,
+    scope: '',
+    optional: false
+  }
   return (
-    <DepNode node={artifact}/>
+    <DepNode node={dummyDep}/>
   )
 }
 
-const DepNode = ({node}: { node: Package }) => {
-  const gav = gavToString(node)
+const DepNode = ({node}: { node: Dependency }) => {
+  const gav = gavToString(node.artifact)
   const [openedNodes, setOpenedNodes] = useState<string[]>([])
   const {data, loading, error, get} = useFetch<Package>(`/api/v1/packages/${gav}?depth=1`, [gav])
-  const artifact = data ?? node
+  const artifact = data ?? node.artifact
 
   const onValueChange = (opened: string[]) => {
     if (loading) {
@@ -35,8 +41,8 @@ const DepNode = ({node}: { node: Package }) => {
   }
   if (!isResolvedPackage(artifact) || getAllDepsCount(artifact) === 0) {
     return (
-      <div className='text-faded py-3'>
-        <DepHeader node={artifact} loading={loading} leaf={true}/>
+      <div className='py-3'>
+        <DepHeader node={node} loading={loading} leaf={true}/>
       </div>
     )
   }
@@ -47,7 +53,7 @@ const DepNode = ({node}: { node: Package }) => {
       <AccordionPrimitive.Item value={gav}>
         <AccordionPrimitive.Header className='flex items-center py-3'>
           <AccordionPrimitive.Trigger asChild>
-            <DepHeader node={artifact} loading={loading}/>
+            <DepHeader node={node} loading={loading}/>
           </AccordionPrimitive.Trigger>
         </AccordionPrimitive.Header>
         <AccordionPrimitive.Content asChild
@@ -55,7 +61,7 @@ const DepNode = ({node}: { node: Package }) => {
           <ul>
             {isResolvedPackage(artifact) && artifact.dependencies?.map(dep => (
               <li key={gavToString(dep.artifact)}>
-                <DepNode node={dep.artifact}/>
+                <DepNode node={dep}/>
               </li>
             ))}
           </ul>
@@ -66,19 +72,19 @@ const DepNode = ({node}: { node: Package }) => {
 }
 
 interface DepHeaderProps {
-  node: Package
+  node: Dependency
   loading: boolean
   leaf?: boolean
 }
 
 const DepHeader = forwardRef<HTMLDivElement, DepHeaderProps>(({node, loading, leaf, ...props}, ref) => {
-  const gav = gavToString(node)
+  const gav = gavToString(node.artifact)
   const iconClasses = 'h-4 w-4 shrink-0 transition-all duration-700'
   const getIcon = () => {
     if (loading) {
       return <LoadingSpinner className={iconClasses}/>
     }
-    if (!isResolvedPackage(node)) {
+    if (!isResolvedPackage(node.artifact)) {
       return <CircleAlert className={clsx(iconClasses, 'text-destructive')}/>
     }
     if (leaf) {
@@ -86,18 +92,34 @@ const DepHeader = forwardRef<HTMLDivElement, DepHeaderProps>(({node, loading, le
     }
     return (
       <>
-        <CirclePlus className={clsx(iconClasses, 'cursor-pointer plus')}/>
+        <CirclePlus className={clsx(iconClasses, 'cursor-pointer peer plus')}/>
         <CircleMinus className={clsx(iconClasses, 'cursor-pointer minus absolute')}/>
       </>
     )
   }
 
+  const headerClasses = clsx(
+    'relative flex items-center gap-2 transition-all',
+    node.optional && 'text-faded',
+    '[&[data-state=open]>svg]:rotate-[360deg]',
+    '[&[data-state=open]>svg.plus]:opacity-0',
+    '[&[data-state=closed]>svg.plus]:opacity-100',
+    '[&[data-state=open]>svg.minus]:opacity-100',
+    '[&[data-state=closed]>svg.minus]:opacity-0'
+  )
   return (
-    <div ref={ref} {...props} className='relative flex items-center gap-2 transition-all [&[data-state=open]>svg]:rotate-[360deg]
-     [&[data-state=open]>svg.plus]:opacity-0 [&[data-state=closed]>svg.plus]:opacity-100
-     [&[data-state=open]>svg.minus]:opacity-100 [&[data-state=closed]>svg.minus]:opacity-0'>
-      {getIcon()}
-      <Link to={`/packages/${gav}`}>{gav}</Link>
+    <div className='flex items-center gap-2'>
+      <div ref={ref} {...props} className={headerClasses}>
+        {getIcon()}
+        <span className='peer-[.cursor-pointer]:cursor-pointer'>{node.artifact.artifactId}</span>
+      </div>
+      {node.optional && <Badge variant='outline' className='border-border text-faded'>Optional</Badge>}
+      <Link to={`/packages/${gav}`}>
+        <Badge variant='outline'
+               className={clsx('border-primary hover:bg-input', node.optional && 'text-faded border-border')}>
+          {node.artifact.version}
+        </Badge>
+      </Link>
     </div>
   )
 })
