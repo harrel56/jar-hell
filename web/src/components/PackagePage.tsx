@@ -3,7 +3,7 @@ import {Outlet, useLoaderData} from 'react-router-dom'
 import {PackageLoaderData} from '@/router.tsx'
 import {Separator} from '@/shadcn/components/ui/Separator.tsx'
 import {Package, ResolvedPackage} from '@/util.ts'
-import {useCallback, useLayoutEffect, useState} from 'react'
+import {useCallback, useRef, useState} from 'react'
 
 export interface OutletContext {
   versions: string[]
@@ -14,8 +14,12 @@ export interface OutletContext {
 export const PackagePage = () => {
   const loaderData = useLoaderData() as PackageLoaderData
   const [analyzedPackages, setAnalyzedPackages] = useState(loaderData.analyzedPackages)
+  const prevLoaderDataRef = useRef(loaderData)
 
-  useLayoutEffect(() => setAnalyzedPackages(loaderData.analyzedPackages), [loaderData.analyzedPackages])
+  if (prevLoaderDataRef.current !== loaderData) {
+    setAnalyzedPackages(loaderData.analyzedPackages)
+    prevLoaderDataRef.current = loaderData
+  }
   const markAsAnalyzed = useCallback((pkg: ResolvedPackage) => {
     loaderData.analyzedPackages.push(pkg)
     setAnalyzedPackages(pkgs => [...pkgs, pkg])
