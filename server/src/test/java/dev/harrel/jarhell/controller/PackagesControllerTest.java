@@ -292,7 +292,7 @@ class PackagesControllerTest {
         assertThat(response.statusCode()).isEqualTo(200);
         JsonNode body = response.body();
         assertArtifact(body, "org.test", "lib", "1.0.0", null);
-        assertThat(body.get("dependencies").elements()).toIterable().isEmpty();
+        assertThat(body.get("dependencies")).isNull();
     }
 
     @Test
@@ -371,9 +371,9 @@ class PackagesControllerTest {
         ArrayNode body = response.body();
         assertThat(body.size()).isEqualTo(2);
         assertArtifact(body.get(0), "org.test", "lib", "1.0.0", null);
-        assertThat(body.get(0).get("dependencies").elements()).toIterable().isEmpty();
+        assertThat(body.get(0).get("dependencies")).isNull();
         assertArtifact(body.get(1), "org.test", "lib", "1.2.0", null);
-        assertThat(body.get(1).get("dependencies").elements()).toIterable().isEmpty();
+        assertThat(body.get(1).get("dependencies")).isNull();
     }
 
     @Test
@@ -409,9 +409,9 @@ class PackagesControllerTest {
         body = response.body();
         assertThat(body.size()).isEqualTo(2);
         assertArtifact(body.get(0), "org.test", "lib", "1.0.0", "doc");
-        assertThat(body.get(0).get("dependencies").elements()).toIterable().isEmpty();
+        assertThat(body.get(0).get("dependencies")).isNull();
         assertArtifact(body.get(1), "org.test", "lib", "1.2.0", "doc");
-        assertThat(body.get(1).get("dependencies").elements()).toIterable().isEmpty();
+        assertThat(body.get(1).get("dependencies")).isNull();
     }
 
     @Test

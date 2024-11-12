@@ -286,7 +286,7 @@ public class ArtifactRepository {
             if (!visited.contains(gav)) {
                 Set<Gav> newVisited = new HashSet<>(visited);
                 newVisited.add(gav);
-                if (currentDepth < depth) {
+                if (depth == -1 || currentDepth < depth) {
                     depsList = deps.values().stream()
                             .map(data -> new DependencyInfo(data.toArtifactTree(newVisited, currentDepth + 1), data.relationProps.optional(), data.relationProps.scope()))
                             .toList();
