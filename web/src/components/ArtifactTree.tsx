@@ -98,7 +98,7 @@ const DepHeader = forwardRef<HTMLDivElement, DepHeaderProps>(({node, loading, le
     )
   }
 
-  const headerClasses = clsx(
+  const accordionClasses = clsx(
     'relative flex items-center gap-2 transition-all',
     node.optional && 'text-faded',
     '[&[data-state=open]>svg]:rotate-[360deg]',
@@ -109,7 +109,7 @@ const DepHeader = forwardRef<HTMLDivElement, DepHeaderProps>(({node, loading, le
   )
   return (
     <div className='flex items-center gap-2'>
-      <div ref={ref} {...props} className={headerClasses}>
+      <div ref={ref} {...props} className={accordionClasses} title={isResolvedPackage(node.artifact) ? '' : 'Unresolved package'}>
         {getIcon()}
         <span className='peer-[.cursor-pointer]:cursor-pointer'>{node.artifact.artifactId}</span>
       </div>
