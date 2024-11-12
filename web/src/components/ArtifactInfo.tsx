@@ -46,7 +46,16 @@ export const ArtifactInfo = () => {
     return null
   }
   if (packageData.unresolved) {
-    return <p>This package couldn't be analyzed</p>
+    return (
+      <Alert variant='destructive' className='h-fit'>
+        <AlertCircle className='h-4 w-4'/>
+        <AlertTitle>This package couldn't be analyzed and is marked as unresolved</AlertTitle>
+        <AlertDescription>
+          This may happen if the package is not available in the Maven Central repository or due to intermittent
+          server/network issues.
+        </AlertDescription>
+      </Alert>
+    )
   }
 
   const effectiveSize = {

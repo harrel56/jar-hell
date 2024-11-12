@@ -72,6 +72,7 @@ public class AnalyzeEngine {
         }
 
         artifactRepository.saveDependencies(gav, output.dependencies().directDependencies());
+        // todo: possibly not removed, maybe remove in finally
         partialAnalysis.remove(gav);
         logger.info("END FULL analysis of [{}]", gav);
         return new ArtifactTree(output.artifactInfo(), directDeps);
@@ -82,7 +83,7 @@ public class AnalyzeEngine {
         ArtifactInfo info = analyzePartially(gav);
 
         List<DependencyInfo> partialDeps;
-        CollectedDependencies deps = analyzer.analyzeDeps(gav);
+        CollectedDependencies deps = Boolean.TRUE.equals(info.unresolved()) ? CollectedDependencies.empty() : analyzer.analyzeDeps(gav);
         try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
             List<Subtask<DependencyInfo>> partialDepTasks = deps.allDependencies().stream()
                     .map(dep -> scope.fork(() -> {
