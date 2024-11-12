@@ -1,0 +1,50 @@
+### get all versions: dev.harrel:json-schema
+GET {{url}}/api/v1/packages?groupId=dev.harrel&artifactId=json-schema
+
+> {%
+  client.test("Response is 200", () => {
+    client.assert(response.status === 200);
+  });
+  client.test("Should be gzipped", function() {
+    client.assert(response.headers.valueOf('Content-Encoding') === 'gzip');
+  });
+%}
+
+### get all versions: no artifactId
+GET {{url}}/api/v1/packages?groupId=dev.harrel
+
+> {%
+  client.test("Response is 400", () => {
+    client.assert(response.status === 400);
+  });
+%}
+
+### get all versions: no groupId
+GET {{url}}/api/v1/packages
+
+> {%
+  client.test("Response is 400", () => {
+    client.assert(response.status === 400);
+  });
+%}
+
+### dev.harrel:json-schema:1.5.1
+GET {{url}}/api/v1/packages/dev.harrel:json-schema:1.5.1
+
+> {%
+  client.test("Response is 200", () => {
+    client.assert(response.status === 200);
+  });
+  client.test("Should be gzipped", function() {
+    client.assert(response.headers.valueOf('Content-Encoding') === 'gzip');
+  });
+%}
+
+### dev.harrel:json-schema:1.5.1 with depth=0
+GET {{url}}/api/v1/packages/dev.harrel:json-schema:1.5.1?depth=0
+
+> {%
+  client.test("Response is 200", () => {
+    client.assert(response.status === 200);
+  });
+%}

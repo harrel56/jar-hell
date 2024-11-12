@@ -15,7 +15,7 @@ Content-Type: application/json
 %}
 
 ### dev.harrel:json-schema
-POST {{url}}/api/v1/analyze
+POST {{url}}/api/v1/analyze-and-wait
 Content-Type: application/json
 
 {
@@ -26,12 +26,12 @@ Content-Type: application/json
 
 > {%
   client.test("Request executed successfully", () => {
-    client.assert(response.status === 202, "Response status is not 202");
+    client.assert(response.status === 200, "Response status is not 200");
   });
 %}
 
 ### com.amazonaws:DynamoDBLocal
-POST {{url}}/api/v1/analyze
+POST {{url}}/api/v1/analyze-and-wait
 Content-Type: application/json
 
 {
@@ -42,12 +42,12 @@ Content-Type: application/json
 
 > {%
   client.test("Request executed successfully", () => {
-    client.assert(response.status === 202, "Response status is not 202");
+    client.assert(response.status === 200, "Response status is not 200");
   });
 %}
 
 ### org.apache.spark:spark-core_2.13
-POST {{url}}/api/v1/analyze
+POST {{url}}/api/v1/analyze-and-wait
 Content-Type: application/json
 
 {
@@ -58,6 +58,6 @@ Content-Type: application/json
 
 > {%
   client.test("Request executed successfully", () => {
-    client.assert(response.status === 202, "Response status is not 202");
+    client.assert(response.status === 200, "Response status is not 200");
   });
 %}
