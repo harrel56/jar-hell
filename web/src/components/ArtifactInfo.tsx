@@ -7,7 +7,7 @@ import {PendingAnalysis} from '@/components/PendingAnalysis.tsx'
 import {LoadingSpinner} from '@/components/LoadingSpinner.tsx'
 import {OutletContext} from '@/components/PackagePage.tsx'
 import {Alert, AlertDescription, AlertTitle} from '@/shadcn/components/ui/Alert.tsx'
-import {AlertCircle} from 'lucide-react'
+import {AlertCircle, Info} from 'lucide-react'
 import {Separator} from '@/shadcn/components/ui/Separator.tsx'
 import {ArtifactTree} from '@/components/ArtifactTree.tsx'
 
@@ -105,8 +105,20 @@ export const ArtifactInfo = () => {
         <MetricDisplay className='col-span-2' {...requiredDependencies}/>
         <MetricDisplay className='col-span-2' {...optionalDependencies}/>
       </div>
-      <Separator/>
-      <ArtifactTree artifact={packageData}/>
+      <fieldset className='flex flex-col gap-6 rounded-xl border w-full h-full p-8 mb-8 shadow-md'>
+        <legend className='text-2xl px-2'>Dependency explorer</legend>
+        <Alert>
+          <Info className='h-4 w-4'/>
+          <AlertTitle>Notice</AlertTitle>
+          <AlertDescription>
+            Dependency tree might be not completely accurate
+            as it does not take into account <strong>excluded packages</strong> and <strong>version conflicts.</strong>
+          </AlertDescription>
+        </Alert>
+        <div className='px-4'>
+          <ArtifactTree artifact={packageData}/>
+        </div>
+      </fieldset>
     </div>
   )
 }
