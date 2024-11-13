@@ -7,10 +7,9 @@ import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.descriptor.DescriptorInfo;
 import dev.harrel.jarhell.model.descriptor.Licence;
 import io.avaje.config.Config;
+import org.apache.maven.model.IssueManagement;
 import org.apache.maven.model.Model;
-import org.apache.maven.model.building.DefaultModelBuildingRequest;
-import org.apache.maven.model.building.ModelBuilder;
-import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.apache.maven.model.Scm;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
@@ -28,6 +27,7 @@ import org.eclipse.aether.util.graph.visitor.PreorderNodeListGenerator;
 
 import javax.inject.Singleton;
 import java.util.List;
+import java.util.Optional;
 
 @Singleton
 class MavenRunner {
@@ -35,13 +35,11 @@ class MavenRunner {
 
     private final RepositorySystem repoSystem;
     private final RepositorySystemSession session;
-    private final ModelBuilder modelBuilder;
     private final List<RemoteRepository> remoteRepos;
 
-    MavenRunner(RepositorySystem repoSystem, RepositorySystemSession session, ModelBuilder modelBuilder) {
+    MavenRunner(RepositorySystem repoSystem, RepositorySystemSession session) {
         this.repoSystem = repoSystem;
         this.session = session;
-        this.modelBuilder = modelBuilder;
         this.remoteRepos = List.of(new RemoteRepository.Builder("central", "default", MAVEN_CENTRAL).build());
     }
 
@@ -80,13 +78,19 @@ class MavenRunner {
             if (model == null) {
                 throw new IllegalArgumentException("Descriptor was not parsed into a model (couldn't retrieve pom?): " + gav);
             }
+            String scmUrl = Optional.ofNullable(model.getScm())
+                    .map(Scm::getUrl)
+                    .orElse(null);
+            String issuesUrl = Optional.ofNullable(model.getIssueManagement())
+                    .map(IssueManagement::getUrl)
+                    .orElse(null);
             List<Licence> licenses = model.getLicenses().stream()
                     .map(license -> new Licence(license.getName(), license.getUrl()))
                     .toList();
 
             // todo: url seems to be resolved incorrectly sometimes :(
             return new DescriptorInfo(model.getPackaging(), model.getName(), model.getDescription(),
-                    model.getUrl(), model.getInceptionYear(), licenses);
+                    model.getUrl(), scmUrl, issuesUrl, model.getInceptionYear(), licenses);
         } catch (ArtifactDescriptorException e) {
             throw new IllegalArgumentException(e);
         }

@@ -6,5 +6,7 @@ public record DescriptorInfo(String packaging,
                              String name,
                              String description,
                              String url,
+                             String scmUrl,
+                             String issuesUrl,
                              String inceptionYear,
                              List<Licence> licences) {}

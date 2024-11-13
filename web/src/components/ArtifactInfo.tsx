@@ -10,6 +10,7 @@ import {Alert, AlertDescription, AlertTitle} from '@/shadcn/components/ui/Alert.
 import {AlertCircle, Info} from 'lucide-react'
 import {Separator} from '@/shadcn/components/ui/Separator.tsx'
 import {ArtifactTree} from '@/components/ArtifactTree.tsx'
+import {PackageLinks} from '@/components/PackageLinks.tsx'
 
 export const ArtifactInfo = () => {
   const ctx = useOutletContext<OutletContext>()
@@ -93,6 +94,7 @@ export const ArtifactInfo = () => {
     <div className='flex flex-col gap-8 items-center'>
       <span className='text-5xl font-extrabold font-mono underline' title='Package name'>{packageData.name}</span>
       <blockquote className='my-6 text-faded' title='Package desription'>{packageData.description}</blockquote>
+      <PackageLinks pkg={packageData}/>
       <Separator/>
       {packageData.effectiveValues.unresolvedDependencies > 0 && (
         <Alert variant='destructive'>

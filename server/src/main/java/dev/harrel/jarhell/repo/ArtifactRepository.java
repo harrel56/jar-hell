@@ -201,7 +201,8 @@ public class ArtifactRepository {
             return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier(),
                     artifactProps.unresolved(), artifactProps.created(), artifactProps.packageSize(), artifactProps.bytecodeVersion(),
                     artifactProps.packaging(), artifactProps.name(), artifactProps.description(), artifactProps.url(),
-                    artifactProps.inceptionYear(), licences, artifactProps.classifiers(), effectiveValues, artifactProps.analyzed());
+                    artifactProps.scmUrl(), artifactProps.issuesUrl(), artifactProps.inceptionYear(),
+                    licences, artifactProps.classifiers(), effectiveValues, artifactProps.analyzed());
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
@@ -232,7 +233,8 @@ public class ArtifactRepository {
             return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(),
                     artifactInfo.unresolved(), artifactInfo.created(), artifactInfo.packageSize(), artifactInfo.bytecodeVersion(),
                     artifactInfo.packaging(), artifactInfo.name(), artifactInfo.description(), artifactInfo.url(),
-                    artifactInfo.inceptionYear(), licenses, artifactInfo.classifiers(), effectiveDependencies,
+                    artifactInfo.scmUrl(), artifactInfo.issuesUrl(), artifactInfo.inceptionYear(),
+                    licenses, artifactInfo.classifiers(), effectiveDependencies,
                     effectiveUnresolvedDependencies, effectiveOptionalDependencies,  effectiveSize,
                     effectiveBytecodeVersion, null);
         } catch (JsonProcessingException e) {
@@ -254,6 +256,8 @@ public class ArtifactRepository {
                                  String name,
                                  String description,
                                  String url,
+                                 String scmUrl,
+                                 String issuesUrl,
                                  String inceptionYear,
                                  String licenses,
                                  List<String> classifiers,

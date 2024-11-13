@@ -75,6 +75,8 @@ export interface ResolvedPackage extends Gav {
   name?: string
   description?: string
   url?: string
+  scmUrl?: string
+  issuesUrl?: string
   inceptionYear?: string
   licenses: License[]
   classifiers: string[]
