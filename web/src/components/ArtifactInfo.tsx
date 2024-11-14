@@ -1,6 +1,6 @@
 import {useOutletContext, useParams} from 'react-router-dom'
 import {useFetch} from '@/hooks/useFetch.ts'
-import {stringToGav, formatBytes, formatBytecodeVersion, Package} from '@/util.ts'
+import {stringToGav, formatBytes, formatBytecodeVersion, Package, formatDate, formatDateTime} from '@/util.ts'
 import {useLayoutEffect, useMemo} from 'react'
 import {MetricDisplay} from '@/components/MetricDisplay.tsx'
 import {PendingAnalysis} from '@/components/PendingAnalysis.tsx'
@@ -90,6 +90,16 @@ export const ArtifactInfo = () => {
     title: 'All optional dependencies',
     value: packageData.effectiveValues.optionalDependencies,
   }
+  const publicationDate = {
+    title: 'Publication date',
+    value: formatDate(packageData.created),
+    valueHint: formatDateTime(packageData.created)
+  }
+  const analysisDate = {
+    title: 'Analysis date',
+    value: formatDate(packageData.analyzed),
+    valueHint: formatDateTime(packageData.analyzed)
+  }
   return (
     <div className='flex flex-col gap-8 items-center'>
       <span className='text-5xl text-center font-extrabold font-mono underline' title='Package name'>{packageData.name ?? packageData.artifactId}</span>
@@ -115,6 +125,8 @@ export const ArtifactInfo = () => {
         <MetricDisplay className='col-span-2' {...packageSize}/>
         <MetricDisplay className='col-span-2' {...requiredDependencies}/>
         <MetricDisplay className='col-span-2' {...optionalDependencies}/>
+        <MetricDisplay className='xl:col-start-2 col-span-2' {...publicationDate}/>
+        <MetricDisplay className='col-span-2' {...analysisDate}/>
       </div>
       <fieldset className='flex flex-col gap-6 rounded-xl border w-full h-full p-8 mb-8 shadow-md'>
         <legend className='text-2xl px-2'>Dependency explorer</legend>
