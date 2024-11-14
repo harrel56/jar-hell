@@ -111,8 +111,8 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_REGISTRY_HOST }}/jar-hell:${{ needs.generate-image-tag.outputs.image-tag }}
-            ghcr.io/harrel56/jar-hell:${{ needs.generate-image-tag.outputs.image-tag }}
-            ghcr.io/harrel56/jar-hell:latest
+            ghcr.io/harrel56/jar-hell/jar-hell:${{ needs.generate-image-tag.outputs.image-tag }}
+            ghcr.io/harrel56/jar-hell/jar-hell:latest
 
   deploy:
     runs-on: ubuntu-latest
