@@ -92,8 +92,8 @@ export const ArtifactInfo = () => {
   }
   return (
     <div className='flex flex-col gap-8 items-center'>
-      <span className='text-5xl text-center font-extrabold font-mono underline' title='Package name'>{packageData.name}</span>
-      <blockquote className='my-6 text-faded' title='Package desription'>{packageData.description}</blockquote>
+      <span className='text-5xl text-center font-extrabold font-mono underline' title='Package name'>{packageData.name ?? packageData.artifactId}</span>
+      {packageData.description && <blockquote className='my-6 text-faded' title='Package desription'>{packageData.description}</blockquote>}
       <PackageLinks pkg={packageData}/>
       <Separator/>
       {packageData.effectiveValues.unresolvedDependencies > 0 && (
