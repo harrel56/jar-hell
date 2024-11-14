@@ -8,25 +8,27 @@ import {Icons} from '@/shadcn/components/ui/Icons.tsx'
 export const PackageLinks = ({pkg}: {pkg: ResolvedPackage}) => {
   return (
     <div className='flex gap-1'>
-      <ExternalLink href={pkg.url}>
+      <ExternalLink name='Home page' href={pkg.url}>
         <HouseIcon/>
       </ExternalLink>
-      <ExternalLink href={pkg.scmUrl}>
+      <ExternalLink name='Source code management page' href={pkg.scmUrl}>
         {getScmIcon(pkg.scmUrl)}
       </ExternalLink>
-      <ExternalLink href={pkg.issuesUrl}>
+      <ExternalLink name='Issue management page' href={pkg.issuesUrl}>
         <BugIcon/>
       </ExternalLink>
-      <ExternalLink href={pkg.classifiers.includes('javadoc') ? generateJavaDocUrl(pkg) : undefined}>
+      <ExternalLink name='Javadoc page' href={pkg.classifiers.includes('javadoc') ? generateJavaDocUrl(pkg) : undefined}>
         <FileCheck/>
       </ExternalLink>
     </div>
   )
 }
 
-const ExternalLink = ({href, children}: PropsWithChildren<{ href?: string }>) => {
+const ExternalLink = ({name, href, children}: PropsWithChildren<{ name: string, href?: string }>) => {
   return (
-    <a href={href} target='_blank' rel='noreferrer'>
+    <a href={href} target='_blank'
+       rel='noreferrer'
+       title={href ? `${name}` : `${name} not available`}>
       <Button variant='ghost'
               size='icon-lg'
               disabled={!href}
