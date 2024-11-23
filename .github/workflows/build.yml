@@ -114,6 +114,6 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            sudo docker compose down jarhell -f /home/harrel/apps/docker-compose.yml
-            sudo docker compose pull jarhell -f /home/harrel/apps/docker-compose.yml
-            sudo docker compose up jarhell -d -f /home/harrel/apps/docker-compose.yml
+            sudo docker compose -f /home/harrel/apps/docker-compose.yml down jarhell
+            sudo docker compose -f /home/harrel/apps/docker-compose.yml pull jarhell
+            sudo docker compose -f /home/harrel/apps/docker-compose.yml up jarhell -d
