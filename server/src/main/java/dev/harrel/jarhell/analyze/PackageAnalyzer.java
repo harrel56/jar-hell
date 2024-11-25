@@ -15,6 +15,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
@@ -44,16 +46,16 @@ class PackageAnalyzer {
     }
 
     private PackageInfo fetchPackage(Gav gav, FilesInfo filesInfo, String packaging) throws InterruptedException, IOException {
-        String packageExtension;
         if (filesInfo.extensions().contains("jar")) {
-            packageExtension = "jar";
-        } else if (filesInfo.extensions().contains(packaging)) {
-            packageExtension = packaging;
+            return fetchJar(gav);
         } else {
-            logger.warn("Couldn't determine package extension for artifact: [{}], packaging: [{}], extensions: {}", gav, packaging, filesInfo.extensions());
-            return new PackageInfo(null, null);
+            return fetchOther(gav, packaging);
         }
-        String url = MavenApiClient.createFileUrl(gav, packageExtension);
+    }
+
+    private PackageInfo fetchJar(Gav gav) throws IOException, InterruptedException {
+        String url = MavenApiClient.createFileUrl(gav, "jar");
+        LocalDateTime created = null;
         Long packageSize = null;
         for (String rangeStep : RANGE_STEPS) {
             HttpRequest request = HttpRequest.newBuilder()
@@ -66,27 +68,57 @@ class PackageAnalyzer {
                 throw new IllegalArgumentException("HTTP call failed [%s] for url [%s]".formatted(streamResponse.statusCode(), url));
             }
 
-            Pattern rangeRegex = Pattern.compile("(\\d*$)");
-            packageSize = streamResponse.headers()
-                    .firstValue("Content-Range")
-                    .map(rangeRegex::matcher)
-                    .filter(Matcher::find)
-                    .map(Matcher::group)
-                    .or(() -> streamResponse.headers().firstValue("Content-Length"))
-                    .map(Long::valueOf)
-                    .orElseThrow();
+            if (created == null) {
+                created = streamResponse.headers()
+                        .firstValue("Last-Modified")
+                        .map(date -> LocalDateTime.parse(date, DateTimeFormatter.RFC_1123_DATE_TIME))
+                        .orElseThrow();
+            }
+            if (packageSize == null) {
+                Pattern rangeRegex = Pattern.compile("(\\d*$)");
+                packageSize = streamResponse.headers()
+                        .firstValue("Content-Range")
+                        .map(rangeRegex::matcher)
+                        .filter(Matcher::find)
+                        .map(Matcher::group)
+                        .or(() -> streamResponse.headers().firstValue("Content-Length"))
+                        .map(Long::valueOf)
+                        .orElseThrow();
+            }
             try {
-                String byteCodeVersion = "jar".equals(packageExtension) ? parseByteCodeVersion(streamResponse) : null;
-                return new PackageInfo(packageSize, byteCodeVersion);
+                String byteCodeVersion = parseByteCodeVersion(streamResponse);
+                return new PackageInfo(created, packageSize, byteCodeVersion);
             } catch (IOException e) {
-                logger.info("Parsing jar failed for [{}] and range [{}]. Retrying with bigger range...", gav, rangeStep);
                 if (packageSize < Long.parseLong(rangeStep)) {
                     break;
                 }
+                logger.info("Parsing jar failed for [{}] and range [{}]. Retrying with bigger range...", gav, rangeStep);
             }
         }
         logger.info("No class files found in jar [{}]. Assuming no bytecode", gav);
-        return new PackageInfo(packageSize, null);
+        return new PackageInfo(created, packageSize, null);
+    }
+
+    private PackageInfo fetchOther(Gav gav, String packaging) throws IOException, InterruptedException {
+        String url = MavenApiClient.createFileUrl(gav, packaging);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .HEAD()
+                .build();
+        HttpResponse<InputStream> streamResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        if (streamResponse.statusCode() >= 400) {
+            throw new IllegalArgumentException("HTTP call failed [%s] for url [%s]".formatted(streamResponse.statusCode(), url));
+        }
+
+        LocalDateTime created = streamResponse.headers()
+                .firstValue("Last-Modified")
+                .map(date -> LocalDateTime.parse(date, DateTimeFormatter.RFC_1123_DATE_TIME))
+                .orElseThrow();
+        long packageSize = streamResponse.headers()
+                .firstValue("Content-Length")
+                .map(Long::valueOf)
+                .orElseThrow();
+        return new PackageInfo(created, packageSize, null);
     }
 
     private String parseByteCodeVersion(HttpResponse<InputStream> streamResponse) throws IOException {

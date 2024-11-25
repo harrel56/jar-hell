@@ -8,10 +8,11 @@ import dev.harrel.jarhell.analyze.FilesInfo;
 import dev.harrel.jarhell.error.BadRequestException;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.central.SelectResponse;
-import dev.harrel.jarhell.model.central.VersionDoc;
 import dev.harrel.jarhell.util.ConcurrentUtil;
 import io.avaje.config.Config;
 import org.apache.maven.artifact.versioning.ComparableVersion;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
 import javax.inject.Singleton;
 import java.io.IOException;
@@ -22,11 +23,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.StructuredTaskScope;
@@ -41,7 +38,7 @@ public class MavenApiClient {
     private static final String CONTENT_URL = Config.get("maven.repo-url");
 
     private static final Pattern SANITIZATION_PATTERN = Pattern.compile("[^\\w\\.-]");
-    private static final Pattern HTML_VERSIONS_PATTERN = Pattern.compile("href=\"(\\d+\\.[^\"]+)\"");
+    private static final Pattern HTML_VERSIONS_PATTERN = Pattern.compile("\\d+.*/");
     private static final Pattern XML_VERSIONS_PATTERN = Pattern.compile("<version>(.+)<\\/version>");
 
     private final ObjectMapper objectMapper;
@@ -90,26 +87,32 @@ public class MavenApiClient {
     }
 
     public FilesInfo fetchFilesInfo(Gav gav) {
-        String query = "?q=g:%s+AND+a:%s+AND+v:%s".formatted(gav.groupId(), gav.artifactId(), gav.version());
-        SelectResponse<VersionDoc> selectResponse = fetch(SEARCH_URL + query, objectMapper, new TypeReference<>() {});
-        if (selectResponse.response().numFound() < 1) {
-            throw new ArtifactNotFoundException(gav.toString());
+        String groupPath = gav.groupId().replace('.', '/');
+        String path = "%s/%s/%s/".formatted(groupPath, gav.artifactId(), gav.version());
+        String encodedPath = URLEncoder.encode(path, StandardCharsets.UTF_8);
+        String url = CONTENT_URL + "/" + encodedPath;
+        HttpResponse<String> res = fetchRaw(url);
+        if (res.statusCode() >= 400) {
+            throw new ArtifactNotFoundException("HTTP call failed [%s] for url [%s]".formatted(res.statusCode(), url));
         }
 
-        LocalDateTime created = Optional.ofNullable(selectResponse.response().docs().getFirst().timestamp())
-                .map(Instant::ofEpochMilli)
-                .map(i -> LocalDateTime.ofInstant(i, ZoneId.systemDefault()))
-                .orElse(null);
-        List<String> ec = selectResponse.response().docs().getFirst().ec();
-        Set<String> extensions = ec.stream()
+        String filePrefix = "%s-%s".formatted(gav.artifactId(), gav.version());
+        Document doc = Jsoup.parse(res.body());
+        List<String> suffixes = doc.getElementsByTag("a").stream()
+                .map(el -> el.attr("href"))
+                .filter(href -> href.startsWith(filePrefix))
+                .map(href -> href.substring(filePrefix.length()))
+                .toList();
+
+        Set<String> extensions = suffixes.stream()
                 .filter(f -> f.startsWith("."))
                 .map(f -> f.substring(1))
                 .collect(Collectors.toSet());
-        Set<String> classifiers = ec.stream()
+        Set<String> classifiers = suffixes.stream()
                 .filter(f -> f.startsWith("-"))
                 .map(f -> f.substring(1, f.indexOf(".")))
                 .collect(Collectors.toSet());
-        return new FilesInfo(created, extensions, classifiers);
+        return new FilesInfo(extensions, classifiers);
     }
 
     private List<String> fetchVersionsFromDir(String groupId, String artifactId) {
@@ -119,10 +122,12 @@ public class MavenApiClient {
         if (res.statusCode() >= 400) {
             return List.of();
         }
-        return HTML_VERSIONS_PATTERN.matcher(res.body())
-                .results()
-                .map(m -> m.group(1))
-                .filter(v -> v.endsWith("/"))
+
+        Document doc = Jsoup.parse(res.body());
+        return doc.getElementsByTag("a")
+                .stream()
+                .map(el -> el.attr("href"))
+                .filter(href -> HTML_VERSIONS_PATTERN.matcher(href).matches())
                 .map(v -> v.substring(0, v.length() - 1))
                 .toList();
     }

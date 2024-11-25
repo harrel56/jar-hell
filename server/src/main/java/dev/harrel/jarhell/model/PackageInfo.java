@@ -1,3 +1,5 @@
 package dev.harrel.jarhell.model;
 
-public record PackageInfo(Long size, String bytecodeVersion) {}
+import java.time.LocalDateTime;
+
+public record PackageInfo(LocalDateTime created, Long size, String bytecodeVersion) {}

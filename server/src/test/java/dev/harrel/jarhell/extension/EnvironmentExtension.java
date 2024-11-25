@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.containers.Neo4jLabsPlugin;
+import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
@@ -80,8 +81,11 @@ public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallba
     }
 
     private State createState() {
+        Network sharedNetwork = Network.newNetwork();
+
         CompletableFuture<Neo4jContainer<?>> neo4jContainerFuture = CompletableFuture.supplyAsync(this::startNeo4j);
-        CompletableFuture<GenericContainer<?>> reposiliteContainerFuture = CompletableFuture.supplyAsync(this::startReposilite);
+        CompletableFuture<GenericContainer<?>> reposiliteContainerFuture = CompletableFuture.supplyAsync(() -> startReposilite(sharedNetwork));
+        CompletableFuture<GenericContainer<?>> nginxContainerFuture = CompletableFuture.supplyAsync(() -> startNginx(sharedNetwork));
         CompletableFuture<WireMockContainer> wireMockContainerFuture = CompletableFuture.supplyAsync(this::startWireMock);
         /* wait for all containers */
         CompletableFuture.allOf(neo4jContainerFuture, reposiliteContainerFuture, wireMockContainerFuture).join();
@@ -91,12 +95,13 @@ public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallba
                 app,
                 neo4jContainerFuture.join(),
                 reposiliteContainerFuture.join(),
+                nginxContainerFuture.join(),
                 wireMockContainerFuture.join()
         );
     }
 
     private Neo4jContainer<?> startNeo4j() {
-        Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:5.11"))
+        Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(DockerImageName.parse("neo4j:5.25"))
                 .withLogConsumer(logConsumer)
                 .withLabsPlugins(Neo4jLabsPlugin.APOC)
                 .withRandomPassword();
@@ -108,11 +113,24 @@ public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallba
         return neo4jContainer;
     }
 
-    private GenericContainer<?> startReposilite() {
+    private GenericContainer<?> startReposilite(Network network) {
         GenericContainer<?> reposiliteContainer = new GenericContainer<>(DockerImageName.parse("dzikoysk/reposilite:3.5.0"));
+        reposiliteContainer.withNetwork(network);
+        reposiliteContainer.withNetworkAliases("reposilite");
         reposiliteContainer.withLogConsumer(logConsumer);
-        reposiliteContainer.setPortBindings(List.of("8181:8080"));
-        reposiliteContainer.withCopyToContainer(MountableFile.forClasspathResource("/reposilite"), "/app/data");
+        reposiliteContainer.setPortBindings(List.of("8080:8080"));
+        reposiliteContainer.withCopyToContainer(MountableFile.forClasspathResource("/reposilite/repositories/snapshots"), "/app/data/repositories/snapshots");
+        reposiliteContainer.start();
+        return reposiliteContainer;
+    }
+
+    private GenericContainer<?> startNginx(Network network) {
+        GenericContainer<?> reposiliteContainer = new GenericContainer<>(DockerImageName.parse("nginx:1.27.2-alpine"));
+        reposiliteContainer.withNetwork(network);
+        reposiliteContainer.withLogConsumer(logConsumer);
+        reposiliteContainer.setPortBindings(List.of("8181:8181"));
+        reposiliteContainer.withCopyToContainer(MountableFile.forClasspathResource("/reposilite/repositories/snapshots"), "/app/data/repositories/snapshots");
+        reposiliteContainer.withCopyToContainer(MountableFile.forClasspathResource("/nginx/nginx.conf"), "/etc/nginx/nginx.conf");
         reposiliteContainer.start();
         return reposiliteContainer;
     }
@@ -137,12 +155,14 @@ public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallba
     private record State(App app,
                          Neo4jContainer<?> neo4jContainer,
                          GenericContainer<?> reposiliteContainer,
+                         GenericContainer<?> nginxContainer,
                          WireMockContainer wireMockContainer) implements Closeable {
         @Override
         public void close() {
             app.close();
             neo4jContainer.stop();
             reposiliteContainer.stop();
+            nginxContainer.stop();
             wireMockContainer.stop();
         }
     }
