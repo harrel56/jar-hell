@@ -41,8 +41,7 @@ public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallba
 
     @Override
     public void beforeAll(ExtensionContext context) {
-        State state = getStore(context).getOrComputeIfAbsent("state", k -> createState(), State.class);
-        System.out.println("state = " + state);
+        getStore(context).getOrComputeIfAbsent("state", k -> createState(), State.class);
     }
 
     @Override
@@ -84,11 +83,12 @@ public class EnvironmentExtension implements BeforeAllCallback, BeforeEachCallba
         Network sharedNetwork = Network.newNetwork();
 
         CompletableFuture<Neo4jContainer<?>> neo4jContainerFuture = CompletableFuture.supplyAsync(this::startNeo4j);
-        CompletableFuture<GenericContainer<?>> reposiliteContainerFuture = CompletableFuture.supplyAsync(() -> startReposilite(sharedNetwork));
-        CompletableFuture<GenericContainer<?>> nginxContainerFuture = CompletableFuture.supplyAsync(() -> startNginx(sharedNetwork));
         CompletableFuture<WireMockContainer> wireMockContainerFuture = CompletableFuture.supplyAsync(this::startWireMock);
+        CompletableFuture<GenericContainer<?>> reposiliteContainerFuture = CompletableFuture.supplyAsync(() -> startReposilite(sharedNetwork));
+        reposiliteContainerFuture.join();
+        CompletableFuture<GenericContainer<?>> nginxContainerFuture = CompletableFuture.supplyAsync(() -> startNginx(sharedNetwork));
         /* wait for all containers */
-        CompletableFuture.allOf(neo4jContainerFuture, reposiliteContainerFuture, wireMockContainerFuture).join();
+        CompletableFuture.allOf(neo4jContainerFuture, reposiliteContainerFuture, nginxContainerFuture, wireMockContainerFuture).join();
 
         App app = startApp();
         return new State(
