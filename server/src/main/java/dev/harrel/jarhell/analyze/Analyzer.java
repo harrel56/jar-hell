@@ -71,7 +71,7 @@ class Analyzer {
         return new ArtifactInfo.EffectiveValues(requiredDeps.size(), unresolvedDeps, optionalDeps, totalSize, bytecodeVersion);
     }
 
-    // todo: maybe actually save excluded and conflicted deps
+      // todo: maybe actually save excluded and conflicted deps
     public TraversalOutput adjustArtifactTree(ArtifactTree artifactTree, List<ArtifactTree> allDependenciesList) {
         Map<Ga, ArtifactTree> allDeps = allDependenciesList.stream()
                 .collect(Collectors.toMap(at -> new Ga(at.artifactInfo().groupId(), at.artifactInfo().artifactId()), Function.identity()));
