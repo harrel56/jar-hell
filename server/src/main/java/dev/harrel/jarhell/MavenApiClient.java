@@ -164,7 +164,9 @@ public class MavenApiClient {
                     .uri(URI.create(url))
                     .GET()
                     .build();
-            return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            return HttpClient.newBuilder()
+                    .followRedirects(HttpClient.Redirect.ALWAYS)
+                    .build().send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException e) {
             throw new UncheckedIOException("HTTP fetch failed for url [%s]".formatted(url), e);
         } catch (InterruptedException e) {
