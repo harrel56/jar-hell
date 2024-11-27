@@ -153,7 +153,16 @@ class Analyzer {
                 "AL 2",
                 "AL2",
                 "AL2.0"
-        ), Set.of()),
+        ), uris(
+                "https://apache.org/licenses/LICENSE-2.0",
+                "https://apache.org/licenses/LICENSE-2.0.txt",
+                "https://apache.org/licenses/LICENSE-2.0.html",
+                "https://opensource.org/licenses/Apache-2.0",
+                "https://opensource.org/licenses/Apache-2-0",
+                "https://opensource.org/licenses/apache-2.0",
+                "https://opensource.org/licenses/apache-2-0",
+                "https://repository.jboss.org/licenses/apache-2.0.txt"
+        )),
         BSD_0(lowercaseSet(
                 "0BSD",
                 "BSD0",
@@ -162,13 +171,17 @@ class Analyzer {
                 "BSD Zero Clause",
                 "0 Clause BSD",
                 "BSD 0 Clause"
-        ), Set.of()),
+        ), uris(
+                "https://opensource.org/license/0bsd"
+        )),
         BSD_1(lowercaseSet(
                 "BSD1",
                 "BSD 1",
                 "1 Clause BSD",
                 "BSD 1 Clause"
-        ), Set.of()),
+        ), uris(
+                "https://opensource.org/license/bsd-1-clause"
+        )),
         BSD_2(lowercaseSet(
                 "Berkeley Software Distribution",
                 "BSD",
@@ -179,7 +192,11 @@ class Analyzer {
                 "Simplified BSD",
                 "FreeBSD",
                 "Free BSD"
-        ), Set.of()),
+        ), uris(
+                "https://opensource.org/licenses/bsd-license.html",
+                "https://opensource.org/licenses/bsd-license.php",
+                "https://opensource.org/license/BSD-2-Clause"
+        )),
         BSD_3(lowercaseSet(
                 "BSD3",
                 "BSD 3",
@@ -189,7 +206,9 @@ class Analyzer {
                 "New BSD",
                 "Modified BSD",
                 "Revised BSD"
-        ), Set.of()),
+        ), uris(
+                "https://opensource.org/licenses/BSD-3-Clause"
+        )),
         CC0_1(lowercaseSet(
                 "CC0",
                 "CC0 1",
@@ -197,7 +216,9 @@ class Analyzer {
                 "Creative Commons 1.0",
                 "Creative Commons 1",
                 "Creative Commons"
-        ), Set.of()),
+        ), uris(
+                "https://repository.jboss.org/licenses/cc0-1.0.txt"
+        )),
         CDDL_1(lowercaseSet(
                 "CDDL",
                 "CDDL1",
@@ -206,7 +227,10 @@ class Analyzer {
                 "Common Development and Distribution 1.0",
                 "Common Development and Distribution 1",
                 "Common Development and Distribution"
-        ), Set.of()),
+        ), uris(
+                "https://opensource.org/license/cddl-1-0",
+                "https://repository.jboss.org/licenses/cddl.txt"
+        )),
         CPL_1(lowercaseSet(
                 "CPL",
                 "CPL1",
@@ -215,7 +239,9 @@ class Analyzer {
                 "Common Public 1.0",
                 "Common Public 1",
                 "Common Public"
-        ), Set.of()),
+        ), uris(
+                "https://opensource.org/license/cpl1.0.txt"
+        )),
         GPL_2(lowercaseSet(
                 "GPL2",
                 "GPL2.0",
@@ -228,7 +254,10 @@ class Analyzer {
                 "GNU General Public 2",
                 "General Public 2.0",
                 "General Public 2"
-        ), Set.of()),
+        ), uris(
+                "https://opensource.org/license/gpl-2-0",
+                "https://gnu.org/licenses/old-licenses/gpl-2.0.en.html"
+        )),
         GPL_3(lowercaseSet(
                 "GPL3",
                 "GPL3.0",
@@ -241,7 +270,10 @@ class Analyzer {
                 "GNU General Public 3",
                 "General Public 3.0",
                 "General Public 3"
-        ), Set.of()),
+        ), uris(
+                "https://opensource.org/license/gpl-3-0",
+                "https://gnu.org/licenses/gpl-3.0.en.html"
+        )),
         AGPL_3(lowercaseSet(
                 "AGPL3",
                 "AGPL3.0",
@@ -258,7 +290,10 @@ class Analyzer {
                 "GNU Affero General Public 3.0",
                 "GNU Affero General Public 3",
                 "GNU Affero General Public"
-        ), Set.of()),
+        ), uris(
+                "https://opensource.org/license/agpl-v3",
+                "https://gnu.org/licenses/agpl-3.0.en.html"
+        )),
         LGPL_2(lowercaseSet(
                 "LGPL2",
                 "LGPL2.1",
@@ -271,7 +306,10 @@ class Analyzer {
                 "GNU Lesser General Public 2",
                 "Lesser General Public 2.1",
                 "Lesser General Public 2"
-        ), Set.of()),
+        ), uris(
+                "https://opensource.org/license/lgpl-2-1",
+                "https://gnu.org/licenses/old-licenses/lgpl-2.1.en.html"
+        )),
         LGPL_3(lowercaseSet(
                 "LGPL3",
                 "LGPL3.0",
@@ -284,15 +322,36 @@ class Analyzer {
                 "GNU Lesser General Public 3",
                 "Lesser General Public 3.0",
                 "Lesser General Public 3"
-        ), Set.of()),
+        ), uris(
+                "https://opensource.org/license/lgpl-3-0",
+                "https://gnu.org/licenses/lgpl-3.0.en.html"
+        )),
         MIT(lowercaseSet(
                 "MIT"
-        ), Set.of()),
+        ), uris(
+                "https://opensource.org/license/mit",
+                "https://opensource.org/license/MIT"
+        )),
         MIT0(lowercaseSet(
                 "MIT0",
                 "MIT 0",
                 "MIT No Attribution"
-        ), Set.of()),
+        ), uris(
+                "https://opensource.org/license/mit-0",
+                "https://opensource.org/license/MIT-0"
+        )),
+        MPL_1(lowercaseSet(
+                "Mozilla Public 1.1",
+                "Mozilla Public 1",
+                "MPL",
+                "MPL1",
+                "MPL1.1",
+                "MPL 1",
+                "MPL 1.1"
+        ), uris(
+                "https://opensource.org/license/mpl-1-1",
+                "https://mozilla.org/en-US/MPL/1.1"
+        )),
         MPL_2(lowercaseSet(
                 "Mozilla Public 2.0",
                 "Mozilla Public 2",
@@ -301,13 +360,20 @@ class Analyzer {
                 "MPL2.0",
                 "MPL 2",
                 "MPL 2.0"
-        ), Set.of()),
+        ), uris(
+                "https://opensource.org/license/mpl-2-0",
+                "https://mozilla.org/en-US/MPL/2.0"
+        )),
         ISC(lowercaseSet(
                 "ISC"
-        ), Set.of()),
+        ), uris(
+                "https://opensource.org/license/isc-license-txt"
+        )),
         ICU(lowercaseSet(
                 "ICU"
-        ), Set.of()),
+        ), uris(
+             "https://opensource.org/license/icu-license"
+        )),
         EPL_1(lowercaseSet(
                 "Eclipse Public",
                 "Eclipse Public 1.0",
@@ -317,7 +383,10 @@ class Analyzer {
                 "EPL1.0",
                 "EPL 1.0",
                 "EPL 1"
-        ), Set.of()),
+        ), uris(
+                "https://opensource.org/license/epl-1-0",
+                "https://eclipse.org/legal/epl/epl-v10.html"
+        )),
         EPL_2(lowercaseSet(
                 "Eclipse Public 2.0",
                 "Eclipse Public 2",
@@ -325,7 +394,10 @@ class Analyzer {
                 "EPL2.0",
                 "EPL 2.0",
                 "EPL 2"
-        ), Set.of()),
+        ), uris(
+                "https://opensource.org/license/epl-2-0",
+                "https://eclipse.org/legal/epl-2.0/"
+        )),
         SSPL_1(lowercaseSet(
                 "SSPL",
                 "SSPL1",
@@ -335,18 +407,25 @@ class Analyzer {
                 "Server Side Public 1.0",
                 "Server Side Public 1",
                 "Server Side Public"
-        ), Set.of()),
+        ), uris(
+                "https://spdx.org/licenses/SSPL-1.0.html"
+        )),
         UNLICENSE(lowercaseSet(
                 "Unlicense",
                 "Public Domain",
                 "PD"
-        ), Set.of()),
+        ), uris(
+                "https://opensource.org/license/unlicense"
+        )),
         ZLIB(lowercaseSet(
                 "zlib",
                 "zlib/libpng",
                 "libpng",
                 "lib png"
-        ), Set.of());
+        ), uris(
+                "https://opensource.org/license/zlib",
+                "https://zlib.net/zlib_license.html"
+        ));
 
         private final Set<String> names;
         private final Set<URI> uris;
@@ -356,7 +435,7 @@ class Analyzer {
             this.uris = uris;
         }
 
-        /// # Input normalization before comparison:
+        /// # name normalization before comparison:
         /// - lowercase
         /// - convert '-', '_' to spaces
         /// - get rid of 'v' if preceding a number or as single letter
@@ -366,12 +445,21 @@ class Analyzer {
         /// - remove all content inside '()'
         /// - StringUtils.normalizeSpace() - to dedup spaces
         /// - trim()
+        ///
+        /// # url normalization:
+        /// - http -> https
+        /// - remove leading 'www'
+        /// - remove trailing slash
         public boolean matches(Licence licence) {
             return false; //todo
         }
 
         private static Set<String> lowercaseSet(String... items) {
             return Arrays.stream(items).map(String::toLowerCase).collect(Collectors.toUnmodifiableSet());
+        }
+
+        private static Set<URI> uris(String... items) {
+            return Arrays.stream(items).map(URI::create).collect(Collectors.toUnmodifiableSet());
         }
     }
 }
