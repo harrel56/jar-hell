@@ -1,6 +1,6 @@
 package dev.harrel.jarhell.model;
 
-import dev.harrel.jarhell.model.descriptor.Licence;
+import dev.harrel.jarhell.model.descriptor.License;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,7 +20,7 @@ public record ArtifactInfo(String groupId,
                            String scmUrl,
                            String issuesUrl,
                            String inceptionYear,
-                           List<Licence> licenses,
+                           List<License> licenses,
                            List<String> classifiers,
                            EffectiveValues effectiveValues,
                            LocalDateTime analyzed) {

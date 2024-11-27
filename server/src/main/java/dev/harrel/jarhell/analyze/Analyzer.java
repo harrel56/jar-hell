@@ -87,7 +87,7 @@ class Analyzer {
                 packageInfo.size(), packageInfo.bytecodeVersion(), descriptorInfo.packaging(),
                 descriptorInfo.name(), descriptorInfo.description(), descriptorInfo.url(),
                 descriptorInfo.scmUrl(), descriptorInfo.issuesUrl(), descriptorInfo.inceptionYear(),
-                descriptorInfo.licences(), List.copyOf(filesInfo.classifiers()), null, null);
+                descriptorInfo.licenses(), List.copyOf(filesInfo.classifiers()), null, null);
     }
 
     private void traverseDeps(ArtifactTree at,

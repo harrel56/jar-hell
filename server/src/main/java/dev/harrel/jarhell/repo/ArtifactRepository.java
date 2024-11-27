@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.harrel.jarhell.model.*;
-import dev.harrel.jarhell.model.descriptor.Licence;
+import dev.harrel.jarhell.model.descriptor.License;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.*;
 import org.neo4j.driver.summary.ResultSummary;
@@ -187,9 +187,9 @@ public class ArtifactRepository {
 
     private ArtifactInfo toArtifactInfo(ArtifactProps artifactProps) {
         try {
-            List<Licence> licences = List.of();
+            List<License> licenses = List.of();
             if (artifactProps.licenses() != null) {
-                licences = objectMapper.readValue(artifactProps.licenses(), new TypeReference<>() {});
+                licenses = objectMapper.readValue(artifactProps.licenses(), new TypeReference<>() {});
             }
             ArtifactInfo.EffectiveValues effectiveValues = new ArtifactInfo.EffectiveValues(
                     artifactProps.effectiveRequiredDependencies(),
@@ -202,7 +202,7 @@ public class ArtifactRepository {
                     artifactProps.unresolved(), artifactProps.created(), artifactProps.packageSize(), artifactProps.bytecodeVersion(),
                     artifactProps.packaging(), artifactProps.name(), artifactProps.description(), artifactProps.url(),
                     artifactProps.scmUrl(), artifactProps.issuesUrl(), artifactProps.inceptionYear(),
-                    licences, artifactProps.classifiers(), effectiveValues, artifactProps.analyzed());
+                    licenses, artifactProps.classifiers(), effectiveValues, artifactProps.analyzed());
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }

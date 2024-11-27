@@ -1,6 +1,6 @@
 package dev.harrel.jarhell.model;
 
-import dev.harrel.jarhell.model.descriptor.Licence;
+import dev.harrel.jarhell.model.descriptor.License;
 import org.apache.commons.lang3.StringUtils;
 
 import java.net.URI;
@@ -307,19 +307,15 @@ public enum LicenseType {
         this.uris = uris;
     }
 
-    public static LicenseType categorize(Licence licence) {
-        URI uri = normalizeUri(licence.url());
-        String name = normalizeName(licence.name());
+    public static LicenseType categorize(License license) {
+        URI uri = normalizeUri(license.url());
+        String name = normalizeName(license.name());
         for (LicenseType type : LicenseType.values()) {
             if (type.uris.contains(uri) || type.names.contains(name)) {
                 return type;
             }
         }
         return UNKNOWN;
-    }
-
-    boolean matches(Licence licence) {
-        return uris.contains(normalizeUri(licence.url())) || names.contains(normalizeName(licence.name()));
     }
 
     /// - lowercase
@@ -332,6 +328,9 @@ public enum LicenseType {
     /// - StringUtils.normalizeSpace() - to dedup spaces
     /// - trim()
     private static String normalizeName(String name) {
+        if (name == null) {
+            return null;
+        }
         name = StringUtils.truncate(name, 128)
                 .toLowerCase()
                 .replace('-', ' ')
@@ -344,6 +343,9 @@ public enum LicenseType {
     /// - remove leading 'www'
     /// - remove trailing slash
     private static URI normalizeUri(String uriString) {
+        if (uriString == null) {
+            return null;
+        }
         uriString = StringUtils.truncate(uriString, 128)
                 .replace("http://", "https://");
         uriString = URI_CLEANER.matcher(uriString).replaceAll("");

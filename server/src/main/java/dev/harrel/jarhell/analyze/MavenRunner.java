@@ -5,7 +5,7 @@ import dev.harrel.jarhell.model.CollectedDependencies;
 import dev.harrel.jarhell.model.FlatDependency;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.descriptor.DescriptorInfo;
-import dev.harrel.jarhell.model.descriptor.Licence;
+import dev.harrel.jarhell.model.descriptor.License;
 import io.avaje.config.Config;
 import org.apache.maven.model.IssueManagement;
 import org.apache.maven.model.Model;
@@ -84,8 +84,8 @@ class MavenRunner {
             String issuesUrl = Optional.ofNullable(model.getIssueManagement())
                     .map(IssueManagement::getUrl)
                     .orElse(null);
-            List<Licence> licenses = model.getLicenses().stream()
-                    .map(license -> new Licence(license.getName(), license.getUrl()))
+            List<License> licenses = model.getLicenses().stream()
+                    .map(license -> new License(license.getName(), license.getUrl()))
                     .toList();
 
             // todo: url seems to be resolved incorrectly sometimes :(

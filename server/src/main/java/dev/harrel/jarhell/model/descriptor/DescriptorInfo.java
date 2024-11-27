@@ -9,4 +9,4 @@ public record DescriptorInfo(String packaging,
                              String scmUrl,
                              String issuesUrl,
                              String inceptionYear,
-                             List<Licence> licences) {}
+                             List<License> licenses) {}
