@@ -47,6 +47,7 @@ class LicenseTypeTest {
                 Arguments.of(new License(null, "http://www.opensource.org/license/bsd-1-clause"), LicenseType.BSD_1),
                 Arguments.of(new License(null, "http://opensource.org/license/bsd-1-clause"), LicenseType.BSD_1),
                 Arguments.of(new License(null, "http://opensource.org/license/bsd-1-clause/"), LicenseType.BSD_1),
+                Arguments.of(new License(null, "sftp://opensource.org/license/bsd-1-clause/"), LicenseType.UNKNOWN),
                 Arguments.of(new License(null, "is it uri?"), LicenseType.UNKNOWN),
 
                 Arguments.of(new License("My License", "https://github.com"), LicenseType.UNKNOWN),
