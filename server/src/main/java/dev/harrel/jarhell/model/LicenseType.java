@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public enum LicenseType {
-    APACHE_2_0(lowercaseSet(
+    APACHE_2(lowercaseSet(
             "Apache Software 2.0",
             "Apache Software 2",
             "Apache 2.0",
@@ -297,7 +297,7 @@ public enum LicenseType {
 
     private static final Pattern NAME_CLEANER = Pattern.compile(
             ",|(\\bthe\\b)|(\\bversion\\b)|(\\blicense\\b)|(\\blicence\\b)|(\\bv\\b)|(v(?=\\d))|(\\.$)|(\\(.*\\))");
-    private static final Pattern URI_CLEANER = Pattern.compile("((?<=//)www(?=\\.))|(/$)");
+    private static final Pattern URI_CLEANER = Pattern.compile("((?<=//)www\\.)|(/$)");
 
     private final Set<String> names;
     private final Set<URI> uris;
@@ -311,7 +311,7 @@ public enum LicenseType {
         URI uri = normalizeUri(license.url());
         String name = normalizeName(license.name());
         for (LicenseType type : LicenseType.values()) {
-            if (type.uris.contains(uri) || type.names.contains(name)) {
+            if ((uri != null && type.uris.contains(uri)) || (name != null && type.names.contains(name))) {
                 return type;
             }
         }
@@ -331,7 +331,7 @@ public enum LicenseType {
         if (name == null) {
             return null;
         }
-        name = StringUtils.truncate(name, 128)
+        name = StringUtils.truncate(name, 64)
                 .toLowerCase()
                 .replace('-', ' ')
                 .replace('_', ' ');
@@ -346,7 +346,7 @@ public enum LicenseType {
         if (uriString == null) {
             return null;
         }
-        uriString = StringUtils.truncate(uriString, 128)
+        uriString = StringUtils.truncate(uriString, 64)
                 .replace("http://", "https://");
         uriString = URI_CLEANER.matcher(uriString).replaceAll("");
         try {
