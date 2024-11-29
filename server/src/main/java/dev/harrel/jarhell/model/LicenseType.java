@@ -69,6 +69,8 @@ public enum LicenseType {
             "BSD 3",
             "3 Clause BSD",
             "BSD 3 Clause",
+            "BSDNew",
+            "BSD New",
             "NewBSD",
             "New BSD",
             "Modified BSD",
