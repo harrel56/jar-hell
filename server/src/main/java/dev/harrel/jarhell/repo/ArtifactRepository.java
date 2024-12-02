@@ -191,18 +191,33 @@ public class ArtifactRepository {
             if (artifactProps.licenses() != null) {
                 licenses = objectMapper.readValue(artifactProps.licenses(), new TypeReference<>() {});
             }
-            ArtifactInfo.EffectiveValues effectiveValues = new ArtifactInfo.EffectiveValues(
-                    artifactProps.effectiveRequiredDependencies(),
-                    artifactProps.effectiveUnresolvedDependencies(),
-                    artifactProps.effectiveOptionalDependencies(),
-                    artifactProps.effectiveSize(),
-                    artifactProps.effectiveBytecodeVersion());
+            List<LicenseType> licenseTypes = List.of();
+            if (artifactProps.licenseTypes() != null) {
+                licenseTypes = artifactProps.licenseTypes().stream().map(LicenseType::valueOf).toList();
+            }
+
+            ArtifactInfo.EffectiveValues effectiveValues = null;
+            if (Boolean.TRUE.equals(artifactProps.unresolved())) {
+                LicenseType effectiveLicenseType = LicenseType.valueOf(artifactProps.effectiveLicenseType());
+                List<Map.Entry<LicenseType, Integer>> effectiveLicenseTypes = artifactProps.effectiveLicenseTypes().stream()
+                        .map(entry -> entry.split(";"))
+                        .map(entry -> Map.entry(LicenseType.valueOf(entry[0]), Integer.valueOf(entry[1])))
+                        .toList();
+                effectiveValues = new ArtifactInfo.EffectiveValues(
+                        artifactProps.effectiveRequiredDependencies(),
+                        artifactProps.effectiveUnresolvedDependencies(),
+                        artifactProps.effectiveOptionalDependencies(),
+                        artifactProps.effectiveSize(),
+                        artifactProps.effectiveBytecodeVersion(),
+                        effectiveLicenseType,
+                        effectiveLicenseTypes);
+            }
 
             return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier(),
                     artifactProps.unresolved(), artifactProps.created(), artifactProps.packageSize(), artifactProps.bytecodeVersion(),
                     artifactProps.packaging(), artifactProps.name(), artifactProps.description(), artifactProps.url(),
                     artifactProps.scmUrl(), artifactProps.issuesUrl(), artifactProps.inceptionYear(),
-                    licenses, artifactProps.classifiers(), effectiveValues, artifactProps.analyzed());
+                    licenses, licenseTypes, artifactProps.classifiers(), effectiveValues, artifactProps.analyzed());
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
@@ -218,25 +233,35 @@ public class ArtifactRepository {
             if (artifactInfo.licenses() != null && !artifactInfo.licenses().isEmpty()) {
                 licenses = objectMapper.writeValueAsString(artifactInfo.licenses());
             }
+            List<String> licenseTypes = null;
+            if (artifactInfo.licenseTypes() != null && !artifactInfo.licenseTypes().isEmpty()) {
+                licenseTypes = artifactInfo.licenseTypes().stream().map(Enum::name).toList();
+            }
             Integer effectiveDependencies = null;
             Integer effectiveUnresolvedDependencies = null;
             Integer effectiveOptionalDependencies = null;
             Long effectiveSize = null;
             String effectiveBytecodeVersion = null;
+            String effectiveLicenseType = null;
+            List<String> effectiveLicenseTypes = null;
             if (artifactInfo.effectiveValues() != null) {
                 effectiveDependencies = artifactInfo.effectiveValues().requiredDependencies();
                 effectiveUnresolvedDependencies = artifactInfo.effectiveValues().unresolvedDependencies();
                 effectiveOptionalDependencies = artifactInfo.effectiveValues().optionalDependencies();
                 effectiveSize = artifactInfo.effectiveValues().size();
                 effectiveBytecodeVersion = artifactInfo.effectiveValues().bytecodeVersion();
+                effectiveLicenseType = artifactInfo.effectiveValues().licenseType().name();
+                effectiveLicenseTypes = artifactInfo.effectiveValues().licenseTypes().stream()
+                        .map(entry -> "%s;%s".formatted(entry.getKey().name(), entry.getValue()))
+                        .toList();
             }
             return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(),
                     artifactInfo.unresolved(), artifactInfo.created(), artifactInfo.packageSize(), artifactInfo.bytecodeVersion(),
                     artifactInfo.packaging(), artifactInfo.name(), artifactInfo.description(), artifactInfo.url(),
                     artifactInfo.scmUrl(), artifactInfo.issuesUrl(), artifactInfo.inceptionYear(),
-                    licenses, artifactInfo.classifiers(), effectiveDependencies,
+                    licenses, licenseTypes, artifactInfo.classifiers(), effectiveDependencies,
                     effectiveUnresolvedDependencies, effectiveOptionalDependencies,  effectiveSize,
-                    effectiveBytecodeVersion, null);
+                    effectiveBytecodeVersion, effectiveLicenseType, effectiveLicenseTypes, null);
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
@@ -260,12 +285,15 @@ public class ArtifactRepository {
                                  String issuesUrl,
                                  String inceptionYear,
                                  String licenses,
+                                 List<String> licenseTypes,
                                  List<String> classifiers,
                                  Integer effectiveRequiredDependencies,
                                  Integer effectiveUnresolvedDependencies,
                                  Integer effectiveOptionalDependencies,
                                  Long effectiveSize,
                                  String effectiveBytecodeVersion,
+                                 String effectiveLicenseType,
+                                 List<String> effectiveLicenseTypes,
                                  LocalDateTime analyzed) {}
 
     private class AggregateTree {

@@ -5,8 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -295,11 +294,53 @@ public enum LicenseType {
             "https://opensource.org/license/zlib",
             "https://zlib.net/zlib_license.html"
     )),
-    UNKNOWN(Set.of(), Set.of());
+    UNKNOWN(Set.of(), Set.of()),
+    NO_LICENSE(Set.of(), Set.of());
+
+    private static final Map<LicenseType, Integer> ORDER_MAP;
+    static {
+        Map<LicenseType, Integer> orderMap = new EnumMap<>(LicenseType.class);
+        List<LicenseType> ordered = List.of(
+                LicenseType.MIT0,
+                LicenseType.BSD_0,
+                LicenseType.MIT,
+                LicenseType.ISC,
+                LicenseType.ZLIB,
+                LicenseType.ICU,
+                LicenseType.BSD_2,
+                LicenseType.APACHE_2,
+                LicenseType.BSD_3,
+                LicenseType.BSD_1,
+                LicenseType.MPL_2,
+                LicenseType.MPL_1,
+                LicenseType.EPL_2,
+                LicenseType.EPL_1,
+                LicenseType.CPL_1,
+                LicenseType.LGPL_3,
+                LicenseType.LGPL_2,
+                LicenseType.GPL_3,
+                LicenseType.GPL_2,
+                LicenseType.CDDL_1,
+                LicenseType.AGPL_3,
+                LicenseType.UNLICENSE,
+                LicenseType.CC0_1,
+                LicenseType.SSPL_1,
+                LicenseType.UNKNOWN,
+                LicenseType.NO_LICENSE
+        );
+        if (ordered.size() != LicenseType.values().length || !Set.copyOf(ordered).containsAll(Arrays.asList(LicenseType.values()))) {
+            throw new IllegalStateException();
+        }
+        for (int i = 0; i < ordered.size(); i++) {
+            orderMap.put(ordered.get(i), i);
+        }
+        ORDER_MAP = Collections.unmodifiableMap(orderMap);
+    }
 
     private static final Pattern NAME_CLEANER = Pattern.compile(
             ",|(\\bthe\\b)|(\\bversion\\b)|(\\blicense\\b)|(\\blicence\\b)|(\\bv\\b)|(v(?=\\d))|(\\.$)|(\\(.*\\))");
     private static final Pattern URI_CLEANER = Pattern.compile("((?<=//)www\\.)|(/$)");
+    public static final Comparator<LicenseType> COMPARATOR = Comparator.comparingInt(ORDER_MAP::get);
 
     private final Set<String> names;
     private final Set<URI> uris;

@@ -4,6 +4,7 @@ import dev.harrel.jarhell.maven.CustomDescriptorReaderDelegate;
 import dev.harrel.jarhell.model.CollectedDependencies;
 import dev.harrel.jarhell.model.FlatDependency;
 import dev.harrel.jarhell.model.Gav;
+import dev.harrel.jarhell.model.LicenseType;
 import dev.harrel.jarhell.model.descriptor.DescriptorInfo;
 import dev.harrel.jarhell.model.descriptor.License;
 import io.avaje.config.Config;
@@ -87,10 +88,13 @@ class MavenRunner {
             List<License> licenses = model.getLicenses().stream()
                     .map(license -> new License(license.getName(), license.getUrl()))
                     .toList();
+            List<LicenseType> licenseTypes = licenses.stream()
+                    .map(LicenseType::categorize)
+                    .toList();
 
             // todo: url seems to be resolved incorrectly sometimes :(
             return new DescriptorInfo(model.getPackaging(), model.getName(), model.getDescription(),
-                    model.getUrl(), scmUrl, issuesUrl, model.getInceptionYear(), licenses);
+                    model.getUrl(), scmUrl, issuesUrl, model.getInceptionYear(), licenses, licenseTypes);
         } catch (ArtifactDescriptorException e) {
             throw new IllegalArgumentException(e);
         }
