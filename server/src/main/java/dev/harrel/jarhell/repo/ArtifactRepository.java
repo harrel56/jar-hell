@@ -199,9 +199,9 @@ public class ArtifactRepository {
             ArtifactInfo.EffectiveValues effectiveValues = null;
             if (Boolean.TRUE.equals(artifactProps.unresolved())) {
                 LicenseType effectiveLicenseType = LicenseType.valueOf(artifactProps.effectiveLicenseType());
-                List<Map.Entry<LicenseType, Integer>> effectiveLicenseTypes = artifactProps.effectiveLicenseTypes().stream()
+                List<Map.Entry<LicenseType, Long>> effectiveLicenseTypes = artifactProps.effectiveLicenseTypes().stream()
                         .map(entry -> entry.split(";"))
-                        .map(entry -> Map.entry(LicenseType.valueOf(entry[0]), Integer.valueOf(entry[1])))
+                        .map(entry -> Map.entry(LicenseType.valueOf(entry[0]), Long.valueOf(entry[1])))
                         .toList();
                 effectiveValues = new ArtifactInfo.EffectiveValues(
                         artifactProps.effectiveRequiredDependencies(),

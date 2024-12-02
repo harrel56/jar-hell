@@ -68,7 +68,18 @@ class Analyzer {
                 .filter(Objects::nonNull)
                 .max(Comparator.naturalOrder())
                 .orElse(null);
-        return new ArtifactInfo.EffectiveValues(requiredDeps.size(), unresolvedDeps, optionalDeps, totalSize, bytecodeVersion);
+
+        List<Map.Entry<LicenseType, Long>> effectiveLicenses = Stream.concat(Stream.of(info), requiredDeps.stream())
+                .map(a -> a.licenseTypes() == null || a.licenseTypes().isEmpty() ? List.of(LicenseType.NO_LICENSE) : a.licenseTypes())
+                .flatMap(List::stream)
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+                .entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByKey(LicenseType.COMPARATOR))
+                .toList();
+        LicenseType effectiveLicense = effectiveLicenses.getFirst().getKey();
+        return new ArtifactInfo.EffectiveValues(requiredDeps.size(), unresolvedDeps, optionalDeps, totalSize, bytecodeVersion,
+                effectiveLicense, effectiveLicenses);
     }
 
     // todo: maybe actually save excluded and conflicted deps

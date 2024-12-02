@@ -1,16 +1,14 @@
 package dev.harrel.jarhell.analyze;
 
 import dev.harrel.jarhell.MavenApiClient;
-import dev.harrel.jarhell.model.ArtifactInfo;
+import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.model.ArtifactInfo.EffectiveValues;
-import dev.harrel.jarhell.model.ArtifactTree;
-import dev.harrel.jarhell.model.DependencyInfo;
-import dev.harrel.jarhell.model.Gav;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,7 +20,7 @@ class AnalyzerTest {
 
     @ParameterizedTest
     @MethodSource("artifactTrees")
-    void name(ArtifactInfo artifactInfo, List<DependencyInfo> deps, EffectiveValues expected) {
+    void shouldComputeEffectiveValues(ArtifactInfo artifactInfo, List<DependencyInfo> deps, EffectiveValues expected) {
         EffectiveValues effectiveValues = analyzer.computeEffectiveValues(artifactInfo, deps);
         assertThat(effectiveValues).isEqualTo(expected);
     }
@@ -30,7 +28,7 @@ class AnalyzerTest {
     private static ArtifactInfo resolved(Long size, String bytecodeVersion) {
         return new ArtifactInfo("org.resolved", "resolved", "1.0.0", null, null, null,
                 size, bytecodeVersion, "jar", "resolved", "desc", null, null, null, null,
-                List.of(), List.of(), null, null);
+                List.of(), List.of(), List.of(), null, null);
     }
 
     private static ArtifactInfo unresolved() {
@@ -49,7 +47,8 @@ class AnalyzerTest {
         return Stream.of(
                 argumentSet("Standalone package",
                         resolved(1000L, "52.0"), List.of(),
-                        new EffectiveValues(0, 0, 0, 1000L, "52.0")
+                        new EffectiveValues(0, 0, 0, 1000L, "52.0",
+                                LicenseType.NO_LICENSE, List.of(Map.entry(LicenseType.NO_LICENSE, 1L)))
                 ),
                 argumentSet("Unresolved standalone package",
                         unresolved(), List.of(),
@@ -57,11 +56,13 @@ class AnalyzerTest {
                 ),
                 argumentSet("3 required unresolved deps",
                         resolved(1000L, "52.0"), List.of(unresolvedDep(false), unresolvedDep(false), unresolvedDep(false)),
-                        new EffectiveValues(3, 3, 0, 1000L, "52.0")
+                        new EffectiveValues(3, 3, 0, 1000L, "52.0",
+                                LicenseType.NO_LICENSE, List.of(Map.entry(LicenseType.NO_LICENSE, 1L)))
                 ),
                 argumentSet("1 required unresolved, 2 optional unresolved deps",
                         resolved(1000L, "52.0"), List.of(unresolvedDep(true), unresolvedDep(false), unresolvedDep(true)),
-                        new EffectiveValues(1, 1, 2, 1000L, "52.0")
+                        new EffectiveValues(1, 1, 2, 1000L, "52.0",
+                                LicenseType.NO_LICENSE, List.of(Map.entry(LicenseType.NO_LICENSE, 1L)))
                 ),
                 argumentSet("3 required resolved deps - size is calculated properly",
                         resolved(1000L, "52.0"), List.of(
@@ -69,7 +70,8 @@ class AnalyzerTest {
                                 resolvedDep(10L, "52.0", false),
                                 resolvedDep(100L, "52.0", false)
                         ),
-                        new EffectiveValues(3, 0, 0, 1111L, "52.0")
+                        new EffectiveValues(3, 0, 0, 1111L, "52.0",
+                                LicenseType.NO_LICENSE, List.of(Map.entry(LicenseType.NO_LICENSE, 1L)))
                 ),
                 argumentSet("3 required, 1 optional resolved deps - size is calculated properly",
                         resolved(1000L, "52.0"), List.of(
@@ -78,7 +80,8 @@ class AnalyzerTest {
                                 resolvedDep(9999L, "52.0", true),
                                 resolvedDep(100L, "52.0", false)
                         ),
-                        new EffectiveValues(3, 0, 1, 1111L, "52.0")
+                        new EffectiveValues(3, 0, 1, 1111L, "52.0",
+                                LicenseType.NO_LICENSE, List.of(Map.entry(LicenseType.NO_LICENSE, 1L)))
                 ),
                 argumentSet("3 required, 1 optional resolved deps - bytecode version is calculated properly",
                         resolved(1000L, "52.0"), List.of(
@@ -87,7 +90,8 @@ class AnalyzerTest {
                                 resolvedDep(10L, "61.65536", false),
                                 resolvedDep(100L, "52.0", false)
                         ),
-                        new EffectiveValues(3, 0, 1, 1111L, "61.65536")
+                        new EffectiveValues(3, 0, 1, 1111L, "61.65536",
+                                LicenseType.NO_LICENSE, List.of(Map.entry(LicenseType.NO_LICENSE, 1L)))
                 ),
                 argumentSet("All cases combined",
                         resolved(1000L, "68.0"), List.of(
@@ -98,7 +102,8 @@ class AnalyzerTest {
                                 resolvedDep(10L, "61.65536", false),
                                 resolvedDep(100L, "52.0", false)
                         ),
-                        new EffectiveValues(4, 1, 2, 1111L, "68.0")
+                        new EffectiveValues(4, 1, 2, 1111L, "68.0",
+                                LicenseType.NO_LICENSE, List.of(Map.entry(LicenseType.NO_LICENSE, 1L)))
                 )
         );
     }

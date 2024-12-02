@@ -44,7 +44,7 @@ public record ArtifactInfo(String groupId,
                                   Long size,
                                   String bytecodeVersion,
                                   LicenseType licenseType,
-                                  List<Map.Entry<LicenseType, Integer>> licenseTypes) {
+                                  List<Map.Entry<LicenseType, Long>> licenseTypes) {
         public EffectiveValues {
             Objects.requireNonNull(licenseType);
             Objects.requireNonNull(licenseTypes);

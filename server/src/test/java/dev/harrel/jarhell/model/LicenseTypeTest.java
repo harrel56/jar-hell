@@ -1,10 +1,12 @@
 package dev.harrel.jarhell.model;
 
 import dev.harrel.jarhell.model.descriptor.License;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -15,6 +17,47 @@ class LicenseTypeTest {
     void shouldCategorizeCorrectly(License license, LicenseType licenseType) {
         LicenseType actualType = LicenseType.categorize(license);
         assertThat(actualType).isEqualTo(licenseType);
+    }
+
+    @Test
+    void shouldSortByRestrictiveness() {
+        List<LicenseType> sorted = Stream.of(
+                        LicenseType.NO_LICENSE,
+                        LicenseType.APACHE_2,
+                        LicenseType.AGPL_3,
+                        LicenseType.NO_LICENSE,
+                        LicenseType.UNKNOWN,
+                        LicenseType.CC0_1,
+                        LicenseType.MIT
+                )
+                .sorted(LicenseType.COMPARATOR)
+                .toList();
+
+        assertThat(sorted).containsExactly(
+                LicenseType.NO_LICENSE,
+                LicenseType.NO_LICENSE,
+                LicenseType.UNKNOWN,
+                LicenseType.CC0_1,
+                LicenseType.AGPL_3,
+                LicenseType.APACHE_2,
+                LicenseType.MIT
+        );
+    }
+
+    @Test
+    void shouldFindMostRestrictiveByMin() {
+        LicenseType min = Stream.of(
+                        LicenseType.APACHE_2,
+                        LicenseType.GPL_3,
+                        LicenseType.MPL_1,
+                        LicenseType.MPL_2,
+                        LicenseType.LGPL_3,
+                        LicenseType.MIT
+                )
+                .min(LicenseType.COMPARATOR)
+                .orElseThrow();
+
+        assertThat(min).isEqualTo(LicenseType.GPL_3);
     }
 
     private static Stream<Arguments> licenses() {
