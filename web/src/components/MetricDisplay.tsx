@@ -14,14 +14,14 @@ export const MetricDisplay = ({className, title, titleHint, value, valueHint}: B
   return (
     <TooltipProvider>
       <div className={cn('flex flex-col items-center gap-1', className)}>
-        <span className='text-xl font-bold text-center'>
+        <span className='text-xl font-bold text-center whitespace-nowrap'>
           {title}
           {titleHint && (
             <Tooltip delayDuration={200}>
               <TooltipTrigger asChild>
                 <CircleHelpIcon size={16} className='ml-2 inline-block align-baseline'/>
               </TooltipTrigger>
-              <TooltipContent className='max-w-64 p-2 font-semibold'>
+              <TooltipContent className='max-w-64 p-2 font-semibold whitespace-normal'>
                 <p>{titleHint}</p>
               </TooltipContent>
             </Tooltip>
