@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.extension.Host;
 import dev.harrel.jarhell.model.Gav;
+import dev.harrel.jarhell.model.LicenseType;
 import dev.harrel.jarhell.util.HttpUtil;
 import org.junit.jupiter.api.Test;
 
@@ -49,7 +50,9 @@ class CyclicAnalysisTest {
                         "unresolvedDependencies", 0L,
                         "optionalDependencies", 0L,
                         "size", 2105L,
-                        "bytecodeVersion", "65.0"
+                        "bytecodeVersion", "65.0",
+                        "licenseType", LicenseType.NO_LICENSE.name(),
+                        "licenseTypes", List.of(Map.of(LicenseType.NO_LICENSE.name(), 1L))
                 ));
         List<Map<String, Object>> deps = (List<Map<String, Object>>) properties.get("dependencies");
         assertThat(deps).isEmpty();
@@ -74,7 +77,9 @@ class CyclicAnalysisTest {
                         "unresolvedDependencies", 0L,
                         "optionalDependencies", 0L,
                         "size", 2105L,
-                        "bytecodeVersion", "65.0"
+                        "bytecodeVersion", "65.0",
+                        "licenseType", LicenseType.NO_LICENSE.name(),
+                        "licenseTypes", List.of(Map.of(LicenseType.NO_LICENSE.name(), 1L))
                 ));
         List<Map<String, Object>> deps = (List<Map<String, Object>>) properties.get("dependencies");
         assertThat(deps).isEmpty();
@@ -100,7 +105,9 @@ class CyclicAnalysisTest {
                         "unresolvedDependencies", 0L,
                         "optionalDependencies", 0L,
                         "size", 6315L,
-                        "bytecodeVersion", "65.0"
+                        "bytecodeVersion", "65.0",
+                        "licenseType", LicenseType.NO_LICENSE.name(),
+                        "licenseTypes", List.of(Map.of(LicenseType.NO_LICENSE.name(), 3L))
                 ));
         List<Map<String, Object>> deps = (List<Map<String, Object>>) properties.get("dependencies");
         assertThat(deps).hasSize(1);
@@ -115,7 +122,9 @@ class CyclicAnalysisTest {
                         "unresolvedDependencies", 0L,
                         "optionalDependencies", 0L,
                         "size", 6315L,
-                        "bytecodeVersion", "65.0"
+                        "bytecodeVersion", "65.0",
+                        "licenseType", LicenseType.NO_LICENSE.name(),
+                        "licenseTypes", List.of(Map.of(LicenseType.NO_LICENSE.name(), 3L))
                 ));
     }
 
@@ -139,7 +148,9 @@ class CyclicAnalysisTest {
                         "unresolvedDependencies", 0L,
                         "optionalDependencies", 3L,
                         "size", 2105L,
-                        "bytecodeVersion", "65.0"
+                        "bytecodeVersion", "65.0",
+                        "licenseType", LicenseType.NO_LICENSE.name(),
+                        "licenseTypes", List.of(Map.of(LicenseType.NO_LICENSE.name(), 1L))
                 ));
         List<Map<String, Object>> deps = (List<Map<String, Object>>) properties.get("dependencies");
         assertThat(deps).hasSize(1);
@@ -154,7 +165,9 @@ class CyclicAnalysisTest {
                         "unresolvedDependencies", 0L,
                         "optionalDependencies", 0L,
                         "size", 6315L,
-                        "bytecodeVersion", "65.0"
+                        "bytecodeVersion", "65.0",
+                        "licenseType", LicenseType.NO_LICENSE.name(),
+                        "licenseTypes", List.of(Map.of(LicenseType.NO_LICENSE.name(), 3L))
                 ));
     }
 }

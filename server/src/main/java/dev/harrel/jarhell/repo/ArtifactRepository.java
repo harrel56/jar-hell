@@ -197,7 +197,7 @@ public class ArtifactRepository {
             }
 
             ArtifactInfo.EffectiveValues effectiveValues = null;
-            if (Boolean.TRUE.equals(artifactProps.unresolved())) {
+            if (artifactProps.effectiveLicenseType() != null && artifactProps.effectiveLicenseTypes() != null) {
                 LicenseType effectiveLicenseType = LicenseType.valueOf(artifactProps.effectiveLicenseType());
                 List<Map.Entry<LicenseType, Long>> effectiveLicenseTypes = artifactProps.effectiveLicenseTypes().stream()
                         .map(entry -> entry.split(";"))

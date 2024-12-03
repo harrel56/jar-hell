@@ -5,6 +5,7 @@ import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.extension.Host;
 import dev.harrel.jarhell.model.Gav;
+import dev.harrel.jarhell.model.LicenseType;
 import dev.harrel.jarhell.util.HttpUtil;
 import io.javalin.http.HandlerType;
 import org.junit.jupiter.api.Test;
@@ -169,13 +170,16 @@ class AnalyzeControllerTest {
                 Map.entry("version", "1.6.2"),
                 Map.entry("url", "https://github.com/RohanNagar/jmail"),
                 Map.entry("bytecodeVersion", "52.0"),
+                Map.entry("licenseTypes", List.of(LicenseType.MIT.name())),
                 Map.entry("classifiers", List.of("javadoc", "sources")),
                 Map.entry("effectiveValues", Map.of(
                         "requiredDependencies", 0L,
                         "unresolvedDependencies", 0L,
                         "optionalDependencies", 0L,
                         "size", 30629L,
-                        "bytecodeVersion", "52.0"
+                        "bytecodeVersion", "52.0",
+                        "licenseType", LicenseType.MIT.name(),
+                        "licenseTypes", List.of(Map.of(LicenseType.MIT.name(), 1L))
                 ))
         );
     }
@@ -190,13 +194,16 @@ class AnalyzeControllerTest {
                 Map.entry("packaging", "jar"),
                 Map.entry("packageSize", 2105L),
                 Map.entry("bytecodeVersion", "65.0"),
+                Map.entry("licenseTypes", List.of()),
                 Map.entry("classifiers", List.of("javadoc", "sources")),
                 Map.entry("effectiveValues", Map.of(
                         "requiredDependencies", 1L,
                         "unresolvedDependencies", 0L,
                         "optionalDependencies", 0L,
                         "size", 32734L,
-                        "bytecodeVersion", "65.0"
+                        "bytecodeVersion", "65.0",
+                        "licenseType", LicenseType.NO_LICENSE.name(),
+                        "licenseTypes", List.of(Map.of(LicenseType.NO_LICENSE.name(), 1L), Map.of(LicenseType.MIT.name(), 1L))
                 ))
         );
     }
