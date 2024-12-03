@@ -70,6 +70,7 @@ class Analyzer {
                 .orElse(null);
 
         List<Map.Entry<LicenseType, Long>> effectiveLicenses = Stream.concat(Stream.of(info), requiredDeps.stream())
+                .filter(a -> !Boolean.TRUE.equals(a.unresolved()))
                 .map(a -> a.licenseTypes() == null || a.licenseTypes().isEmpty() ? List.of(LicenseType.NO_LICENSE) : a.licenseTypes())
                 .flatMap(List::stream)
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
