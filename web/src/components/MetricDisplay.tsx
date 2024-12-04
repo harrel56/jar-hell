@@ -13,8 +13,8 @@ export interface ByteDisplayProps {
 export const MetricDisplay = ({className, title, titleHint, value, valueHint}: ByteDisplayProps) => {
   return (
     <TooltipProvider>
-      <div className={cn('flex flex-col items-center gap-1', className)}>
-        <span className='text-xl font-bold text-center whitespace-nowrap'>
+      <div className={cn('flex flex-col items-center gap-1 whitespace-nowrap', className)}>
+        <span className='text-xl font-bold text-center'>
           {title}
           {titleHint && (
             <Tooltip delayDuration={200}>

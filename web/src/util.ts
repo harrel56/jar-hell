@@ -50,6 +50,50 @@ export const formatBytecodeVersion = (bytecodeVersion?: string) => {
   return 'Java ' + version + (preview ? '*' : '')
 }
 
+export const formatPackageLicenseType = (pkg: ResolvedPackage) => {
+  if (pkg.licenseTypes.length === 0) {
+    return formatLicenseType('NO_LICENSE')
+  } else if (pkg.licenseTypes.length === 1) {
+    return formatLicenseType(pkg.licenseTypes[0])
+  } else if (pkg.licenseTypes.length === 2) {
+    return formatLicenseType(pkg.licenseTypes[0]) + (pkg.licenseTypes.length - 1) + ' other'
+  } else {
+    return formatLicenseType(pkg.licenseTypes[0]) + (pkg.licenseTypes.length - 1) + ' others'
+  }
+}
+
+export const formatLicenseType = (type: string) => {
+  switch (type) {
+    case 'NO_LICENSE': return 'No license'
+    case 'UNKNOWN': return 'Unknown'
+    case 'SSPL_1': return 'SSPL 1.0'
+    case 'CC0_1': return 'CC0 1.0'
+    case 'UNLICENSE': return 'The Unlicense'
+    case 'AGPL_3': return 'Affero GPL 3.0'
+    case 'CDDL_1': return 'CDDL 1.0'
+    case 'GPL_2': return 'GPL 2.0'
+    case 'GPL_3': return 'GPL 3.0'
+    case 'LGPL_2': return 'LGPL 2.1'
+    case 'LGPL_3': return 'LGPL 3.0'
+    case 'CPL_1': return 'CPL 1.0'
+    case 'EPL_1': return 'Eclipse 1.0'
+    case 'EPL_2': return 'Eclipse 2.0'
+    case 'MPL_1': return 'Mozilla 1.0'
+    case 'MPL_2': return 'Mozilla 2.0'
+    case 'BSD_1': return 'BSD 1-clause'
+    case 'BSD_3': return 'BSD 3-clause'
+    case 'APACHE_2': return 'Apache 2.0'
+    case 'BSD_2': return 'BSD 2-clause'
+    case 'ICU': return 'ICU'
+    case 'ZLIB': return 'ZLIB'
+    case 'ISC': return 'ISC'
+    case 'MIT': return 'MIT'
+    case 'BSD_0': return 'BSD 0-clause'
+    case 'MIT0': return 'MIT No Attribution'
+    default: return type
+  }
+}
+
 export interface License {
   name: string
   url: string
@@ -79,6 +123,7 @@ export interface ResolvedPackage extends Gav {
   issuesUrl?: string
   inceptionYear?: string
   licenses: License[]
+  licenseTypes: string[]
   classifiers: string[]
   created: string
   analyzed: string
@@ -89,6 +134,8 @@ export interface ResolvedPackage extends Gav {
     unresolvedDependencies: number
     size: number
     bytecodeVersion?: string
+    licenseType: string
+    licenseTypes: Record<string, number>[]
   }
 }
 

@@ -1,6 +1,14 @@
 import {useOutletContext, useParams} from 'react-router-dom'
 import {useFetch} from '@/hooks/useFetch.ts'
-import {stringToGav, formatBytes, formatBytecodeVersion, Package, formatDate, formatDateTime} from '@/util.ts'
+import {
+  stringToGav,
+  formatBytes,
+  formatBytecodeVersion,
+  Package,
+  formatDate,
+  formatDateTime,
+  formatLicenseType, formatPackageLicenseType
+} from '@/util.ts'
 import {useLayoutEffect, useMemo} from 'react'
 import {MetricDisplay} from '@/components/MetricDisplay.tsx'
 import {PendingAnalysis} from '@/components/PendingAnalysis.tsx'
@@ -77,10 +85,26 @@ export const ArtifactInfo = () => {
     value: formatBytecodeVersion(packageData.effectiveValues.bytecodeVersion),
     valueHint: packageData.effectiveValues.bytecodeVersion
   }
+  const effectiveLicenseType = {
+    title: 'Effective license',
+    titleHint:
+      `todo`,
+    value: formatLicenseType(packageData.effectiveValues.licenseType)
+  }
   const packageSize = {
     title: 'Package size',
     value: formatBytes(packageData.packageSize),
     valueHint: packageData.packageSize + ' bytes'
+  }
+  const bytecodeVersion = {
+    title: 'Bytecode version',
+    value: formatBytecodeVersion(packageData.bytecodeVersion),
+    valueHint: packageData.bytecodeVersion
+  }
+  const licenseType = {
+    title: 'License',
+    value: formatPackageLicenseType(packageData),
+    valueHint: packageData.licenses.map(license => `${license.name} (${license.url})`).join('\n')
   }
   const requiredDependencies = {
     title: 'All required dependencies',
@@ -120,13 +144,16 @@ export const ArtifactInfo = () => {
         </Alert>
       )}
       <div className='grid xl:grid-cols-6 lg:grid-cols-4 grid-cols-2 gap-x-32 gap-y-16 h-fit'>
-        <MetricDisplay className='xl:col-start-2 col-span-2' {...effectiveSize}/>
-        <MetricDisplay className='col-span-2' {...effectiveBytecodeVersion}/>
-        <MetricDisplay className='col-span-2' {...packageSize}/>
-        <MetricDisplay className='col-span-2' {...requiredDependencies}/>
-        <MetricDisplay className='col-span-2' {...optionalDependencies}/>
         <MetricDisplay className='xl:col-start-2 col-span-2' {...publicationDate}/>
         <MetricDisplay className='col-span-2' {...analysisDate}/>
+        <MetricDisplay className='col-span-2' {...effectiveSize}/>
+        <MetricDisplay className='col-span-2' {...effectiveBytecodeVersion}/>
+        <MetricDisplay className='col-span-2' {...effectiveLicenseType}/>
+        <MetricDisplay className='col-span-2' {...packageSize}/>
+        <MetricDisplay className='col-span-2' {...bytecodeVersion}/>
+        <MetricDisplay className='col-span-2' {...licenseType}/>
+        <MetricDisplay className='xl:col-start-2 col-span-2' {...requiredDependencies}/>
+        <MetricDisplay className='col-span-2' {...optionalDependencies}/>
       </div>
       <fieldset className='flex flex-col gap-6 rounded-xl border w-full h-full p-8 mb-8 shadow-md'>
         <legend className='text-2xl px-2'>Dependency explorer</legend>
