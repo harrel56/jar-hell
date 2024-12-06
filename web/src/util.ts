@@ -56,9 +56,9 @@ export const formatPackageLicenseType = (pkg: ResolvedPackage) => {
   } else if (pkg.licenseTypes.length === 1) {
     return formatLicenseType(pkg.licenseTypes[0])
   } else if (pkg.licenseTypes.length === 2) {
-    return formatLicenseType(pkg.licenseTypes[0]) + (pkg.licenseTypes.length - 1) + ' other'
+    return `${formatLicenseType(pkg.licenseTypes[0])} + ${pkg.licenseTypes.length - 1} other`
   } else {
-    return formatLicenseType(pkg.licenseTypes[0]) + (pkg.licenseTypes.length - 1) + ' others'
+    return `${formatLicenseType(pkg.licenseTypes[0])} + ${pkg.licenseTypes.length - 1} others`
   }
 }
 
