@@ -12,10 +12,16 @@ import io.avaje.inject.Factory;
 import io.javalin.config.JavalinConfig;
 import io.javalin.json.JavalinJackson;
 import io.javalin.plugin.bundled.CorsPluginConfig;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
+import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
+import org.eclipse.jetty.http2.client.HTTP2Client;
+import org.eclipse.jetty.http2.client.http.ClientConnectionFactoryOverHTTP2;
+import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.neo4j.driver.*;
 
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -42,11 +48,13 @@ public class Configuration {
         return driver;
     }
 
-    @Bean
+    @Bean(initMethod = "start", destroyMethod = "stop")
     HttpClient httpClient() {
-        return HttpClient.newBuilder()
-                .followRedirects(HttpClient.Redirect.ALWAYS)
-                .build();
+        ClientConnector connector = new ClientConnector();
+        ClientConnectionFactory.Info http1 = HttpClientConnectionFactory.HTTP11;
+        ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(connector));
+        HttpClientTransportDynamic transport = new HttpClientTransportDynamic(connector, http1, http2);
+        return new HttpClient(transport);
     }
 
     @Bean
