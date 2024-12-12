@@ -11,23 +11,22 @@ import dev.harrel.jarhell.model.central.SelectResponse;
 import dev.harrel.jarhell.util.ConcurrentUtil;
 import io.avaje.config.Config;
 import org.apache.maven.artifact.versioning.ComparableVersion;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
 import javax.inject.Singleton;
-import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URI;
 import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.StructuredTaskScope;
 import java.util.concurrent.StructuredTaskScope.Subtask;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -58,8 +57,17 @@ public class MavenApiClient {
             return List.of();
         }
 
-        SelectResponse<SolrArtifact> response = fetch(SEARCH_URL + "?q=" + queryString + "&rows=80", objectMapper, new TypeReference<>() {});
-        return response.response().docs();
+        String url = SEARCH_URL + "?q=" + queryString + "&rows=80";
+        var res = fetchRaw(url);
+        if (res.getStatus() >= 400) {
+            throw new BadRequestException("HTTP call failed [%s] for url [%s]".formatted(res.getStatus(), url));
+        }
+        try {
+            SelectResponse<SolrArtifact> data = objectMapper.readValue(res.getContentAsString(), new TypeReference<>() {});
+            return data.response().docs();
+        } catch (JsonProcessingException e) {
+            throw new UncheckedIOException("HTTP fetch deserialization failed for url [%s]".formatted(url), e);
+        }
     }
 
     public List<String> fetchArtifactVersions(String groupId, String artifactId) {
@@ -82,8 +90,8 @@ public class MavenApiClient {
     }
 
     public boolean checkIfArtifactExists(Gav gav) {
-        HttpResponse<String> res = fetchRaw(createFileUrl(gav, "pom"));
-        return res.statusCode() == 200;
+        var res = fetchRaw(createFileUrl(gav, "pom"));
+        return res.getStatus() == 200;
     }
 
     public FilesInfo fetchFilesInfo(Gav gav) {
@@ -91,13 +99,13 @@ public class MavenApiClient {
         String path = "%s/%s/%s/".formatted(groupPath, gav.artifactId(), gav.version());
         String encodedPath = URLEncoder.encode(path, StandardCharsets.UTF_8);
         String url = CONTENT_URL + "/" + encodedPath;
-        HttpResponse<String> res = fetchRaw(url);
-        if (res.statusCode() >= 400) {
-            throw new ArtifactNotFoundException("HTTP call failed [%s] for url [%s]".formatted(res.statusCode(), url));
+        var res = fetchRaw(url);
+        if (res.getStatus() >= 400) {
+            throw new ArtifactNotFoundException("HTTP call failed [%s] for url [%s]".formatted(res.getStatus(), url));
         }
 
         String filePrefix = "%s-%s".formatted(gav.artifactId(), gav.version());
-        Document doc = Jsoup.parse(res.body());
+        Document doc = Jsoup.parse(res.getContentAsString());
         List<String> suffixes = doc.getElementsByTag("a").stream()
                 .map(el -> el.attr("href"))
                 .filter(href -> href.startsWith(filePrefix))
@@ -118,12 +126,12 @@ public class MavenApiClient {
     private List<String> fetchVersionsFromDir(String groupId, String artifactId) {
         String groupPath = groupId.replace('.', '/');
         String encodedPath = URLEncoder.encode(groupPath + "/" + artifactId, StandardCharsets.UTF_8);
-        HttpResponse<String> res = fetchRaw(CONTENT_URL + "/" + encodedPath);
-        if (res.statusCode() >= 400) {
+        var res = fetchRaw(CONTENT_URL + "/" + encodedPath);
+        if (res.getStatus() >= 400) {
             return List.of();
         }
 
-        Document doc = Jsoup.parse(res.body());
+        Document doc = Jsoup.parse(res.getContentAsString());
         return doc.getElementsByTag("a")
                 .stream()
                 .map(el -> el.attr("href"))
@@ -136,37 +144,21 @@ public class MavenApiClient {
         String groupPath = groupId.replace('.', '/');
         String metadataPath = "%s/%s/maven-metadata.xml".formatted(groupPath, artifactId);
         String encodedPath = URLEncoder.encode(metadataPath, StandardCharsets.UTF_8);
-        HttpResponse<String> res = fetchRaw(CONTENT_URL + "/" + encodedPath);
-        if (res.statusCode() >= 400) {
+        var res = fetchRaw(CONTENT_URL + "/" + encodedPath);
+        if (res.getStatus() >= 400) {
             return List.of();
         }
-        return XML_VERSIONS_PATTERN.matcher(res.body())
+        return XML_VERSIONS_PATTERN.matcher(res.getContentAsString())
                 .results()
                 .map(m -> m.group(1))
                 .toList();
     }
 
-    private <T> T fetch(String url, ObjectMapper objectMapper, TypeReference<T> type) {
+    private ContentResponse fetchRaw(String url) {
         try {
-            HttpResponse<String> response = fetchRaw(url);
-            if (response.statusCode() >= 400) {
-                throw new BadRequestException("HTTP call failed [%s] for url [%s]".formatted(response.statusCode(), url));
-            }
-            return objectMapper.readValue(response.body(), type);
-        } catch (JsonProcessingException e) {
-            throw new UncheckedIOException("HTTP fetch deserialization failed for url [%s]".formatted(url), e);
-        }
-    }
-
-    private HttpResponse<String> fetchRaw(String url) {
-        try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .GET()
-                    .build();
-            return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException e) {
-            throw new UncheckedIOException("HTTP fetch failed for url [%s]".formatted(url), e);
+            return httpClient.GET(url);
+        } catch (ExecutionException | TimeoutException e) {
+            throw new IllegalArgumentException("HTTP fetch failed for url [%s]".formatted(url), e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalArgumentException(e);
