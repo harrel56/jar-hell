@@ -2,30 +2,30 @@ package dev.harrel.jarhell;
 
 import dev.harrel.jarhell.model.Gav;
 import io.avaje.config.Config;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpVersion;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import javax.net.ssl.SSLSession;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpHeaders;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class MavenApiClientTest {
     private static final String CONTENT_URL = Config.get("maven.repo-url");
+    private static final String DIR_URL = CONTENT_URL + "/dev%2Fharrel%2Foops.hello";
+    private static final String METADATA_URL = CONTENT_URL + "/dev%2Fharrel%2Foops.hello%2Fmaven-metadata.xml";
 
     private HttpClient httpClient;
     private MavenApiClient mavenApiClient;
@@ -38,16 +38,17 @@ class MavenApiClientTest {
 
     @Test
     void artifactExistsFor200() throws Exception {
-        when(httpClient.send(any(), any())).thenReturn(new HttpResponseMock<>(200, null));
+        when(httpClient.GET((String) any())).thenReturn(new ContentResponseMock(200, null));
         boolean res = mavenApiClient.checkIfArtifactExists(new Gav("a", "b", "1.0.0"));
 
         assertThat(res).isTrue();
     }
 
+
     @ParameterizedTest
     @ValueSource(ints = {201, 300, 400, 401, 403, 404, 500, 501, 502, 503})
     void artifactDoesNotExistForOtherStatus(int status) throws Exception {
-        when(httpClient.send(any(), any())).thenReturn(new HttpResponseMock<>(status, null));
+        when(httpClient.GET((String) any())).thenReturn(new ContentResponseMock(status, null));
         boolean res = mavenApiClient.checkIfArtifactExists(new Gav("a", "b", "1.0.0"));
 
         assertThat(res).isFalse();
@@ -55,7 +56,7 @@ class MavenApiClientTest {
 
     @Test
     void mergesVersionsFromDirAndMetadata() throws Exception {
-        HttpResponseMock<Object> dirHttpRes = new HttpResponseMock<>(200, """
+        ContentResponseMock dirHttpRes = new ContentResponseMock(200, """
                 <a href="../">../</a>
                 <a href="1.0.0/" title="1.0.0/">1.0.0/</a>
                 <a href="1.0.0-beta.1/" title="1.0.0-beta.1/">1.0.0-beta.1/</a>
@@ -78,11 +79,11 @@ class MavenApiClientTest {
                 <a href="1.4.4" title="1.4.4/">1.4.4/</a>
                 <a href="this-is-not-version/" title="this-is-not-version/">this-is-not-version/</a>
                 <a href="1.5.0/" title="1.5.0/">1.5.0/</a>""");
-        HttpResponseMock<Object> metadataHttpRes = new HttpResponseMock<>(200, """
+        ContentResponseMock metadataHttpRes = new ContentResponseMock(200, """
                 <version>1.0.0</version>
                 <version>1.5.1</version>""");
-        when(httpClient.send(eq(dirRequest()), any())).thenReturn(dirHttpRes);
-        when(httpClient.send(eq(metadataRequest()), any())).thenReturn(metadataHttpRes);
+        when(httpClient.GET(DIR_URL)).thenReturn(dirHttpRes);
+        when(httpClient.GET(METADATA_URL)).thenReturn(metadataHttpRes);
         List<String> res = mavenApiClient.fetchArtifactVersions("dev.harrel", "oops.hello");
 
         assertThat(res).containsExactly(
@@ -111,8 +112,8 @@ class MavenApiClientTest {
 
     @Test
     void failsIfDirAndMetadataVersionsAreEmpty() throws Exception {
-        HttpResponseMock<Object> httpRes = new HttpResponseMock<>(200, "what?");
-        when(httpClient.send(any(), any())).thenReturn(httpRes);
+        ContentResponseMock httpRes = new ContentResponseMock(200, "what?");
+        when(httpClient.GET((String) any())).thenReturn(httpRes);
 
         assertThatThrownBy(() -> mavenApiClient.fetchArtifactVersions("dev.harrel", "oops.hello"))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -120,12 +121,12 @@ class MavenApiClientTest {
 
     @Test
     void ignoresDirVersionsIf404() throws Exception {
-        HttpResponseMock<Object> httpRes = new HttpResponseMock<>(404, "what?");
-        HttpResponseMock<Object> metadataHttpRes = new HttpResponseMock<>(200, """
+        ContentResponseMock httpRes = new ContentResponseMock(404, "what?");
+        ContentResponseMock metadataHttpRes = new ContentResponseMock(200, """
                 <version>1.0.0</version>
                 <version>1.5.1</version>""");
-        when(httpClient.send(eq(dirRequest()), any())).thenReturn(httpRes);
-        when(httpClient.send(eq(metadataRequest()), any())).thenReturn(metadataHttpRes);
+        when(httpClient.GET(DIR_URL)).thenReturn(httpRes);
+        when(httpClient.GET(METADATA_URL)).thenReturn(metadataHttpRes);
 
         List<String> res = mavenApiClient.fetchArtifactVersions("dev.harrel", "oops.hello");
 
@@ -134,10 +135,10 @@ class MavenApiClientTest {
 
     @Test
     void ignoresMetadataVersionsIf404() throws Exception {
-        HttpResponseMock<Object> httpRes = new HttpResponseMock<>(200, "<a href=\"1.0.0/\"></a>");
-        HttpResponseMock<Object> metadataHttpRes = new HttpResponseMock<>(404, "error");
-        when(httpClient.send(eq(dirRequest()), any())).thenReturn(httpRes);
-        when(httpClient.send(eq(metadataRequest()), any())).thenReturn(metadataHttpRes);
+        ContentResponseMock httpRes = new ContentResponseMock(200, "<a href=\"1.0.0/\"></a>");
+        ContentResponseMock metadataHttpRes = new ContentResponseMock(404, "error");
+        when(httpClient.GET(DIR_URL)).thenReturn(httpRes);
+        when(httpClient.GET(METADATA_URL)).thenReturn(metadataHttpRes);
 
         List<String> res = mavenApiClient.fetchArtifactVersions("dev.harrel", "oops.hello");
 
@@ -146,10 +147,10 @@ class MavenApiClientTest {
 
     @Test
     void failsIfDirVersionsFail() throws Exception {
-        HttpResponseMock<Object> metadataHttpRes = new HttpResponseMock<>(200, "");
+        ContentResponseMock metadataHttpRes = new ContentResponseMock(200, "");
         IllegalArgumentException iae = new IllegalArgumentException();
-        when(httpClient.send(eq(dirRequest()), any())).thenThrow(iae);
-        when(httpClient.send(eq(metadataRequest()), any())).thenReturn(metadataHttpRes);
+        when(httpClient.GET(DIR_URL)).thenThrow(iae);
+        when(httpClient.GET(METADATA_URL)).thenReturn(metadataHttpRes);
 
         assertThatThrownBy(() -> mavenApiClient.fetchArtifactVersions("dev.harrel", "oops.hello"))
                 .isInstanceOf(CompletionException.class)
@@ -158,77 +159,78 @@ class MavenApiClientTest {
 
     @Test
     void failsIfMetadataVersionsFail() throws Exception {
-        HttpResponseMock<Object> dirHttpRes = new HttpResponseMock<>(200, "");
+        ContentResponseMock dirHttpRes = new ContentResponseMock(200, "");
         IllegalArgumentException iae = new IllegalArgumentException();
-        when(httpClient.send(eq(dirRequest()), any())).thenReturn(dirHttpRes);
-        when(httpClient.send(eq(metadataRequest()), any())).thenThrow(iae);
+        when(httpClient.GET(DIR_URL)).thenReturn(dirHttpRes);
+        when(httpClient.GET(METADATA_URL)).thenThrow(iae);
 
         assertThatThrownBy(() -> mavenApiClient.fetchArtifactVersions("dev.harrel", "oops.hello"))
                 .isInstanceOf(CompletionException.class)
                 .hasCause(iae);
     }
 
-    private static HttpRequest dirRequest() {
-        return HttpRequest.newBuilder()
-                .uri(URI.create(CONTENT_URL + "/dev%2Fharrel%2Foops.hello"))
-                .GET()
-                .build();
-    }
-
-    private static HttpRequest metadataRequest() {
-        return HttpRequest.newBuilder()
-                .uri(URI.create(CONTENT_URL + "/dev%2Fharrel%2Foops.hello%2Fmaven-metadata.xml"))
-                .GET()
-                .build();
-    }
-
-    private static class HttpResponseMock<T> implements HttpResponse<T> {
+    private static class ContentResponseMock implements ContentResponse {
         private final int statusCode;
-        private final T body;
+        private final String body;
 
-        HttpResponseMock(int statusCode, T body) {
+        ContentResponseMock(int statusCode, String body) {
             this.statusCode = statusCode;
             this.body = body;
         }
 
         @Override
-        public int statusCode() {
+        public int getStatus() {
             return statusCode;
         }
 
         @Override
-        public HttpRequest request() {
-            return null;
+        public byte[] getContent() {
+            return body.getBytes(StandardCharsets.UTF_8);
         }
 
         @Override
-        public T body() {
+        public String getContentAsString() {
             return body;
         }
 
         @Override
-        public Optional<SSLSession> sslSession() {
-            return Optional.empty();
+        public String getMediaType() {
+            return "";
         }
 
         @Override
-        public HttpHeaders headers() {
+        public String getEncoding() {
+            return "";
+        }
+
+        @Override
+        public Request getRequest() {
             return null;
         }
 
         @Override
-        public Optional<HttpResponse<T>> previousResponse() {
-            return Optional.empty();
+        public <T extends ResponseListener> List<T> getListeners(Class<T> listenerClass) {
+            return List.of();
         }
 
         @Override
-        public URI uri() {
+        public HttpVersion getVersion() {
             return null;
         }
 
         @Override
-        public HttpClient.Version version() {
+        public String getReason() {
+            return "";
+        }
+
+        @Override
+        public HttpFields getHeaders() {
             return null;
+        }
+
+        @Override
+        public boolean abort(Throwable cause) {
+            return false;
         }
     }
 }

@@ -48,13 +48,15 @@ public class Configuration {
         return driver;
     }
 
-    @Bean(initMethod = "start", destroyMethod = "stop")
-    HttpClient httpClient() {
+    @Bean(destroyMethod = "stop")
+    HttpClient httpClient() throws Exception {
         ClientConnector connector = new ClientConnector();
         ClientConnectionFactory.Info http1 = HttpClientConnectionFactory.HTTP11;
         ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(connector));
         HttpClientTransportDynamic transport = new HttpClientTransportDynamic(connector, http1, http2);
-        return new HttpClient(transport);
+        HttpClient httpClient = new HttpClient(transport);
+        httpClient.start();
+        return httpClient;
     }
 
     @Bean
