@@ -4,18 +4,17 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.extension.Host;
-import dev.harrel.jarhell.util.HttpUtil;
+import dev.harrel.jarhell.util.TestUtil;
 import io.javalin.http.HandlerType;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
-import static dev.harrel.jarhell.MavenApiClient.*;
+import static dev.harrel.jarhell.MavenApiClient.SolrArtifact;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @EnvironmentTest
@@ -30,17 +29,12 @@ class MavenApiControllerTest {
     }
 
     @Test
-    void shouldReturnListOfVersions() throws IOException, InterruptedException {
-        String uri = host + "/api/v1/maven/versions?groupId=dev.harrel&artifactId=json-schema";
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .GET()
-                .build();
+    void shouldReturnListOfVersions() throws InterruptedException, ExecutionException, TimeoutException {
+        ContentResponse res = httpClient.GET(host + "/api/v1/maven/versions?groupId=dev.harrel&artifactId=json-schema");
 
-        HttpResponse<List<String>> response = httpClient.send(request, HttpUtil.jsonHandler(new TypeReference<>() {}));
-
-        assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.body()).containsExactly(
+        assertThat(res.getStatus()).isEqualTo(200);
+        List<String> body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        assertThat(body).containsExactly(
                 "1.0.0",
                 "1.1.0",
                 "1.2.0",
@@ -56,21 +50,17 @@ class MavenApiControllerTest {
                 "1.4.2",
                 "1.4.3",
                 "1.5.0"
-                );
+        );
     }
 
     @Test
-    void shouldFailVersionsWithoutGroupId() throws IOException, InterruptedException {
+    void shouldFailVersionsWithoutGroupId() throws InterruptedException, ExecutionException, TimeoutException {
         String uri = host + "/api/v1/maven/versions?artifactId=json-schema";
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .GET()
-                .build();
+        ContentResponse res = httpClient.GET(uri);
 
-        HttpResponse<ErrorResponse> response = httpClient.send(request, HttpUtil.jsonHandler(ErrorResponse.class));
-
-        assertThat(response.statusCode()).isEqualTo(400);
-        assertThat(response.body()).isEqualTo(new ErrorResponse(
+        assertThat(res.getStatus()).isEqualTo(400);
+        ErrorResponse err = TestUtil.readJson(res.getContentAsString(), ErrorResponse.class);
+        assertThat(err).isEqualTo(new ErrorResponse(
                 uri,
                 HandlerType.GET,
                 "groupId parameter is required"
@@ -78,17 +68,13 @@ class MavenApiControllerTest {
     }
 
     @Test
-    void shouldFailVersionsWithoutArtifactId() throws IOException, InterruptedException {
+    void shouldFailVersionsWithoutArtifactId() throws InterruptedException, ExecutionException, TimeoutException {
         String uri = host + "/api/v1/maven/versions?groupId=dev.harrel";
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .GET()
-                .build();
+        ContentResponse res = httpClient.GET(uri);
 
-        HttpResponse<ErrorResponse> response = httpClient.send(request, HttpUtil.jsonHandler(ErrorResponse.class));
-
-        assertThat(response.statusCode()).isEqualTo(400);
-        assertThat(response.body()).isEqualTo(new ErrorResponse(
+        assertThat(res.getStatus()).isEqualTo(400);
+        ErrorResponse err = TestUtil.readJson(res.getContentAsString(), ErrorResponse.class);
+        assertThat(err).isEqualTo(new ErrorResponse(
                 uri,
                 HandlerType.GET,
                 "artifactId parameter is required"
@@ -96,17 +82,13 @@ class MavenApiControllerTest {
     }
 
     @Test
-    void shouldRunSearch() throws IOException, InterruptedException {
+    void shouldRunSearch() throws InterruptedException, ExecutionException, TimeoutException {
         String uri = host + "/api/v1/maven/search?query=dev.harrel:json-schema";
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .GET()
-                .build();
+        ContentResponse res = httpClient.GET(uri);
 
-        HttpResponse<List<SolrArtifact>> response = httpClient.send(request, HttpUtil.jsonHandler(new TypeReference<>() {}));
-
-        assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.body()).hasSize(1);
-        assertThat(response.body().getFirst()).isEqualTo(new SolrArtifact("dev.harrel", "json-schema", "1.5.0"));
+        assertThat(res.getStatus()).isEqualTo(200);
+        List<SolrArtifact> body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        assertThat(body).hasSize(1);
+        assertThat(body.getFirst()).isEqualTo(new SolrArtifact("dev.harrel", "json-schema", "1.5.0"));
     }
 }
