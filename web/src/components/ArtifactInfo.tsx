@@ -7,7 +7,7 @@ import {
   Package,
   formatDate,
   formatDateTime,
-  formatLicenseType, formatPackageLicenseType
+  formatLicenseType, formatPackageLicenseType, formatLicenseTypesMap
 } from '@/util.ts'
 import {useLayoutEffect, useMemo} from 'react'
 import {MetricDisplay} from '@/components/MetricDisplay.tsx'
@@ -88,7 +88,14 @@ export const ArtifactInfo = () => {
   const effectiveLicenseType = {
     title: 'Effective license',
     titleHint:
-      `todo`,
+      `<p>The most restrictive license being used in dependencies (only required) or the package itself.
+        The restrictiveness is arbitrarily assigned for each license type.
+        This metric is a great simplification of licensing subject, and it does not take into account many important factors (like license compatibility).
+        It should be primarily used to find possibly overlooked unwanted licenses.</p>
+        <br>
+        
+        <p>Number of license types found across dependencies:<br>
+        ${formatLicenseTypesMap(packageData.effectiveValues.licenseTypes)}</p>`,
     value: formatLicenseType(packageData.effectiveValues.licenseType)
   }
   const packageSize = {

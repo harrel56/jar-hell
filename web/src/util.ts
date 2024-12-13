@@ -50,6 +50,11 @@ export const formatBytecodeVersion = (bytecodeVersion?: string) => {
   return 'Java ' + version + (preview ? '*' : '')
 }
 
+export const formatLicenseTypesMap = (types: Record<string, number>[]) => {
+  return types.map(type => Object.entries(type).map(entry =>
+    `<strong>${formatLicenseType(entry[0])}:</strong> ${entry[1]}`)).join(',<br>')
+}
+
 export const formatPackageLicenseType = (pkg: ResolvedPackage) => {
   if (pkg.licenseTypes.length === 0) {
     return formatLicenseType('NO_LICENSE')

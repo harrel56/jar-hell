@@ -22,7 +22,7 @@ export const MetricDisplay = ({className, title, titleHint, value, valueHint}: B
                 <CircleHelpIcon size={16} className='ml-2 inline-block align-baseline'/>
               </TooltipTrigger>
               <TooltipContent className='max-w-64 p-2 font-semibold whitespace-normal'>
-                <p>{titleHint}</p>
+                <p dangerouslySetInnerHTML={({__html: titleHint})}></p>
               </TooltipContent>
             </Tooltip>
           )}
