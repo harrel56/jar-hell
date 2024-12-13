@@ -5,20 +5,18 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.extension.Host;
-import dev.harrel.jarhell.util.HttpUtil;
 import dev.harrel.jarhell.util.TestUtil;
 import io.javalin.http.HandlerType;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.Driver;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -46,17 +44,13 @@ class PackagesControllerTest {
             "::",
             ":::"
     })
-    void shouldFailForInvalidCoordinates(String coordinate) throws IOException, InterruptedException {
+    void shouldFailForInvalidCoordinates(String coordinate) throws InterruptedException, ExecutionException, TimeoutException {
         String uri = host + "/api/v1/packages/%s".formatted(coordinate);
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .GET()
-                .build();
+        ContentResponse res = httpClient.GET(uri);
 
-        HttpResponse<ErrorResponse> response = httpClient.send(request, HttpUtil.jsonHandler(ErrorResponse.class));
-
-        assertThat(response.statusCode()).isEqualTo(400);
-        assertThat(response.body()).isEqualTo(
+        assertThat(res.getStatus()).isEqualTo(400);
+        ErrorResponse err = TestUtil.readJson(res.getContentAsString(), ErrorResponse.class);
+        assertThat(err).isEqualTo(
                 new ErrorResponse(uri,
                         HandlerType.GET,
                         "Invalid artifact coordinate format [%s]".formatted(coordinate))
@@ -64,17 +58,13 @@ class PackagesControllerTest {
     }
 
     @Test
-    void shouldReturn404ForNotFound() throws IOException, InterruptedException {
+    void shouldReturn404ForNotFound() throws InterruptedException, ExecutionException, TimeoutException {
         String uri = host + "/api/v1/packages/org.test:lib:1.0.0";
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .GET()
-                .build();
+        ContentResponse res = httpClient.GET(uri);
 
-        HttpResponse<ErrorResponse> response = httpClient.send(request, HttpUtil.jsonHandler(ErrorResponse.class));
-
-        assertThat(response.statusCode()).isEqualTo(404);
-        assertThat(response.body()).isEqualTo(
+        assertThat(res.getStatus()).isEqualTo(404);
+        ErrorResponse err = TestUtil.readJson(res.getContentAsString(), ErrorResponse.class);
+        assertThat(err).isEqualTo(
                 new ErrorResponse(uri,
                         HandlerType.GET,
                         "Package with coordinates [org.test:lib:1.0.0] not found")
@@ -82,49 +72,39 @@ class PackagesControllerTest {
     }
 
     @Test
-    void shouldFindByGav() throws IOException, InterruptedException {
+    void shouldFindByGav() throws InterruptedException, ExecutionException, TimeoutException {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(
                     tx -> tx.run("CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0', classifier: ''})")
             );
         }
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(host + "/api/v1/packages/org.test:lib:1.0.0"))
-                .GET()
-                .build();
+        ContentResponse res = httpClient.GET(host + "/api/v1/packages/org.test:lib:1.0.0");
 
-        HttpResponse<JsonNode> response = httpClient.send(request, HttpUtil.jsonHandler(JsonNode.class));
-
-        assertThat(response.statusCode()).isEqualTo(200);
-        JsonNode body = response.body();
+        assertThat(res.getStatus()).isEqualTo(200);
+        JsonNode body = TestUtil.readJson(res.getContentAsString(), JsonNode.class);
         assertArtifact(body, "org.test", "lib", "1.0.0", null);
         assertThat(body.get("dependencies").elements()).toIterable().isEmpty();
     }
 
     @Test
-    void shouldFindByGavWithClassifier() throws IOException, InterruptedException {
+    void shouldFindByGavWithClassifier() throws InterruptedException, ExecutionException, TimeoutException {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(
                     tx -> tx.run("CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0', classifier: 'doc'})")
             );
         }
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(host + "/api/v1/packages/org.test:lib:1.0.0:doc"))
-                .GET()
-                .build();
+        ContentResponse res = httpClient.GET(host + "/api/v1/packages/org.test:lib:1.0.0:doc");
 
-        HttpResponse<JsonNode> response = httpClient.send(request, HttpUtil.jsonHandler(JsonNode.class));
-
-        assertThat(response.statusCode()).isEqualTo(200);
-        JsonNode body = response.body();
+        assertThat(res.getStatus()).isEqualTo(200);
+        JsonNode body = TestUtil.readJson(res.getContentAsString(), JsonNode.class);
         assertArtifact(body, "org.test", "lib", "1.0.0", "doc");
         assertThat(body.get("dependencies").elements()).toIterable().isEmpty();
     }
 
     @Test
-    void shouldFindByGavDoesNotReturnWithClassifier() throws IOException, InterruptedException {
+    void shouldFindByGavDoesNotReturnWithClassifier() throws InterruptedException, ExecutionException, TimeoutException {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(
                     tx -> tx.run("CREATE (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0', classifier: 'doc'})")
@@ -132,15 +112,11 @@ class PackagesControllerTest {
         }
 
         String uri = host + "/api/v1/packages/org.test:lib:1.0.0";
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .GET()
-                .build();
+        ContentResponse res = httpClient.GET(uri);
 
-        HttpResponse<ErrorResponse> response = httpClient.send(request, HttpUtil.jsonHandler(ErrorResponse.class));
-
-        assertThat(response.statusCode()).isEqualTo(404);
-        assertThat(response.body()).isEqualTo(
+        assertThat(res.getStatus()).isEqualTo(404);
+        ErrorResponse err = TestUtil.readJson(res.getContentAsString(), ErrorResponse.class);
+        assertThat(err).isEqualTo(
                 new ErrorResponse(uri,
                         HandlerType.GET,
                         "Package with coordinates [org.test:lib:1.0.0] not found")
@@ -148,7 +124,7 @@ class PackagesControllerTest {
     }
 
     @Test
-    void shouldFindWithSingleDirectDependency() throws IOException, InterruptedException {
+    void shouldFindWithSingleDirectDependency() throws InterruptedException, ExecutionException, TimeoutException {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(
                     tx -> tx.run("""
@@ -160,15 +136,10 @@ class PackagesControllerTest {
         }
 
         String uri = host + "/api/v1/packages/org.test:lib:1.0.0";
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .GET()
-                .build();
+        ContentResponse res = httpClient.GET(uri);
 
-        HttpResponse<JsonNode> response = httpClient.send(request, HttpUtil.jsonHandler(JsonNode.class));
-
-        assertThat(response.statusCode()).isEqualTo(200);
-        JsonNode body = response.body();
+        assertThat(res.getStatus()).isEqualTo(200);
+        JsonNode body = TestUtil.readJson(res.getContentAsString(), JsonNode.class);
         assertArtifact(body, "org.test", "lib", "1.0.0", null);
 
         List<JsonNode> dependencies = TestUtil.iteratorToList(body.get("dependencies").elements());
@@ -182,14 +153,14 @@ class PackagesControllerTest {
     }
 
     @Test
-    void shouldFindWithMultipleDirectDependencies() throws IOException, InterruptedException {
+    void shouldFindWithMultipleDirectDependencies() throws InterruptedException, ExecutionException, TimeoutException {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(
                     tx -> tx.run("""
                             CREATE (root:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0', classifier: ''})\
                             -[:DEPENDS_ON {optional: true, scope: 'runtime'}]->\
                             (:Artifact {groupId: 'org.test', artifactId: 'dep1', version: '1.0.0', classifier: ''}),
-                                                        
+                            
                             (root)-[:DEPENDS_ON {optional: false, scope: 'compile'}]->\
                             (:Artifact {groupId: 'org.test', artifactId: 'dep2', version: '1.0.0', classifier: ''})
                             """)
@@ -197,15 +168,10 @@ class PackagesControllerTest {
         }
 
         String uri = host + "/api/v1/packages/org.test:lib:1.0.0";
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .GET()
-                .build();
+        ContentResponse res = httpClient.GET(uri);
 
-        HttpResponse<JsonNode> response = httpClient.send(request, HttpUtil.jsonHandler(JsonNode.class));
-
-        assertThat(response.statusCode()).isEqualTo(200);
-        JsonNode body = response.body();
+        assertThat(res.getStatus()).isEqualTo(200);
+        JsonNode body = TestUtil.readJson(res.getContentAsString(), JsonNode.class);
         assertArtifact(body, "org.test", "lib", "1.0.0", null);
 
         List<JsonNode> dependencies = TestUtil.iteratorToList(body.get("dependencies").elements());
@@ -225,7 +191,7 @@ class PackagesControllerTest {
     }
 
     @Test
-    void shouldFindWithTransitiveDependencies() throws IOException, InterruptedException {
+    void shouldFindWithTransitiveDependencies() throws InterruptedException, ExecutionException, TimeoutException {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(
                     tx -> tx.run("""
@@ -239,15 +205,10 @@ class PackagesControllerTest {
         }
 
         String uri = host + "/api/v1/packages/org.test:lib:1.0.0";
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .GET()
-                .build();
+        ContentResponse res = httpClient.GET(uri);
 
-        HttpResponse<JsonNode> response = httpClient.send(request, HttpUtil.jsonHandler(JsonNode.class));
-
-        assertThat(response.statusCode()).isEqualTo(200);
-        JsonNode body = response.body();
+        assertThat(res.getStatus()).isEqualTo(200);
+        JsonNode body = TestUtil.readJson(res.getContentAsString(), JsonNode.class);
         assertArtifact(body, "org.test", "lib", "1.0.0", null);
 
         List<JsonNode> dependencies = TestUtil.iteratorToList(body.get("dependencies").elements());
@@ -268,7 +229,7 @@ class PackagesControllerTest {
     }
 
     @Test
-    void shouldFindWithDepth0() throws IOException, InterruptedException {
+    void shouldFindWithDepth0() throws InterruptedException, ExecutionException, TimeoutException {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(
                     tx -> tx.run("""
@@ -282,21 +243,16 @@ class PackagesControllerTest {
         }
 
         String uri = host + "/api/v1/packages/org.test:lib:1.0.0?depth=0";
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .GET()
-                .build();
+        ContentResponse res = httpClient.GET(uri);
 
-        HttpResponse<JsonNode> response = httpClient.send(request, HttpUtil.jsonHandler(JsonNode.class));
-
-        assertThat(response.statusCode()).isEqualTo(200);
-        JsonNode body = response.body();
+        assertThat(res.getStatus()).isEqualTo(200);
+        JsonNode body = TestUtil.readJson(res.getContentAsString(), JsonNode.class);
         assertArtifact(body, "org.test", "lib", "1.0.0", null);
         assertThat(body.get("dependencies")).isNull();
     }
 
     @Test
-    void shouldFindWithDepth1() throws IOException, InterruptedException {
+    void shouldFindWithDepth1() throws InterruptedException, ExecutionException, TimeoutException {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(
                     tx -> tx.run("""
@@ -310,15 +266,10 @@ class PackagesControllerTest {
         }
 
         String uri = host + "/api/v1/packages/org.test:lib:1.0.0?depth=1";
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .GET()
-                .build();
+        ContentResponse res = httpClient.GET(uri);
 
-        HttpResponse<JsonNode> response = httpClient.send(request, HttpUtil.jsonHandler(JsonNode.class));
-
-        assertThat(response.statusCode()).isEqualTo(200);
-        JsonNode body = response.body();
+        assertThat(res.getStatus()).isEqualTo(200);
+        JsonNode body = TestUtil.readJson(res.getContentAsString(), JsonNode.class);
         assertArtifact(body, "org.test", "lib", "1.0.0", null);
 
         List<JsonNode> dependencies = TestUtil.iteratorToList(body.get("dependencies").elements());
@@ -331,17 +282,13 @@ class PackagesControllerTest {
     }
 
     @Test
-    void shouldReturn400ForInvalidDepth() throws IOException, InterruptedException {
+    void shouldReturn400ForInvalidDepth() throws InterruptedException, ExecutionException, TimeoutException {
         String uri = host + "/api/v1/packages/org.test:lib:1.0.0?depth=hello";
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .GET()
-                .build();
+        ContentResponse res = httpClient.GET(uri);
 
-        HttpResponse<ErrorResponse> response = httpClient.send(request, HttpUtil.jsonHandler(ErrorResponse.class));
-
-        assertThat(response.statusCode()).isEqualTo(400);
-        assertThat(response.body()).isEqualTo(
+        assertThat(res.getStatus()).isEqualTo(400);
+        ErrorResponse err = TestUtil.readJson(res.getContentAsString(), ErrorResponse.class);
+        assertThat(err).isEqualTo(
                 new ErrorResponse(uri,
                         HandlerType.GET,
                         "java.lang.NumberFormatException: For input string: \"hello\"")
@@ -349,7 +296,7 @@ class PackagesControllerTest {
     }
 
     @Test
-    void shouldFindAllVersions() throws IOException, InterruptedException {
+    void shouldFindAllVersions() throws InterruptedException, ExecutionException, TimeoutException {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(
                     tx -> tx.run("""
@@ -360,15 +307,10 @@ class PackagesControllerTest {
             );
         }
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(host + "/api/v1/packages?groupId=org.test&artifactId=lib"))
-                .GET()
-                .build();
+        ContentResponse res = httpClient.GET(host + "/api/v1/packages?groupId=org.test&artifactId=lib");
 
-        HttpResponse<ArrayNode> response = httpClient.send(request, HttpUtil.jsonHandler(ArrayNode.class));
-
-        assertThat(response.statusCode()).isEqualTo(200);
-        ArrayNode body = response.body();
+        assertThat(res.getStatus()).isEqualTo(200);
+        ArrayNode body = TestUtil.readJson(res.getContentAsString(), ArrayNode.class);
         assertThat(body.size()).isEqualTo(2);
         assertArtifact(body.get(0), "org.test", "lib", "1.0.0", null);
         assertThat(body.get(0).get("dependencies")).isNull();
@@ -377,7 +319,7 @@ class PackagesControllerTest {
     }
 
     @Test
-    void shouldFindAllVersionsWithClassifier() throws IOException, InterruptedException {
+    void shouldFindAllVersionsWithClassifier() throws InterruptedException, ExecutionException, TimeoutException {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(
                     tx -> tx.run("""
@@ -388,25 +330,16 @@ class PackagesControllerTest {
             );
         }
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(host + "/api/v1/packages?groupId=org.test&artifactId=lib"))
-                .GET()
-                .build();
+        ContentResponse res = httpClient.GET(host + "/api/v1/packages?groupId=org.test&artifactId=lib");
 
-        HttpResponse<ArrayNode> response = httpClient.send(request, HttpUtil.jsonHandler(ArrayNode.class));
-        assertThat(response.statusCode()).isEqualTo(200);
-        ArrayNode body = response.body();
+        assertThat(res.getStatus()).isEqualTo(200);
+        ArrayNode body = TestUtil.readJson(res.getContentAsString(), ArrayNode.class);
         assertThat(body.size()).isZero();
 
-        request = HttpRequest.newBuilder()
-                .uri(URI.create(host + "/api/v1/packages?groupId=org.test&artifactId=lib&classifier=doc"))
-                .GET()
-                .build();
+        res = httpClient.GET(host + "/api/v1/packages?groupId=org.test&artifactId=lib&classifier=doc");
 
-        response = httpClient.send(request, HttpUtil.jsonHandler(ArrayNode.class));
-
-        assertThat(response.statusCode()).isEqualTo(200);
-        body = response.body();
+        assertThat(res.getStatus()).isEqualTo(200);
+        body = TestUtil.readJson(res.getContentAsString(), ArrayNode.class);
         assertThat(body.size()).isEqualTo(2);
         assertArtifact(body.get(0), "org.test", "lib", "1.0.0", "doc");
         assertThat(body.get(0).get("dependencies")).isNull();
@@ -415,7 +348,7 @@ class PackagesControllerTest {
     }
 
     @Test
-    void shouldFailFindAllVersionsWithoutGroupId() throws IOException, InterruptedException {
+    void shouldFailFindAllVersionsWithoutGroupId() throws InterruptedException, ExecutionException, TimeoutException {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(
                     tx -> tx.run("""
@@ -427,15 +360,11 @@ class PackagesControllerTest {
         }
 
         String uri = host + "/api/v1/packages?artifactId=lib";
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .GET()
-                .build();
+        ContentResponse res = httpClient.GET(uri);
 
-        HttpResponse<ErrorResponse> response = httpClient.send(request, HttpUtil.jsonHandler(ErrorResponse.class));
-
-        assertThat(response.statusCode()).isEqualTo(400);
-        assertThat(response.body()).isEqualTo(
+        assertThat(res.getStatus()).isEqualTo(400);
+        ErrorResponse err = TestUtil.readJson(res.getContentAsString(), ErrorResponse.class);
+        assertThat(err).isEqualTo(
                 new ErrorResponse(uri,
                         HandlerType.GET,
                         "groupId parameter is required")
@@ -443,7 +372,7 @@ class PackagesControllerTest {
     }
 
     @Test
-    void shouldFailFindAllVersionsWithoutArtifactId() throws IOException, InterruptedException {
+    void shouldFailFindAllVersionsWithoutArtifactId() throws InterruptedException, ExecutionException, TimeoutException {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(
                     tx -> tx.run("""
@@ -455,15 +384,11 @@ class PackagesControllerTest {
         }
 
         String uri = host + "/api/v1/packages?groupId=dev.harrel";
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .GET()
-                .build();
+        ContentResponse res = httpClient.GET(uri);
 
-        HttpResponse<ErrorResponse> response = httpClient.send(request, HttpUtil.jsonHandler(ErrorResponse.class));
-
-        assertThat(response.statusCode()).isEqualTo(400);
-        assertThat(response.body()).isEqualTo(
+        assertThat(res.getStatus()).isEqualTo(400);
+        ErrorResponse err = TestUtil.readJson(res.getContentAsString(), ErrorResponse.class);
+        assertThat(err).isEqualTo(
                 new ErrorResponse(uri,
                         HandlerType.GET,
                         "artifactId parameter is required")
