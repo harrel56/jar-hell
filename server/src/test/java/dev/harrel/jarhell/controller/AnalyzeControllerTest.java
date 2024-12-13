@@ -6,20 +6,21 @@ import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.extension.Host;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.LicenseType;
-import dev.harrel.jarhell.util.HttpUtil;
+import dev.harrel.jarhell.util.TestUtil;
 import io.javalin.http.HandlerType;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.http.HttpMethod;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.EagerResult;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -38,24 +39,22 @@ class AnalyzeControllerTest {
     }
 
     @Test
-    void shouldAnalyzeStandaloneLib() throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(host + "/api/v1/analyze"))
-                .POST(HttpUtil.jsonPublisher(
+    void shouldAnalyzeStandaloneLib() throws InterruptedException, ExecutionException, TimeoutException {
+        ContentResponse res = httpClient.newRequest(host + "/api/v1/analyze")
+                .body(new StringRequestContent(TestUtil.writeJson(
                         new Gav("com.sanctionco.jmail", "jmail", "1.6.2")
-                ))
-                .build();
+                )))
+                .method(HttpMethod.POST)
+                .send();
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        assertThat(response.statusCode()).isEqualTo(202);
-        assertThat(response.body()).isEmpty();
+        assertThat(res.getStatus()).isEqualTo(202);
+        assertThat(res.getContentAsString()).isEmpty();
 
         await().atMost(Duration.ofSeconds(5)).until(() -> !fetchByArtifactId("jmail").records().isEmpty());
 
-        HttpRequest packageReq = HttpRequest.newBuilder().uri(URI.create(host + "/api/v1/packages/com.sanctionco.jmail:jmail:1.6.2")).GET().build();
-        HttpResponse<Map<String, Object>> packageRes = httpClient.send(packageReq, HttpUtil.jsonHandler(new TypeReference<>() {}));
-        assertThat(packageRes.statusCode()).isEqualTo(200);
-        Map<String, Object> properties = packageRes.body();
+        ContentResponse packageRes = httpClient.GET(host + "/api/v1/packages/com.sanctionco.jmail:jmail:1.6.2");
+        assertThat(packageRes.getStatus()).isEqualTo(200);
+        Map<String, Object> properties = TestUtil.readJson(packageRes.getContentAsString(), new TypeReference<>() {});
         assertThat(properties).isNotNull();
         assertThat(properties).containsEntry("licenses", List.of(Map.of(
                 "name", "MIT License",
@@ -66,24 +65,22 @@ class AnalyzeControllerTest {
     }
 
     @Test
-    void shouldAnalyzeLibWithDependency() throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(host + "/api/v1/analyze"))
-                .POST(HttpUtil.jsonPublisher(
+    void shouldAnalyzeLibWithDependency() throws InterruptedException, ExecutionException, TimeoutException {
+        ContentResponse res = httpClient.newRequest(host + "/api/v1/analyze")
+                .body(new StringRequestContent(TestUtil.writeJson(
                         new Gav("org.test", "artifact", "3.0.1")
-                ))
-                .build();
+                )))
+                .method(HttpMethod.POST)
+                .send();
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        assertThat(response.statusCode()).isEqualTo(202);
-        assertThat(response.body()).isEmpty();
+        assertThat(res.getStatus()).isEqualTo(202);
+        assertThat(res.getContentAsString()).isEmpty();
 
         await().atMost(Duration.ofSeconds(5)).until(() -> !fetchByArtifactId("artifact").records().isEmpty());
 
-        HttpRequest packageReq = HttpRequest.newBuilder().uri(URI.create(host + "/api/v1/packages/com.sanctionco.jmail:jmail:1.6.2")).GET().build();
-        HttpResponse<Map<String, Object>> packageRes = httpClient.send(packageReq, HttpUtil.jsonHandler(new TypeReference<>() {}));
-        assertThat(packageRes.statusCode()).isEqualTo(200);
-        Map<String, Object> properties = packageRes.body();
+        ContentResponse packageRes = httpClient.GET(host + "/api/v1/packages/com.sanctionco.jmail:jmail:1.6.2");
+        assertThat(packageRes.getStatus()).isEqualTo(200);
+        Map<String, Object> properties = TestUtil.readJson(packageRes.getContentAsString(), new TypeReference<>() {});
         assertThat(properties).isNotNull();
         assertThat(properties).containsEntry("licenses", List.of(Map.of(
                 "name", "MIT License",
@@ -94,17 +91,16 @@ class AnalyzeControllerTest {
     }
 
     @Test
-    void shouldAnalyzeAndWaitForStandaloneLib() throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(host + "/api/v1/analyze-and-wait"))
-                .POST(HttpUtil.jsonPublisher(
+    void shouldAnalyzeAndWaitForStandaloneLib() throws InterruptedException, ExecutionException, TimeoutException {
+        ContentResponse res = httpClient.newRequest(host + "/api/v1/analyze-and-wait")
+                .body(new StringRequestContent(TestUtil.writeJson(
                         new Gav("com.sanctionco.jmail", "jmail", "1.6.2")
-                ))
-                .build();
+                )))
+                .method(HttpMethod.POST)
+                .send();
 
-        HttpResponse<Map<String, Object>> response = httpClient.send(request, HttpUtil.jsonHandler(new TypeReference<>() {}));
-        assertThat(response.statusCode()).isEqualTo(200);
-        Map<String, Object> properties = response.body();
+        assertThat(res.getStatus()).isEqualTo(200);
+        Map<String, Object> properties = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(properties).isNotNull();
         assertThat(properties).containsEntry("licenses", List.of(Map.of(
                 "name", "MIT License",
@@ -116,17 +112,16 @@ class AnalyzeControllerTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void shouldAnalyzeAndWaitForLibWithDependency() throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(host + "/api/v1/analyze-and-wait"))
-                .POST(HttpUtil.jsonPublisher(
+    void shouldAnalyzeAndWaitForLibWithDependency() throws InterruptedException, ExecutionException, TimeoutException {
+        ContentResponse res = httpClient.newRequest(host + "/api/v1/analyze-and-wait")
+                .body(new StringRequestContent(TestUtil.writeJson(
                         new Gav("org.test", "artifact", "3.0.1")
-                ))
-                .build();
+                )))
+                .method(HttpMethod.POST)
+                .send();
 
-        HttpResponse<Map<String, Object>> response = httpClient.send(request, HttpUtil.jsonHandler(new TypeReference<>() {}));
-        assertThat(response.statusCode()).isEqualTo(200);
-        Map<String, Object> properties = response.body();
+        assertThat(res.getStatus()).isEqualTo(200);
+        Map<String, Object> properties = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(properties).isNotNull();
         assertTestArtifactInfo(properties);
         var dependencies = (List<Map<String, Object>>) properties.get("dependencies");
@@ -138,17 +133,17 @@ class AnalyzeControllerTest {
     }
 
     @Test
-    void shouldReturnNotFound() throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(host + "/api/v1/analyze"))
-                .POST(HttpUtil.jsonPublisher(
+    void shouldReturnNotFound() throws InterruptedException, ExecutionException, TimeoutException {
+        ContentResponse res = httpClient.newRequest(host + "/api/v1/analyze")
+                .body(new StringRequestContent(TestUtil.writeJson(
                         new Gav("org.non-existent", "non-existent", "9.9.9")
-                ))
-                .build();
+                )))
+                .method(HttpMethod.POST)
+                .send();
 
-        HttpResponse<ErrorResponse> response = httpClient.send(request, HttpUtil.jsonHandler(ErrorResponse.class));
-        assertThat(response.statusCode()).isEqualTo(404);
-        assertThat(response.body()).isEqualTo(
+        assertThat(res.getStatus()).isEqualTo(404);
+        ErrorResponse err = TestUtil.readJson(res.getContentAsString(), ErrorResponse.class);
+        assertThat(err).isEqualTo(
                 new ErrorResponse(host + "/api/v1/analyze",
                         HandlerType.POST,
                         "Package with coordinates [org.non-existent:non-existent:9.9.9] not found")
