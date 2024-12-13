@@ -5,16 +5,17 @@ import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.extension.Host;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.LicenseType;
-import dev.harrel.jarhell.util.HttpUtil;
+import dev.harrel.jarhell.util.TestUtil;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.http.HttpMethod;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,17 +32,16 @@ class CyclicAnalysisTest {
     }
 
     @Test
-    void hardCycleWithSelfIsIgnored() throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(host + "/api/v1/analyze-and-wait"))
-                .POST(HttpUtil.jsonPublisher(
+    void hardCycleWithSelfIsIgnored() throws InterruptedException, ExecutionException, TimeoutException {
+        ContentResponse res = httpClient.newRequest(host + "/api/v1/analyze-and-wait")
+                .body(new StringRequestContent(TestUtil.writeJson(
                         new Gav("org.test", "cycle-self", "1.0.0")
-                ))
-                .build();
+                )))
+                .method(HttpMethod.POST)
+                .send();
 
-        HttpResponse<Map<String, Object>> response = httpClient.send(request, HttpUtil.jsonHandler(new TypeReference<>() {}));
-        assertThat(response.statusCode()).isEqualTo(200);
-        Map<String, Object> properties = response.body();
+        assertThat(res.getStatus()).isEqualTo(200);
+        Map<String, Object> properties = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(properties)
                 .containsEntry("artifactId", "cycle-self")
                 .containsEntry("packageSize", 2105L)
@@ -59,17 +59,16 @@ class CyclicAnalysisTest {
     }
 
     @Test
-    void softCycleWithSelfIsIgnored() throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(host + "/api/v1/analyze-and-wait"))
-                .POST(HttpUtil.jsonPublisher(
+    void softCycleWithSelfIsIgnored() throws InterruptedException, ExecutionException, TimeoutException {
+        ContentResponse res = httpClient.newRequest(host + "/api/v1/analyze-and-wait")
+                .body(new StringRequestContent(TestUtil.writeJson(
                         new Gav("org.test", "cycle-self-soft", "1.0.0")
-                ))
-                .build();
+                )))
+                .method(HttpMethod.POST)
+                .send();
 
-        HttpResponse<Map<String, Object>> response = httpClient.send(request, HttpUtil.jsonHandler(new TypeReference<>() {}));
-        assertThat(response.statusCode()).isEqualTo(200);
-        Map<String, Object> properties = response.body();
+        assertThat(res.getStatus()).isEqualTo(200);
+        Map<String, Object> properties = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(properties).containsEntry("artifactId", "cycle-self-soft")
                 .containsEntry("packageSize", 2105L)
                 .containsEntry("effectiveValues", Map.of(
@@ -86,17 +85,16 @@ class CyclicAnalysisTest {
     }
 
     @Test
-    void hardCycleWithThreeArtifactsIsComputedCorrectly() throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(host + "/api/v1/analyze-and-wait"))
-                .POST(HttpUtil.jsonPublisher(
+    void hardCycleWithThreeArtifactsIsComputedCorrectly() throws InterruptedException, ExecutionException, TimeoutException {
+        ContentResponse res = httpClient.newRequest(host + "/api/v1/analyze-and-wait")
+                .body(new StringRequestContent(TestUtil.writeJson(
                         new Gav("org.test", "cycle1", "1.0.0")
-                ))
-                .build();
+                )))
+                .method(HttpMethod.POST)
+                .send();
 
-        HttpResponse<Map<String, Object>> response = httpClient.send(request, HttpUtil.jsonHandler(new TypeReference<>() {}));
-        assertThat(response.statusCode()).isEqualTo(200);
-        Map<String, Object> properties = response.body();
+        assertThat(res.getStatus()).isEqualTo(200);
+        Map<String, Object> properties = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(properties)
                 .containsEntry("artifactId", "cycle1")
                 .containsEntry("packageSize", 2105L)
@@ -129,17 +127,16 @@ class CyclicAnalysisTest {
     }
 
     @Test
-    void hardCycleWithFourArtifactsIsComputedCorrectly() throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(host + "/api/v1/analyze-and-wait"))
-                .POST(HttpUtil.jsonPublisher(
+    void hardCycleWithFourArtifactsIsComputedCorrectly() throws InterruptedException, ExecutionException, TimeoutException {
+        ContentResponse res = httpClient.newRequest(host + "/api/v1/analyze-and-wait")
+                .body(new StringRequestContent(TestUtil.writeJson(
                         new Gav("org.test", "pre-cycle", "1.0.0")
-                ))
-                .build();
+                )))
+                .method(HttpMethod.POST)
+                .send();
 
-        HttpResponse<Map<String, Object>> response = httpClient.send(request, HttpUtil.jsonHandler(new TypeReference<>() {}));
-        assertThat(response.statusCode()).isEqualTo(200);
-        Map<String, Object> properties = response.body();
+        assertThat(res.getStatus()).isEqualTo(200);
+        Map<String, Object> properties = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(properties)
                 .containsEntry("artifactId", "pre-cycle")
                 .containsEntry("packageSize", 2105L)
