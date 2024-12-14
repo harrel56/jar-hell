@@ -37,7 +37,7 @@ public class MavenApiClient {
     private static final String CONTENT_URL = Config.get("maven.repo-url");
 
     private static final Pattern SANITIZATION_PATTERN = Pattern.compile("[^\\w\\.-]");
-    private static final Pattern HTML_VERSIONS_PATTERN = Pattern.compile("\\d+.*/");
+    public static final Pattern HTML_VERSIONS_PATTERN = Pattern.compile("\\d+.*/");
     private static final Pattern XML_VERSIONS_PATTERN = Pattern.compile("<version>(.+)<\\/version>");
 
     private final ObjectMapper objectMapper;
