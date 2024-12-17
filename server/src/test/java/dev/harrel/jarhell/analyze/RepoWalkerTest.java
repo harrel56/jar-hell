@@ -1,10 +1,10 @@
 package dev.harrel.jarhell.analyze;
 
 import dev.harrel.jarhell.extension.EnvironmentTest;
-import dev.harrel.jarhell.model.Gav;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -14,18 +14,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RepoWalkerTest {
     @Test
     void collectsGavsCorrectly(RepoWalker repoWalker) {
-        Set<Gav> gavs = Collections.newSetFromMap(new ConcurrentHashMap<>());
-        repoWalker.walk(state -> state.versions().forEach(v -> gavs.add(new Gav(state.groupId(), state.artifactId(), v))));
+        Set<RepoWalker.State> gavs = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        repoWalker.walk(gavs::add);
         assertThat(gavs).contains(
-                new Gav("org.test", "artifact", "1.0.10"),
-                new Gav("org.test", "artifact", "1.1.0"),
-                new Gav("org.test", "artifact", "3.0.1"),
-                new Gav("org.test", "pre-cycle", "1.0.0"),
-                new Gav("org.test", "cycle1", "1.0.0"),
-                new Gav("org.test", "cycle2", "1.0.0"),
-                new Gav("org.test", "cycle3", "1.0.0"),
-                new Gav("org.test", "cycle3", "1.0.0"),
-                new Gav("com.sanctionco.jmail", "jmail", "1.6.2")
+                new RepoWalker.State("org.test", "artifact", List.of("1.0.10", "1.1.0", "3.0.1")),
+                new RepoWalker.State("org.test", "pre-cycle", List.of("1.0.0")),
+                new RepoWalker.State("org.test", "cycle1", List.of("1.0.0")),
+                new RepoWalker.State("org.test", "cycle2", List.of("1.0.0")),
+                new RepoWalker.State("org.test", "cycle3", List.of("1.0.0")),
+                new RepoWalker.State("com.sanctionco.jmail", "jmail", List.of("1.6.2")),
+                new RepoWalker.State("dev.harrel", "json-schema", List.of("1.5.0"))
         );
     }
 }
