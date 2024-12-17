@@ -13,9 +13,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.StructuredTaskScope;
+import java.util.concurrent.StructuredTaskScope.Subtask;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static dev.harrel.jarhell.MavenApiClient.HTML_VERSIONS_PATTERN;
 
@@ -65,7 +68,17 @@ public class RepoWalker {
                 .toList();
 
         // todo: use structured concurrency and visit all paths
-        consumer.accept(createState(pathSegments, versions));
+        try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+            Subtask<Void> consumerTask = scope.fork(() -> {
+                consumer.accept(createState(pathSegments, versions));
+                return null;
+            });
+            paths.stream().map(path -> scope.fork(() -> {
+                walkInternal(consumer, concatList(pathSegments, path));
+                return null;
+            }));
+            scope.join();
+        }
 
     }
 
@@ -74,6 +87,10 @@ public class RepoWalker {
                 .map(seg -> URLEncoder.encode(seg, StandardCharsets.UTF_8))
                 .collect(Collectors.joining("/"));
         return URI.create(repoUrl + "/" + path);
+    }
+
+    private List<String> concatList(List<String> pathSegments, String path) {
+        return Stream.concat(pathSegments.stream(), Stream.of(path)).toList();
     }
 
     private State createState(List<String> pathSegments, List<String> versions) {
