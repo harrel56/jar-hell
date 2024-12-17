@@ -7,7 +7,7 @@ import io.avaje.http.api.Post;
 import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
 
-@Controller
+@Controller("/api/v1")
 class AnalyzeController {
     private final AnalyzeEngine analyzeEngine;
 
@@ -15,13 +15,13 @@ class AnalyzeController {
         this.analyzeEngine = analyzeEngine;
     }
 
-    @Post("/api/v1/analyze")
+    @Post("/analyze")
     void analyze(Gav gav, Context ctx) {
         analyzeEngine.analyze(gav);
         ctx.status(HttpStatus.ACCEPTED);
     }
 
-    @Post("/api/v1/analyze-and-wait")
+    @Post("/analyze-and-wait")
     void analyzeAndWait(Gav gav, Context ctx) {
         analyzeEngine.analyze(gav).join();
         ctx.redirect("/api/v1/packages/%s?depth=1".formatted(gav));
