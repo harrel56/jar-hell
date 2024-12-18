@@ -55,6 +55,7 @@ public class Configuration {
         ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(connector));
         HttpClientTransportDynamic transport = new HttpClientTransportDynamic(connector, http1, http2);
         HttpClient httpClient = new HttpClient(transport);
+        httpClient.setMaxRequestsQueuedPerDestination(Integer.MAX_VALUE);
         httpClient.start();
         return httpClient;
     }

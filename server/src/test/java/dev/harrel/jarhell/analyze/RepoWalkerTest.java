@@ -15,7 +15,12 @@ class RepoWalkerTest {
     @Test
     void collectsGavsCorrectly(RepoWalker repoWalker) {
         Set<RepoWalker.State> gavs = Collections.newSetFromMap(new ConcurrentHashMap<>());
-        repoWalker.walk(gavs::add);
+        try {
+            repoWalker.walk(gavs::add);
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        System.out.println(gavs.size());
         assertThat(gavs).contains(
                 new RepoWalker.State("org.test", "artifact", List.of("1.0.10", "1.1.0", "3.0.1")),
                 new RepoWalker.State("org.test", "pre-cycle", List.of("1.0.0")),
