@@ -1,10 +1,13 @@
 package dev.harrel.jarhell.analyze;
 
+import io.avaje.config.Config;
 import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
 import java.net.URI;
@@ -14,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -24,22 +26,25 @@ import static dev.harrel.jarhell.MavenApiClient.HTML_VERSIONS_PATTERN;
 
 @Singleton
 public class RepoWalker {
-    private final String repoUrl = "https://repo1.maven.org/maven2";//Config.get("maven.repo-url");
+    private static final Logger logger = LoggerFactory.getLogger(RepoWalker.class);
+
+    private final String repoUrl = Config.get("maven.repo-url");
     private final HttpClient httpClient;
-    private final AtomicLong counter = new AtomicLong();
-    private final ExecutorService executorService = Executors.newFixedThreadPool(256 * Runtime.getRuntime().availableProcessors(), Thread.ofVirtual().factory());
+    private final int poolSize = 128 * Runtime.getRuntime().availableProcessors();
+    private final ExecutorService consumerService = Executors.newFixedThreadPool(poolSize, Thread.ofVirtual().factory());
+    private final ExecutorService httpService = Executors.newFixedThreadPool(poolSize, Thread.ofVirtual().factory());
 
     public RepoWalker(HttpClient httpClient) {
         this.httpClient = httpClient;
     }
 
     public void walk(Consumer<State> consumer) {
+        logger.info("Starting repo walking: url={}, vThreadPoolSize={}", repoUrl, poolSize * 2);
         walkInternal(consumer, List.of()).join();
     }
 
     private CompletableFuture<?> walkInternal(Consumer<State> consumer, List<String> pathSegments) {
         URI uri = segmentsToUri(pathSegments);
-        System.out.println(counter.incrementAndGet());
         ContentResponse res;
         try {
             res = httpClient.GET(uri);
@@ -50,7 +55,7 @@ public class RepoWalker {
             throw new CompletionException(e);
         }
         if (res.getStatus() >= 400) {
-            throw new IllegalArgumentException("HTTP call failed [%s] for url [%s]".formatted(res.getStatus(), uri));
+            logger.warn("HTTP call failed [{}] for url [{}]", res.getStatus(), uri);
         }
 
         Document doc = Jsoup.parse(res.getContentAsString());
@@ -73,11 +78,11 @@ public class RepoWalker {
             futures.add(CompletableFuture.supplyAsync(() -> {
                 consumer.accept(createState(pathSegments, versions));
                 return null;
-            }, executorService));
+            }, consumerService));
         }
         for (String path : paths) {
             CompletableFuture<?> cf = CompletableFuture.supplyAsync(
-                            () -> walkInternal(consumer, concatList(pathSegments, path)), executorService)
+                            () -> walkInternal(consumer, concatList(pathSegments, path)), httpService)
                     .thenCompose(Function.identity());
             futures.add(cf);
         }
@@ -89,7 +94,7 @@ public class RepoWalker {
                 .map(v -> v.substring(0, v.length() - 1))
                 .map(seg -> URLEncoder.encode(seg, StandardCharsets.UTF_8))
                 .collect(Collectors.joining("/"));
-        return URI.create(repoUrl + "/" + path);
+        return URI.create(repoUrl +  "/" + path + (path.isEmpty() ? "" : "/"));
     }
 
     private List<String> concatList(List<String> pathSegments, String path) {

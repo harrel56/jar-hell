@@ -22,7 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class MavenApiClientTest {
+public class MavenApiClientTest {
     private static final String CONTENT_URL = Config.get("maven.repo-url");
     private static final String DIR_URL = CONTENT_URL + "/dev%2Fharrel%2Foops.hello";
     private static final String METADATA_URL = CONTENT_URL + "/dev%2Fharrel%2Foops.hello%2Fmaven-metadata.xml";
@@ -169,11 +169,11 @@ class MavenApiClientTest {
                 .hasCause(iae);
     }
 
-    private static class ContentResponseMock implements ContentResponse {
+    public static class ContentResponseMock implements ContentResponse {
         private final int statusCode;
         private final String body;
 
-        ContentResponseMock(int statusCode, String body) {
+        public ContentResponseMock(int statusCode, String body) {
             this.statusCode = statusCode;
             this.body = body;
         }
