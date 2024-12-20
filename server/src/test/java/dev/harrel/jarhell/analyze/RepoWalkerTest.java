@@ -25,7 +25,7 @@ class RepoWalkerTest {
     @Test
     void collectsGavsCorrectly(RepoWalker repoWalker) {
         Set<RepoWalker.State> gavs = Collections.newSetFromMap(new ConcurrentHashMap<>());
-        repoWalker.walk(gavs::add);
+        repoWalker.walk(gavs::add).join();
 
         assertThat(gavs).contains(
                 new RepoWalker.State("org.test", "artifact", List.of("1.0.10", "1.1.0", "3.0.1")),
@@ -47,7 +47,7 @@ class RepoWalkerTest {
                 """));
         when(httpClient.GET(argThat(uriEndsWith("/path/")))).thenReturn(new MavenApiClientTest.ContentResponseMock(404, "err"));
 
-        new RepoWalker(httpClient).walk(_ -> {});
+        new RepoWalker(httpClient).walk(_ -> {}).get();
     }
 
     private static ArgumentMatcher<URI> uriEndsWith(String suffix) {

@@ -38,9 +38,9 @@ public class RepoWalker {
         this.httpClient = httpClient;
     }
 
-    public void walk(Consumer<State> consumer) {
+    public CompletableFuture<?> walk(Consumer<State> consumer) {
         logger.info("Starting repo walking: url={}, vThreadPoolSize={}", repoUrl, poolSize * 2);
-        walkInternal(consumer, List.of()).join();
+        return walkInternal(consumer, List.of());
     }
 
     private CompletableFuture<?> walkInternal(Consumer<State> consumer, List<String> pathSegments) {

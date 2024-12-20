@@ -1,6 +1,7 @@
 package dev.harrel.jarhell.controller;
 
 import dev.harrel.jarhell.analyze.AnalyzeEngine;
+import dev.harrel.jarhell.analyze.RepoWalker;
 import dev.harrel.jarhell.model.Gav;
 import io.avaje.http.api.Controller;
 import io.avaje.http.api.Post;
@@ -10,9 +11,11 @@ import io.javalin.http.HttpStatus;
 @Controller("/api/v1")
 class AnalyzeController {
     private final AnalyzeEngine analyzeEngine;
+    private final RepoWalker repoWalker;
 
-    AnalyzeController(AnalyzeEngine analyzeEngine) {
+    AnalyzeController(AnalyzeEngine analyzeEngine, RepoWalker repoWalker) {
         this.analyzeEngine = analyzeEngine;
+        this.repoWalker = repoWalker;
     }
 
     @Post("/analyze")
@@ -25,5 +28,11 @@ class AnalyzeController {
     void analyzeAndWait(Gav gav, Context ctx) {
         analyzeEngine.analyze(gav).join();
         ctx.redirect("/api/v1/packages/%s?depth=1".formatted(gav));
+    }
+
+    @Post("/crawl")
+    void crawl(Context ctx) {
+        repoWalker.walk(state -> analyzeEngine.analyze(new Gav(state.groupId(), state.artifactId(), state.versions().getLast())).join());
+        ctx.status(HttpStatus.ACCEPTED);
     }
 }
