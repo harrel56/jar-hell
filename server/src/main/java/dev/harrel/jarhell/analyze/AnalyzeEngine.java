@@ -45,6 +45,13 @@ public class AnalyzeEngine {
         return CompletableFuture.supplyAsync(() -> doFullAnalysis(gav), Executors.newVirtualThreadPerTaskExecutor());
     }
 
+    public void saveUnresolved(Gav gav) {
+        Optional<ArtifactTree> at = artifactRepository.find(gav, 0);
+        if (at.isEmpty()) {
+            artifactRepository.saveArtifact(ArtifactInfo.unresolved(gav));
+        }
+    }
+
     private ArtifactTree doFullAnalysis(Gav gav) {
         logger.info("START FULL analysis of [{}]", gav);
         AnalysisOutput output;
