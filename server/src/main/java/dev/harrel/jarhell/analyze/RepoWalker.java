@@ -1,6 +1,7 @@
 package dev.harrel.jarhell.analyze;
 
 import io.avaje.config.Config;
+import io.avaje.inject.PreDestroy;
 import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -38,12 +39,18 @@ public class RepoWalker {
         this.httpClient = httpClient;
     }
 
-    public CompletableFuture<?> walk(Consumer<State> consumer) {
+    @PreDestroy
+    void destroy() {
+        consumerService.shutdown();
+        httpService.shutdown();
+    }
+
+    public CompletableFuture<Void> walk(Consumer<State> consumer) {
         logger.info("Starting repo walking: url={}, vThreadPoolSize={}", repoUrl, poolSize * 2);
         return walkInternal(consumer, List.of());
     }
 
-    private CompletableFuture<?> walkInternal(Consumer<State> consumer, List<String> pathSegments) {
+    private CompletableFuture<Void> walkInternal(Consumer<State> consumer, List<String> pathSegments) {
         URI uri = segmentsToUri(pathSegments);
         ContentResponse res;
         try {

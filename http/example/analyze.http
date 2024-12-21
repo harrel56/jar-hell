@@ -61,3 +61,8 @@ Content-Type: application/json
     client.assert(response.status === 200, "Response status is not 200");
   });
 %}
+
+### crawl
+POST https://jarhell.harrel.click/api/v1/crawl
+Content-Type: application/json
+
