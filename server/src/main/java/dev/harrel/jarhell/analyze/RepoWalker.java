@@ -1,6 +1,5 @@
 package dev.harrel.jarhell.analyze;
 
-import io.avaje.config.Config;
 import io.avaje.inject.PreDestroy;
 import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.eclipse.jetty.client.HttpClient;
@@ -18,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -29,7 +29,6 @@ import static dev.harrel.jarhell.MavenApiClient.HTML_VERSIONS_PATTERN;
 public class RepoWalker {
     private static final Logger logger = LoggerFactory.getLogger(RepoWalker.class);
 
-    private final String repoUrl = Config.get("maven.repo-url");
     private final HttpClient httpClient;
     private final int poolSize = 128 * Runtime.getRuntime().availableProcessors();
     private final ExecutorService consumerService = Executors.newFixedThreadPool(poolSize, Thread.ofVirtual().factory());
@@ -45,13 +44,16 @@ public class RepoWalker {
         httpService.shutdown();
     }
 
-    public CompletableFuture<Void> walk(Consumer<State> consumer) {
+    public CompletableFuture<Void> walk(String repoUrl, Consumer<ArtifactData> consumer) {
         logger.info("Starting repo walking: url={}, vThreadPoolSize={}", repoUrl, poolSize * 2);
-        return walkInternal(consumer, List.of());
+        return walkInternal(new SharedState(repoUrl, consumer, new AtomicLong()), List.of());
     }
 
-    private CompletableFuture<Void> walkInternal(Consumer<State> consumer, List<String> pathSegments) {
-        URI uri = segmentsToUri(pathSegments);
+    private CompletableFuture<Void> walkInternal(SharedState state, List<String> pathSegments) {
+        URI uri = segmentsToUri(state, pathSegments);
+        if (state.counter().incrementAndGet() % 1000 == 0) {
+            logger.info("Walking in progress... {} - {}", state.counter(), uri);
+        }
         ContentResponse res;
         try {
             res = httpClient.GET(uri);
@@ -83,39 +85,41 @@ public class RepoWalker {
         List<CompletableFuture<?>> futures = new ArrayList<>(paths.size() + 1);
         if (!versions.isEmpty() && pathSegments.size() >= 2) {
             futures.add(CompletableFuture.supplyAsync(() -> {
-                consumer.accept(createState(pathSegments, versions));
+                state.consumer().accept(createArtifactData(pathSegments, versions));
                 return null;
             }, consumerService));
         }
         for (String path : paths) {
             CompletableFuture<?> cf = CompletableFuture.supplyAsync(
-                            () -> walkInternal(consumer, concatList(pathSegments, path)), httpService)
+                            () -> walkInternal(state, concatList(pathSegments, path)), httpService)
                     .thenCompose(Function.identity());
             futures.add(cf);
         }
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
-    private URI segmentsToUri(List<String> pathSegments) {
+    private URI segmentsToUri(SharedState state, List<String> pathSegments) {
         String path = pathSegments.stream()
                 .map(v -> v.substring(0, v.length() - 1))
                 .map(seg -> URLEncoder.encode(seg, StandardCharsets.UTF_8))
                 .collect(Collectors.joining("/"));
-        return URI.create(repoUrl +  "/" + path + (path.isEmpty() ? "" : "/"));
+        return URI.create(state.repoUrl() +  "/" + path + (path.isEmpty() ? "" : "/"));
     }
 
     private List<String> concatList(List<String> pathSegments, String path) {
         return Stream.concat(pathSegments.stream(), Stream.of(path)).toList();
     }
 
-    private State createState(List<String> pathSegments, List<String> versions) {
+    private ArtifactData createArtifactData(List<String> pathSegments, List<String> versions) {
         pathSegments = pathSegments.stream()
                 .map(v -> v.substring(0, v.length() - 1))
                 .toList();
         String groupId = String.join(".", pathSegments.subList(0, pathSegments.size() - 1));
         String artifactId = pathSegments.getLast();
-        return new State(groupId, artifactId, versions);
+        return new ArtifactData(groupId, artifactId, versions);
     }
 
-    public record State(String groupId, String artifactId, List<String> versions) {}
+    public record ArtifactData(String groupId, String artifactId, List<String> versions) {}
+
+    private record SharedState(String repoUrl, Consumer<ArtifactData> consumer, AtomicLong counter) {}
 }

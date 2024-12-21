@@ -2,6 +2,7 @@ package dev.harrel.jarhell.analyze;
 
 import dev.harrel.jarhell.MavenApiClientTest;
 import dev.harrel.jarhell.extension.EnvironmentTest;
+import io.avaje.config.Config;
 import org.eclipse.jetty.client.HttpClient;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
@@ -24,17 +25,17 @@ import static org.mockito.Mockito.when;
 class RepoWalkerTest {
     @Test
     void collectsGavsCorrectly(RepoWalker repoWalker) {
-        Set<RepoWalker.State> gavs = Collections.newSetFromMap(new ConcurrentHashMap<>());
-        repoWalker.walk(gavs::add).join();
+        Set<RepoWalker.ArtifactData> gavs = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        repoWalker.walk(Config.get("maven.repo-url"), gavs::add).join();
 
         assertThat(gavs).contains(
-                new RepoWalker.State("org.test", "artifact", List.of("1.0.10", "1.1.0", "3.0.1")),
-                new RepoWalker.State("org.test", "pre-cycle", List.of("1.0.0")),
-                new RepoWalker.State("org.test", "cycle1", List.of("1.0.0")),
-                new RepoWalker.State("org.test", "cycle2", List.of("1.0.0")),
-                new RepoWalker.State("org.test", "cycle3", List.of("1.0.0")),
-                new RepoWalker.State("com.sanctionco.jmail", "jmail", List.of("1.6.2")),
-                new RepoWalker.State("dev.harrel", "json-schema", List.of("1.5.0"))
+                new RepoWalker.ArtifactData("org.test", "artifact", List.of("1.0.10", "1.1.0", "3.0.1")),
+                new RepoWalker.ArtifactData("org.test", "pre-cycle", List.of("1.0.0")),
+                new RepoWalker.ArtifactData("org.test", "cycle1", List.of("1.0.0")),
+                new RepoWalker.ArtifactData("org.test", "cycle2", List.of("1.0.0")),
+                new RepoWalker.ArtifactData("org.test", "cycle3", List.of("1.0.0")),
+                new RepoWalker.ArtifactData("com.sanctionco.jmail", "jmail", List.of("1.6.2")),
+                new RepoWalker.ArtifactData("dev.harrel", "json-schema", List.of("1.5.0"))
         );
     }
 
@@ -47,7 +48,7 @@ class RepoWalkerTest {
                 """));
         when(httpClient.GET(argThat(uriEndsWith("/path/")))).thenReturn(new MavenApiClientTest.ContentResponseMock(404, "err"));
 
-        new RepoWalker(httpClient).walk(_ -> {}).get();
+        new RepoWalker(httpClient).walk(Config.get("maven.repo-url"), _ -> {}).get();
     }
 
     private static ArgumentMatcher<URI> uriEndsWith(String suffix) {
