@@ -30,9 +30,11 @@ public class RepoWalker {
     private static final Logger logger = LoggerFactory.getLogger(RepoWalker.class);
 
     private final HttpClient httpClient;
-    private final int poolSize = 128 * Runtime.getRuntime().availableProcessors();
-    private final ExecutorService consumerService = Executors.newFixedThreadPool(poolSize, Thread.ofVirtual().factory());
-    private final ExecutorService httpService = Executors.newFixedThreadPool(poolSize, Thread.ofVirtual().factory());
+    /* server.bolt.thread_pool_max_size has default of 400 */
+    private static final int CONSUMER_POOL_SIZE = 128;
+    private static final int HTTP_POOL_SIZE = 64 * Runtime.getRuntime().availableProcessors();
+    private final ExecutorService consumerService = Executors.newFixedThreadPool(CONSUMER_POOL_SIZE, Thread.ofVirtual().factory());
+    private final ExecutorService httpService = Executors.newFixedThreadPool(HTTP_POOL_SIZE, Thread.ofVirtual().factory());
 
     public RepoWalker(HttpClient httpClient) {
         this.httpClient = httpClient;
@@ -45,7 +47,7 @@ public class RepoWalker {
     }
 
     public CompletableFuture<Void> walk(String repoUrl, Consumer<ArtifactData> consumer) {
-        logger.info("Starting repo walking: url={}, vThreadPoolSize={}", repoUrl, poolSize * 2);
+        logger.info("Starting repo walking: url={}, vConsumerPoolSize={}, vHttpPoolSize={}", repoUrl, CONSUMER_POOL_SIZE, HTTP_POOL_SIZE);
         return walkInternal(new SharedState(repoUrl, consumer, new AtomicLong()), List.of());
     }
 
