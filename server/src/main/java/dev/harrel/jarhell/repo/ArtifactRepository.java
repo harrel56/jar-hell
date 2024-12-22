@@ -47,10 +47,10 @@ public class ArtifactRepository {
                                     AND root.classifier = $classifier
                                 RETURN root
                                 """,
-                        parameters(
-                                "groupId", groupId,
-                                "artifactId", artifactId,
-                                "classifier", classifier == null ? "" : classifier)
+                                parameters(
+                                        "groupId", groupId,
+                                        "artifactId", artifactId,
+                                        "classifier", classifier == null ? "" : classifier)
                         )
                 );
                 return new SummarizedResult(res.list(), res.consume());
@@ -72,6 +72,22 @@ public class ArtifactRepository {
                     .sorted(Comparator.comparing(at -> at.artifactInfo().version()))
                     .toList();
         }
+    }
+
+    public boolean exists(Gav gav) {
+        Map<String, Object> gavData = objectMapper.convertValue(gav, new TypeReference<>() {});
+        gavData.computeIfAbsent("classifier", k -> "");
+        return !driver.executableQuery("""
+                        MATCH (root:Artifact)
+                        WHERE
+                            root.groupId = $props.groupId
+                            AND root.artifactId = $props.artifactId
+                            AND root.version = $props.version
+                            AND root.classifier = $props.classifier
+                        RETURN root""")
+                .execute()
+                .records()
+                .isEmpty();
     }
 
     public Optional<ArtifactTree> find(Gav gav) {
@@ -141,7 +157,7 @@ public class ArtifactRepository {
         propsMap.computeIfAbsent("classifier", k -> "");
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(tx ->
-                tx.run(new Query("CREATE (a:Artifact $props) SET a.analyzed = localdatetime()", parameters("props", propsMap)))
+                    tx.run(new Query("CREATE (a:Artifact $props) SET a.analyzed = localdatetime()", parameters("props", propsMap)))
             );
         }
     }
@@ -260,7 +276,7 @@ public class ArtifactRepository {
                     artifactInfo.packaging(), artifactInfo.name(), artifactInfo.description(), artifactInfo.url(),
                     artifactInfo.scmUrl(), artifactInfo.issuesUrl(), artifactInfo.inceptionYear(),
                     licenses, licenseTypes, artifactInfo.classifiers(), effectiveDependencies,
-                    effectiveUnresolvedDependencies, effectiveOptionalDependencies,  effectiveSize,
+                    effectiveUnresolvedDependencies, effectiveOptionalDependencies, effectiveSize,
                     effectiveBytecodeVersion, effectiveLicenseType, effectiveLicenseTypes, null);
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);

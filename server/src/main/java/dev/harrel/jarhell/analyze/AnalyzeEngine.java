@@ -46,8 +46,7 @@ public class AnalyzeEngine {
     }
 
     public void saveUnresolved(Gav gav) {
-        Optional<ArtifactTree> at = artifactRepository.find(gav, 0);
-        if (at.isEmpty()) {
+        if (artifactRepository.exists(gav)) {
             artifactRepository.saveArtifact(ArtifactInfo.unresolved(gav));
         }
     }

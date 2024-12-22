@@ -66,3 +66,6 @@ Content-Type: application/json
 POST https://jarhell.harrel.click/api/v1/crawl
 Content-Type: application/json
 
+### crawl local
+POST http://localhost:8060/api/v1/crawl
+Content-Type: application/json
