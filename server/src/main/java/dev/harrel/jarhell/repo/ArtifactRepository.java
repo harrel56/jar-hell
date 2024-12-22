@@ -85,6 +85,7 @@ public class ArtifactRepository {
                             AND root.version = $props.version
                             AND root.classifier = $props.classifier
                         RETURN root""")
+                .withParameters(Map.of("props", gavData))
                 .execute()
                 .records()
                 .isEmpty();
