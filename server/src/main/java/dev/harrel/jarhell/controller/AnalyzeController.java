@@ -32,11 +32,10 @@ class AnalyzeController {
     }
 
     @Post("/crawl")
-    void crawl(Context ctx) {
-        repoWalker.walk(
+    RepoWalker.Summary crawl() {
+        return repoWalker.walk(
                 Config.get("maven.repo-url"),
                 data -> analyzeEngine.saveUnresolved(new Gav(data.groupId(), data.artifactId(), data.versions().getLast()))
-        );
-        ctx.status(HttpStatus.ACCEPTED);
+        ).join();
     }
 }

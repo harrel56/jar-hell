@@ -13,6 +13,8 @@ import javax.inject.Singleton;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -46,15 +48,27 @@ public class RepoWalker {
         httpService.shutdown();
     }
 
-    public CompletableFuture<Void> walk(String repoUrl, Consumer<ArtifactData> consumer) {
+    public CompletableFuture<Summary> walk(String repoUrl, Consumer<ArtifactData> consumer) {
         logger.info("Starting repo walking: url={}, vConsumerPoolSize={}, vHttpPoolSize={}", repoUrl, CONSUMER_POOL_SIZE, HTTP_POOL_SIZE);
-        return walkInternal(new SharedState(repoUrl, consumer, new AtomicLong()), List.of());
+        Instant startTime = Instant.now();
+        SharedState sharedState = new SharedState(repoUrl, consumer, new AtomicLong(), new AtomicLong());
+        return walkInternal(sharedState, List.of())
+                .thenApply(_ -> {
+                    Summary summary = new Summary(
+                            Duration.between(startTime, Instant.now()),
+                            sharedState.requestsCount.get(),
+                            sharedState.artifactsCount.get()
+                    );
+                    logger.info("Repo walking completed: duration={}, requests={}, artifacts={}",
+                            summary.duration, summary.requestsCount, summary.artifactsCount);
+                    return summary;
+                });
     }
 
     private CompletableFuture<Void> walkInternal(SharedState state, List<String> pathSegments) {
         URI uri = segmentsToUri(state, pathSegments);
-        if (state.counter().incrementAndGet() % 1000 == 0) {
-            logger.info("Walking in progress... {} - {}", state.counter(), uri);
+        if (state.requestsCount().incrementAndGet() % 1000 == 0) {
+            logger.info("Walking in progress... {} - {}", state.requestsCount(), uri);
         }
         ContentResponse res;
         try {
@@ -88,6 +102,7 @@ public class RepoWalker {
         if (!versions.isEmpty() && pathSegments.size() >= 2) {
             futures.add(CompletableFuture.supplyAsync(() -> {
                 state.consumer().accept(createArtifactData(pathSegments, versions));
+                state.artifactsCount.incrementAndGet();
                 return null;
             }, consumerService));
         }
@@ -105,7 +120,7 @@ public class RepoWalker {
                 .map(v -> v.substring(0, v.length() - 1))
                 .map(seg -> URLEncoder.encode(seg, StandardCharsets.UTF_8))
                 .collect(Collectors.joining("/"));
-        return URI.create(state.repoUrl() +  "/" + path + (path.isEmpty() ? "" : "/"));
+        return URI.create(state.repoUrl() + "/" + path + (path.isEmpty() ? "" : "/"));
     }
 
     private List<String> concatList(List<String> pathSegments, String path) {
@@ -123,5 +138,8 @@ public class RepoWalker {
 
     public record ArtifactData(String groupId, String artifactId, List<String> versions) {}
 
-    private record SharedState(String repoUrl, Consumer<ArtifactData> consumer, AtomicLong counter) {}
+    public record Summary(Duration duration, long requestsCount, long artifactsCount) {}
+
+    private record SharedState(String repoUrl, Consumer<ArtifactData> consumer, AtomicLong requestsCount,
+                               AtomicLong artifactsCount) {}
 }
