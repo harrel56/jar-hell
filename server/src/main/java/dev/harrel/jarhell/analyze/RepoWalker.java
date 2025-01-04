@@ -43,9 +43,15 @@ public class RepoWalker {
     }
 
     @PreDestroy
-    void destroy() {
-        consumerService.shutdown();
-        httpService.shutdown();
+    void destroy() throws InterruptedException {
+        consumerService.shutdownNow();
+        httpService.shutdownNow();
+        if (!consumerService.awaitTermination(2L, TimeUnit.SECONDS)) {
+            logger.warn("consumerService failed to shutdown gracefully");
+        }
+        if (!httpService.awaitTermination(2L, TimeUnit.SECONDS)) {
+            logger.warn("httpService failed to shutdown gracefully");
+        }
     }
 
     public CompletableFuture<Summary> walk(String repoUrl, Consumer<ArtifactData> consumer) {
@@ -81,8 +87,7 @@ public class RepoWalker {
             return failure(state.failedRequestsCount());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            logger.warn("HTTP call interrupted for url [{}]", uri, e);
-            return failure(state.failedRequestsCount());
+            throw new CompletionException(e);
 
         }
         if (res.getStatus() >= 400) {
