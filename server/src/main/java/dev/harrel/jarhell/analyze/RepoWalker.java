@@ -51,16 +51,19 @@ public class RepoWalker {
     public CompletableFuture<Summary> walk(String repoUrl, Consumer<ArtifactData> consumer) {
         logger.info("Starting repo walking: url={}, vConsumerPoolSize={}, vHttpPoolSize={}", repoUrl, CONSUMER_POOL_SIZE, HTTP_POOL_SIZE);
         Instant startTime = Instant.now();
-        SharedState sharedState = new SharedState(repoUrl, consumer, new AtomicLong(), new AtomicLong());
+        SharedState sharedState = new SharedState(repoUrl, consumer);
         return walkInternal(sharedState, List.of())
                 .thenApply(_ -> {
                     Summary summary = new Summary(
                             Duration.between(startTime, Instant.now()),
                             sharedState.requestsCount.get(),
-                            sharedState.artifactsCount.get()
+                            sharedState.artifactsCount.get(),
+                            sharedState.failedRequestsCount.get(),
+                            sharedState.failedArtifactsCount().get()
                     );
-                    logger.info("Repo walking completed: duration={}, requests={}, artifacts={}",
-                            summary.duration, summary.requestsCount, summary.artifactsCount);
+                    logger.info("Repo walking completed: duration={}, requests={}, artifacts={}, failedRequests={}, failedArtifacts={}",
+                            summary.duration(), summary.requestsCount(), summary.artifactsCount(),
+                            summary.failedRequestsCount(), summary.failedArtifactsCount());
                     return summary;
                 });
     }
@@ -74,13 +77,17 @@ public class RepoWalker {
         try {
             res = httpClient.GET(uri);
         } catch (ExecutionException | TimeoutException e) {
-            throw new CompletionException(e);
+            logger.warn("HTTP call failed for url [{}]", uri, e);
+            return failure(state.failedRequestsCount());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new CompletionException(e);
+            logger.warn("HTTP call interrupted for url [{}]", uri, e);
+            return failure(state.failedRequestsCount());
+
         }
         if (res.getStatus() >= 400) {
             logger.warn("HTTP call failed [{}] for url [{}]", res.getStatus(), uri);
+            return failure(state.failedRequestsCount());
         }
 
         Document doc = Jsoup.parse(res.getContentAsString());
@@ -100,11 +107,19 @@ public class RepoWalker {
 
         List<CompletableFuture<?>> futures = new ArrayList<>(paths.size() + 1);
         if (!versions.isEmpty() && pathSegments.size() >= 2) {
-            futures.add(CompletableFuture.supplyAsync(() -> {
-                state.consumer().accept(createArtifactData(pathSegments, versions));
-                state.artifactsCount.incrementAndGet();
-                return null;
-            }, consumerService));
+            ArtifactData artifactData = createArtifactData(pathSegments, versions);
+            CompletableFuture<Void> artifactFuture = CompletableFuture.supplyAsync(() -> {
+                state.consumer().accept(artifactData);
+                return state.artifactsCount.incrementAndGet();
+            }, consumerService).handle((_, ex) -> {
+                if (ex != null) {
+                    logger.warn("Artifact processing failed for [{}:{}]", artifactData.groupId, artifactData.artifactId, ex);
+                    return failure(state.failedArtifactsCount());
+                } else {
+                    return CompletableFuture.<Void>completedFuture(null);
+                }
+            }).thenCompose(Function.identity());
+            futures.add(artifactFuture);
         }
         for (String path : paths) {
             CompletableFuture<?> cf = CompletableFuture.supplyAsync(
@@ -136,10 +151,27 @@ public class RepoWalker {
         return new ArtifactData(groupId, artifactId, versions);
     }
 
+    private static CompletableFuture<Void> failure(AtomicLong counter) {
+        counter.incrementAndGet();
+        return CompletableFuture.completedFuture(null);
+    }
+
     public record ArtifactData(String groupId, String artifactId, List<String> versions) {}
 
-    public record Summary(Duration duration, long requestsCount, long artifactsCount) {}
+    public record Summary(Duration duration,
+                          long requestsCount,
+                          long artifactsCount,
+                          long failedRequestsCount,
+                          long failedArtifactsCount) {}
 
-    private record SharedState(String repoUrl, Consumer<ArtifactData> consumer, AtomicLong requestsCount,
-                               AtomicLong artifactsCount) {}
+    private record SharedState(String repoUrl,
+                               Consumer<ArtifactData> consumer,
+                               AtomicLong requestsCount,
+                               AtomicLong artifactsCount,
+                               AtomicLong failedRequestsCount,
+                               AtomicLong failedArtifactsCount) {
+        private SharedState(String repoUrl, Consumer<ArtifactData> consumer) {
+            this(repoUrl, consumer, new AtomicLong(), new AtomicLong(), new AtomicLong(), new AtomicLong());
+        }
+    }
 }
