@@ -1,5 +1,6 @@
 package dev.harrel.jarhell.analyze;
 
+import dev.harrel.jarhell.util.ConcurrentUtil;
 import io.avaje.inject.PreDestroy;
 import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.eclipse.jetty.client.HttpClient;
@@ -44,6 +45,7 @@ public class RepoWalker {
 
     @PreDestroy
     void destroy() throws InterruptedException {
+        logger.info("Shutting down...");
         consumerService.shutdownNow();
         httpService.shutdownNow();
         if (!consumerService.awaitTermination(2L, TimeUnit.SECONDS)) {
@@ -74,7 +76,7 @@ public class RepoWalker {
                 });
     }
 
-    private CompletableFuture<Void> walkInternal(SharedState state, List<String> pathSegments) {
+    private CompletableFuture<?> walkInternal(SharedState state, List<String> pathSegments) {
         URI uri = segmentsToUri(state, pathSegments);
         if (state.requestsCount().incrementAndGet() % 1000 == 0) {
             logger.info("Walking in progress... {} - {}", state.requestsCount(), uri);
@@ -88,7 +90,6 @@ public class RepoWalker {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new CompletionException(e);
-
         }
         if (res.getStatus() >= 400) {
             logger.warn("HTTP call failed [{}] for url [{}]", res.getStatus(), uri);
@@ -132,7 +133,7 @@ public class RepoWalker {
                     .thenCompose(Function.identity());
             futures.add(cf);
         }
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        return ConcurrentUtil.allOfFailFast(futures);
     }
 
     private URI segmentsToUri(SharedState state, List<String> pathSegments) {
