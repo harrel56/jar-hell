@@ -7,7 +7,6 @@ import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.model.descriptor.License;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.*;
-import org.neo4j.driver.internal.NoOpBookmarkManager;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.types.Entity;
 import org.neo4j.driver.types.MapAccessor;
@@ -78,18 +77,21 @@ public class ArtifactRepository {
     public boolean exists(Gav gav) {
         Map<String, Object> gavData = objectMapper.convertValue(gav, new TypeReference<>() {});
         gavData.computeIfAbsent("classifier", k -> "");
-        return !driver.executableQuery("""
+        try (var session = session()) {
+            return session.executeRead(tx -> {
+                Result res = tx.run(new Query("""
                         MATCH (root:Artifact)
                         WHERE
                             root.groupId = $props.groupId
                             AND root.artifactId = $props.artifactId
                             AND root.version = $props.version
                             AND root.classifier = $props.classifier
-                        RETURN root""")
-                .withParameters(Map.of("props", gavData))
-                .execute()
-                .records()
-                .isEmpty();
+                        RETURN root""",
+                        parameters("props", gavData))
+                );
+                return res.hasNext();
+            });
+        }
     }
 
     public Optional<ArtifactTree> find(Gav gav) {
@@ -194,7 +196,7 @@ public class ArtifactRepository {
     }
 
     private Session session() {
-        return driver.session(SessionConfig.builder().withBookmarkManager(NoOpBookmarkManager.INSTANCE).build());
+        return driver.session(SessionConfig.builder().withBookmarkManager(null).build());
     }
 
     private Gav toGav(ArtifactProps artifactProps) {
