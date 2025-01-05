@@ -1,8 +1,8 @@
 package dev.harrel.jarhell.analyze;
 
+import dev.harrel.jarhell.CustomHttpClient;
 import dev.harrel.jarhell.MavenApiClientTest;
 import dev.harrel.jarhell.extension.EnvironmentTest;
-import org.eclipse.jetty.client.HttpClient;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
 
@@ -15,8 +15,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -42,12 +41,12 @@ class RepoWalkerTest {
 
     @Test
     void doesntFailForFailedRequests() throws ExecutionException, InterruptedException, TimeoutException {
-        HttpClient httpClient = mock(HttpClient.class);
-        when(httpClient.GET((URI) any())).thenReturn(new MavenApiClientTest.ContentResponseMock(200, """
+        CustomHttpClient httpClient = mock(CustomHttpClient.class);
+        when(httpClient.GET((URI) any(), anyInt())).thenReturn(new MavenApiClientTest.ContentResponseMock(200, """
                 <a href="../">../</a>
                 <a href="path/">path/</a>
                 """));
-        when(httpClient.GET(argThat(uriEndsWith("/path/")))).thenReturn(new MavenApiClientTest.ContentResponseMock(404, "err"));
+        when(httpClient.GET(argThat(uriEndsWith("/path/")), anyInt())).thenReturn(new MavenApiClientTest.ContentResponseMock(404, "err"));
 
         new RepoWalker(httpClient).walk(repoUrl, _ -> {}).get();
     }

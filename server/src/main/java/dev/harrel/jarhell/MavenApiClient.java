@@ -11,10 +11,7 @@ import dev.harrel.jarhell.model.central.SelectResponse;
 import dev.harrel.jarhell.util.ConcurrentUtil;
 import io.avaje.config.Config;
 import org.apache.maven.artifact.versioning.ComparableVersion;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
@@ -28,7 +25,6 @@ import java.util.StringJoiner;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.StructuredTaskScope;
 import java.util.concurrent.StructuredTaskScope.Subtask;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -44,9 +40,9 @@ public class MavenApiClient {
     private static final Pattern XML_VERSIONS_PATTERN = Pattern.compile("<version>(.+)<\\/version>");
 
     private final ObjectMapper objectMapper;
-    private final HttpClient httpClient;
+    private final CustomHttpClient httpClient;
 
-    MavenApiClient(ObjectMapper objectMapper, HttpClient httpClient) {
+    MavenApiClient(ObjectMapper objectMapper, CustomHttpClient httpClient) {
         this.objectMapper = objectMapper;
         this.httpClient = httpClient;
     }
@@ -159,10 +155,7 @@ public class MavenApiClient {
 
     private ContentResponse fetchRaw(String url) {
         try {
-            Request req = httpClient.newRequest(url);
-            FutureResponseListener listener = new FutureResponseListener(req, 16 * 1024 * 1024);
-            req.send(listener);
-            return listener.get(5L, TimeUnit.SECONDS);
+            return httpClient.GET(url, 16 * 1024 * 1024);
         } catch (ExecutionException | TimeoutException e) {
             throw new IllegalArgumentException("HTTP fetch failed for url [%s]".formatted(url), e);
         } catch (InterruptedException e) {

@@ -1,12 +1,10 @@
 package dev.harrel.jarhell.analyze;
 
+import dev.harrel.jarhell.CustomHttpClient;
 import dev.harrel.jarhell.util.ConcurrentUtil;
 import io.avaje.inject.PreDestroy;
 import org.apache.maven.artifact.versioning.ComparableVersion;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.slf4j.Logger;
@@ -34,14 +32,14 @@ import static dev.harrel.jarhell.MavenApiClient.HTML_VERSIONS_PATTERN;
 public class RepoWalker {
     private static final Logger logger = LoggerFactory.getLogger(RepoWalker.class);
 
-    private final HttpClient httpClient;
+    private final CustomHttpClient httpClient;
     /* server.bolt.thread_pool_max_size has default of 400 */
     private static final int CONSUMER_POOL_SIZE = 2;
     private static final int HTTP_POOL_SIZE = 64 * Runtime.getRuntime().availableProcessors();
     private final ExecutorService consumerService = Executors.newFixedThreadPool(CONSUMER_POOL_SIZE, Thread.ofVirtual().factory());
     private final ExecutorService httpService = Executors.newFixedThreadPool(HTTP_POOL_SIZE, Thread.ofVirtual().factory());
 
-    public RepoWalker(HttpClient httpClient) {
+    public RepoWalker(CustomHttpClient httpClient) {
         this.httpClient = httpClient;
     }
 
@@ -85,10 +83,7 @@ public class RepoWalker {
         }
         ContentResponse res;
         try {
-            Request req = httpClient.newRequest(uri);
-            FutureResponseListener listener = new FutureResponseListener(req, 16 * 1024 * 1024);
-            req.send(listener);
-            res = listener.get(5L, TimeUnit.SECONDS);
+            res = httpClient.GET(uri, 16 * 1024 * 1024);
         } catch (ExecutionException | TimeoutException e) {
             logger.warn("HTTP call failed for url [{}]", uri, e);
             return failure(state.failedRequestsCount());

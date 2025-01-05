@@ -12,7 +12,6 @@ import io.avaje.inject.Factory;
 import io.javalin.config.JavalinConfig;
 import io.javalin.json.JavalinJackson;
 import io.javalin.plugin.bundled.CorsPluginConfig;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -49,12 +48,12 @@ public class Configuration {
     }
 
     @Bean(destroyMethod = "stop")
-    HttpClient httpClient() throws Exception {
+    CustomHttpClient httpClient() throws Exception {
         ClientConnector connector = new ClientConnector();
         ClientConnectionFactory.Info http1 = HttpClientConnectionFactory.HTTP11;
         ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(connector));
         HttpClientTransportDynamic transport = new HttpClientTransportDynamic(connector, http1, http2);
-        HttpClient httpClient = new HttpClient(transport);
+        CustomHttpClient httpClient = new CustomHttpClient(transport);
         httpClient.setMaxRequestsQueuedPerDestination(Integer.MAX_VALUE);
         httpClient.start();
         return httpClient;
