@@ -34,7 +34,7 @@ public class RepoWalker {
 
     private final HttpClient httpClient;
     /* server.bolt.thread_pool_max_size has default of 400 */
-    private static final int CONSUMER_POOL_SIZE = 128;
+    private static final int CONSUMER_POOL_SIZE = 8;
     private static final int HTTP_POOL_SIZE = 64 * Runtime.getRuntime().availableProcessors();
     private final ExecutorService consumerService = Executors.newFixedThreadPool(CONSUMER_POOL_SIZE, Thread.ofVirtual().factory());
     private final ExecutorService httpService = Executors.newFixedThreadPool(HTTP_POOL_SIZE, Thread.ofVirtual().factory());
