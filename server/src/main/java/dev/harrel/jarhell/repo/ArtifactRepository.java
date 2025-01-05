@@ -37,7 +37,7 @@ public class ArtifactRepository {
     }
 
     public List<ArtifactTree> findAllVersions(String groupId, String artifactId, String classifier) {
-        try (var session = driver.session()) {
+        try (var session = session()) {
             SummarizedResult result = session.executeRead(tx -> {
                 Result res = tx.run(new Query("""
                                 MATCH (root:Artifact)
@@ -98,7 +98,7 @@ public class ArtifactRepository {
     public Optional<ArtifactTree> find(Gav gav, int depth) {
         Map<String, Object> gavData = objectMapper.convertValue(gav, new TypeReference<>() {});
         gavData.computeIfAbsent("classifier", k -> "");
-        try (var session = driver.session()) {
+        try (var session = session()) {
             SummarizedResult result = session.executeRead(tx -> {
                 Result res = tx.run(new Query("""
                         MATCH (root:Artifact)
@@ -156,7 +156,7 @@ public class ArtifactRepository {
         ArtifactProps artifactProps = toArtifactProps(artifactInfo);
         Map<String, Object> propsMap = objectMapper.convertValue(artifactProps, new TypeReference<>() {});
         propsMap.computeIfAbsent("classifier", k -> "");
-        try (var session = driver.session()) {
+        try (var session = session()) {
             session.executeWriteWithoutResult(tx ->
                     tx.run(new Query("CREATE (a:Artifact $props) SET a.analyzed = localdatetime()", parameters("props", propsMap)))
             );
@@ -164,7 +164,7 @@ public class ArtifactRepository {
     }
 
     public void saveDependencies(Gav parent, List<FlatDependency> deps) {
-        try (var session = driver.session()) {
+        try (var session = session()) {
             session.executeWriteWithoutResult(tx -> saveDependencies(tx, parent, deps));
         }
     }
@@ -190,6 +190,10 @@ public class ArtifactRepository {
                     AND d.classifier = dep.depGav.classifier
                 MERGE (a)-[:DEPENDS_ON {optional: dep.depProps.optional, scope: dep.depProps.scope}]->(d)""",
                 parameters("dependencies", dependencies)));
+    }
+
+    private Session session() {
+        return driver.session(SessionConfig.builder().withBookmarkManager(null).build());
     }
 
     private Gav toGav(ArtifactProps artifactProps) {
