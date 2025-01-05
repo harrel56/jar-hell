@@ -13,6 +13,8 @@ import io.avaje.config.Config;
 import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
@@ -26,6 +28,7 @@ import java.util.StringJoiner;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.StructuredTaskScope;
 import java.util.concurrent.StructuredTaskScope.Subtask;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -156,7 +159,10 @@ public class MavenApiClient {
 
     private ContentResponse fetchRaw(String url) {
         try {
-            return httpClient.GET(url);
+            Request req = httpClient.newRequest(url);
+            FutureResponseListener listener = new FutureResponseListener(req, 16 * 1024 * 1024);
+            req.send(listener);
+            return listener.get(5L, TimeUnit.SECONDS);
         } catch (ExecutionException | TimeoutException e) {
             throw new IllegalArgumentException("HTTP fetch failed for url [%s]".formatted(url), e);
         } catch (InterruptedException e) {

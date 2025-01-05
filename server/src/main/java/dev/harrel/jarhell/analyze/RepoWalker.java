@@ -5,6 +5,8 @@ import io.avaje.inject.PreDestroy;
 import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.slf4j.Logger;
@@ -83,7 +85,10 @@ public class RepoWalker {
         }
         ContentResponse res;
         try {
-            res = httpClient.GET(uri);
+            Request req = httpClient.newRequest(uri);
+            FutureResponseListener listener = new FutureResponseListener(req, 16 * 1024 * 1024);
+            req.send(listener);
+            res = listener.get(5L, TimeUnit.SECONDS);
         } catch (ExecutionException | TimeoutException e) {
             logger.warn("HTTP call failed for url [{}]", uri, e);
             return failure(state.failedRequestsCount());
@@ -116,7 +121,11 @@ public class RepoWalker {
             ArtifactData artifactData = createArtifactData(pathSegments, versions);
             CompletableFuture<Void> artifactFuture = CompletableFuture.supplyAsync(() -> {
                 state.consumer().accept(artifactData);
-                return state.artifactsCount.incrementAndGet();
+                if (state.artifactsCount().incrementAndGet() % 1000 == 0) {
+                    logger.info("Consuming in progress... {} - {}:{}",
+                            state.artifactsCount(), artifactData.groupId(), artifactData.artifactId());
+                }
+                return null;
             }, consumerService).handle((_, ex) -> {
                 if (ex != null) {
                     logger.warn("Artifact processing failed for [{}:{}]", artifactData.groupId, artifactData.artifactId, ex);
