@@ -7,6 +7,7 @@ import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.model.descriptor.License;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.*;
+import org.neo4j.driver.internal.NoOpBookmarkManager;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.types.Entity;
 import org.neo4j.driver.types.MapAccessor;
@@ -193,7 +194,7 @@ public class ArtifactRepository {
     }
 
     private Session session() {
-        return driver.session(SessionConfig.builder().withBookmarkManager(null).build());
+        return driver.session(SessionConfig.builder().withBookmarkManager(NoOpBookmarkManager.INSTANCE).build());
     }
 
     private Gav toGav(ArtifactProps artifactProps) {
