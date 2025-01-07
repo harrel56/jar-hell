@@ -4,14 +4,22 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import dev.harrel.jarhell.error.BadRequestException;
+import dev.harrel.jarhell.error.ErrorResponse;
+import dev.harrel.jarhell.error.ResourceNotFoundException;
 import io.avaje.config.Config;
 import io.avaje.http.api.AvajeJavalinPlugin;
+import io.avaje.http.api.InvalidTypeArgumentException;
 import io.avaje.inject.Bean;
 import io.avaje.inject.Factory;
-import io.javalin.config.JavalinConfig;
+import io.javalin.Javalin;
+import io.javalin.http.HttpStatus;
+import io.javalin.http.UnauthorizedResponse;
 import io.javalin.json.JavalinJackson;
 import io.javalin.plugin.bundled.CorsPluginConfig;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -19,14 +27,17 @@ import org.eclipse.jetty.http2.client.http.ClientConnectionFactoryOverHTTP2;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.neo4j.driver.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.Optional;
 
 @Factory
 public class Configuration {
+    private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
 
     @Bean
     public ObjectMapper objectMapper() {
@@ -60,22 +71,59 @@ public class Configuration {
     }
 
     @Bean
-    Consumer<JavalinConfig> javalinConfig(ObjectMapper objectMapper, List<AvajeJavalinPlugin> avajePlugins) {
-        return config -> {
-            config.jsonMapper(new JavalinJackson(objectMapper, true));
-            config.spaRoot.addFile("/", "/web/index.html");
-            config.staticFiles.add(staticFiles -> {
-                staticFiles.directory = "/web/assets";
-                staticFiles.hostedPath = "/assets";
-                staticFiles.precompress = true;
-                staticFiles.headers = Map.of("Cache-Control", "max-age=86400");
-            });
-            if (Config.enabled("jar-hell.dev-mode", false)) {
-                config.bundledPlugins.enableCors(cors ->
-                        cors.addRule(CorsPluginConfig.CorsRule::anyHost)
-                );
-            }
-            avajePlugins.forEach(config::registerPlugin);
-        };
+    Javalin javalinServer(ObjectMapper objectMapper, List<AvajeJavalinPlugin> avajePlugins) {
+        final String apiToken = Config.get("API_TOKEN");
+        return Javalin.create(config -> {
+                    config.jsonMapper(new JavalinJackson(objectMapper, true));
+                    config.spaRoot.addFile("/", "/web/index.html");
+                    config.staticFiles.add(staticFiles -> {
+                        staticFiles.directory = "/web/assets";
+                        staticFiles.hostedPath = "/assets";
+                        staticFiles.precompress = true;
+                        staticFiles.headers = Map.of("Cache-Control", "max-age=86400");
+                    });
+                    if (Config.enabled("jar-hell.dev-mode", false)) {
+                        config.bundledPlugins.enableCors(cors ->
+                                cors.addRule(CorsPluginConfig.CorsRule::anyHost)
+                        );
+                    }
+                    avajePlugins.forEach(config::registerPlugin);
+                })
+                .beforeMatched("/technical/*", ctx -> {
+                    String token = Optional.ofNullable(ctx.header("Authorization"))
+                            .map(header -> header.split(" "))
+                            .filter(values -> values.length == 2 && "Bearer".equals(values[0]))
+                            .map(values -> values[1])
+                            .orElse(null);
+                    if (!apiToken.equals(token)) {
+                        Thread.sleep(2000);
+                        throw new UnauthorizedResponse("Invalid token");
+                    }
+                })
+                .exception(UnauthorizedResponse.class, (e, ctx) -> {
+                    ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
+                    ctx.status(HttpStatus.UNAUTHORIZED);
+                })
+                .exception(ResourceNotFoundException.class, (e, ctx) -> {
+                    ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
+                    ctx.status(HttpStatus.NOT_FOUND);
+                })
+                .exception(ValueInstantiationException.class, (e, ctx) -> {
+                    ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), ExceptionUtils.getRootCause(e).getMessage()));
+                    ctx.status(HttpStatus.BAD_REQUEST);
+                })
+                .exception(BadRequestException.class, (e, ctx) -> {
+                    ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
+                    ctx.status(HttpStatus.BAD_REQUEST);
+                })
+                .exception(InvalidTypeArgumentException.class, (e, ctx) -> {
+                    ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
+                    ctx.status(HttpStatus.BAD_REQUEST);
+                })
+                .exception(Exception.class, (e, ctx) -> {
+                    logger.error("Unhandled exception occurred", e);
+                    ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
+                    ctx.status(HttpStatus.INTERNAL_SERVER_ERROR);
+                });
     }
 }

@@ -69,3 +69,4 @@ Content-Type: application/json
 ### crawl local
 POST http://localhost:8060/technical/v1/crawl
 Content-Type: application/json
+Authorization: Bearer test
