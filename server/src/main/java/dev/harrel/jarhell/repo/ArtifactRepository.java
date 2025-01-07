@@ -195,6 +195,8 @@ public class ArtifactRepository {
                 parameters("dependencies", dependencies)));
     }
 
+    /* Just because of bug: https://github.com/neo4j/neo4j-java-driver/issues/1601
+    * I don't use bookmarks either way so maybe it's even better that way */
     private Session session() {
         return driver.session(SessionConfig.builder().withBookmarkManager(null).build());
     }
