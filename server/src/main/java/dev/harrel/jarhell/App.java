@@ -4,17 +4,20 @@ import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.error.ResourceNotFoundException;
 import dev.harrel.jarhell.error.BadRequestException;
+import io.avaje.config.Config;
 import io.avaje.http.api.InvalidTypeArgumentException;
 import io.avaje.inject.BeanScope;
 import io.avaje.inject.spi.GenericType;
 import io.javalin.Javalin;
 import io.javalin.config.JavalinConfig;
 import io.javalin.http.HttpStatus;
+import io.javalin.http.UnauthorizedResponse;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 public class App implements Closeable {
@@ -38,6 +41,21 @@ public class App implements Closeable {
 
         Consumer<JavalinConfig> configConsumer = beanScope.get(new GenericType<Consumer<JavalinConfig>>() {}, "javalinConfig");
         this.server = Javalin.create(configConsumer)
+                .beforeMatched("/technical/*", ctx -> {
+                    String token = Optional.ofNullable(ctx.header("Authorization"))
+                            .map(header -> header.split(" "))
+                            .filter(values -> values.length == 2 && "Bearer".equals(values[0]))
+                            .map(values -> values[1])
+                            .orElse(null);
+                    if (!Config.get("API_TOKEN").equals(token)) {
+                        Thread.sleep(2000);
+                        throw new UnauthorizedResponse("Invalid token");
+                    }
+                })
+                .exception(UnauthorizedResponse.class, (e, ctx) -> {
+                    ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
+                    ctx.status(HttpStatus.UNAUTHORIZED);
+                })
                 .exception(ResourceNotFoundException.class, (e, ctx) -> {
                     ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
                     ctx.status(HttpStatus.NOT_FOUND);
