@@ -162,7 +162,7 @@ class AnalyzeControllerTest {
     }
 
     private EagerResult fetchByArtifactId(String id) {
-        return driver.executableQuery("MATCH (n {artifactId:'%s'}) RETURN n".formatted(id)).execute();
+        return driver.executableQuery("MATCH (n) WHERE n.artifactId = '%s' AND n.unresolved IS NULL RETURN n".formatted(id)).execute();
     }
 
     private void assertJmailArtifactInfo(Map<String, Object> properties) {

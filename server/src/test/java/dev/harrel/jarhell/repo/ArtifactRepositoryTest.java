@@ -89,6 +89,51 @@ class ArtifactRepositoryTest {
         assertThat(artifactTree.get().artifactInfo().unresolvedReason()).isEqualTo("test3");
     }
 
+    @Test
+    void shouldSwitchFromUnresolvedToResolved() {
+        Gav gav = new Gav("x", "y", "1");
+        repo.saveArtifact(ArtifactInfo.unresolved(gav, "test"));
+        ArtifactInfo artifact = artifactInfo(gav);
+        repo.saveArtifact(artifact);
+        Optional<ArtifactTree> artifactTree = repo.find(gav);
+
+        assertThat(artifactTree).isPresent();
+        assertThat(artifactTree.get().dependencies()).isEmpty();
+        assertThat(artifactTree.get().artifactInfo().analyzed()).isBeforeOrEqualTo(LocalDateTime.now());
+        assertArtifact(artifactTree.get().artifactInfo(), gav);
+    }
+
+    @Test
+    void shouldSwitchFromResolvedToUnresolved() {
+        Gav gav = new Gav("x", "y", "1");
+        repo.saveArtifact(artifactInfo(gav));
+        repo.saveArtifact(ArtifactInfo.unresolved(gav, "test"));
+        Optional<ArtifactTree> artifactTree = repo.find(gav);
+
+        assertThat(artifactTree).isPresent();
+        assertThat(artifactTree.get().dependencies()).isEmpty();
+        assertThat(artifactTree.get().artifactInfo().analyzed()).isBeforeOrEqualTo(LocalDateTime.now());
+        assertThat(artifactTree.get().artifactInfo().unresolved()).isTrue();
+        assertThat(artifactTree.get().artifactInfo().unresolvedCount()).isEqualTo(1);
+        assertThat(artifactTree.get().artifactInfo().unresolvedReason()).isEqualTo("test");
+    }
+
+    @Test
+    void shouldSwitchFromUnresolvedToResolvedAndBackToUnresolved() {
+        Gav gav = new Gav("x", "y", "1");
+        repo.saveArtifact(ArtifactInfo.unresolved(gav, "test1"));
+        repo.saveArtifact(artifactInfo(gav));
+        repo.saveArtifact(ArtifactInfo.unresolved(gav, "test2"));
+        Optional<ArtifactTree> artifactTree = repo.find(gav);
+
+        assertThat(artifactTree).isPresent();
+        assertThat(artifactTree.get().dependencies()).isEmpty();
+        assertThat(artifactTree.get().artifactInfo().analyzed()).isBeforeOrEqualTo(LocalDateTime.now());
+        assertThat(artifactTree.get().artifactInfo().unresolved()).isTrue();
+        assertThat(artifactTree.get().artifactInfo().unresolvedCount()).isEqualTo(1);
+        assertThat(artifactTree.get().artifactInfo().unresolvedReason()).isEqualTo("test2");
+    }
+
     private static ArtifactInfo artifactInfo(Gav gav) {
         return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), null, null, null,
                 LocalDateTime.MIN, 10L, "52.0", "jar", "name", "desc", "url", "scmUrl",
@@ -101,6 +146,9 @@ class ArtifactRepositoryTest {
         assertThat(info.groupId()).isEqualTo(gav.groupId());
         assertThat(info.artifactId()).isEqualTo(gav.artifactId());
         assertThat(info.version()).isEqualTo(gav.version());
+        assertThat(info.unresolved()).isNull();
+        assertThat(info.unresolvedCount()).isNull();
+        assertThat(info.unresolvedReason()).isNull();
         assertThat(info.packageSize()).isEqualTo(10L);
         assertThat(info.classifiers()).isEqualTo(List.of("source"));
     }
