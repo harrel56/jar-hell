@@ -1,13 +1,11 @@
 package dev.harrel.jarhell.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.extension.Host;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.LicenseType;
 import dev.harrel.jarhell.util.TestUtil;
-import io.javalin.http.HandlerType;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.StringRequestContent;
@@ -40,6 +38,37 @@ class AnalyzeControllerTest {
 
     @Test
     void shouldAnalyzeStandaloneLib() throws InterruptedException, ExecutionException, TimeoutException {
+        ContentResponse res = httpClient.newRequest(host + "/api/v1/analyze")
+                .body(new StringRequestContent(TestUtil.writeJson(
+                        new Gav("com.sanctionco.jmail", "jmail", "1.6.2")
+                )))
+                .method(HttpMethod.POST)
+                .send();
+
+        assertThat(res.getStatus()).isEqualTo(202);
+        assertThat(res.getContentAsString()).isEmpty();
+
+        await().atMost(Duration.ofSeconds(5)).until(() -> !fetchByArtifactId("jmail").records().isEmpty());
+
+        ContentResponse packageRes = httpClient.GET(host + "/api/v1/packages/com.sanctionco.jmail:jmail:1.6.2");
+        assertThat(packageRes.getStatus()).isEqualTo(200);
+        Map<String, Object> properties = TestUtil.readJson(packageRes.getContentAsString(), new TypeReference<>() {});
+        assertThat(properties).isNotNull();
+        assertThat(properties).containsEntry("licenses", List.of(Map.of(
+                "name", "MIT License",
+                "url", "https://opensource.org/licenses/mit-license.php"
+        )));
+        assertThat(properties).containsEntry("dependencies", List.of());
+        assertJmailArtifactInfo(properties);
+    }
+
+    @Test
+    void shouldAnalyzeUnresolvedLib() throws InterruptedException, ExecutionException, TimeoutException {
+        try (var session = driver.session()) {
+            session.executeWriteWithoutResult(tx -> {
+                tx.run("CREATE (:Artifact {groupId: 'com.sanctionco.jmail', artifactId: 'jmail', version: '1.6.2', classifier: '', unresolved: true})");
+            });
+        }
         ContentResponse res = httpClient.newRequest(host + "/api/v1/analyze")
                 .body(new StringRequestContent(TestUtil.writeJson(
                         new Gav("com.sanctionco.jmail", "jmail", "1.6.2")
@@ -130,24 +159,6 @@ class AnalyzeControllerTest {
         assertThat(dependencies.getFirst()).containsEntry("scope", "compile");
 
         assertJmailArtifactInfo(((Map<String, Object>) dependencies.getFirst().get("artifact")));
-    }
-
-    @Test
-    void shouldReturnNotFound() throws InterruptedException, ExecutionException, TimeoutException {
-        ContentResponse res = httpClient.newRequest(host + "/api/v1/analyze")
-                .body(new StringRequestContent(TestUtil.writeJson(
-                        new Gav("org.non-existent", "non-existent", "9.9.9")
-                )))
-                .method(HttpMethod.POST)
-                .send();
-
-        assertThat(res.getStatus()).isEqualTo(404);
-        ErrorResponse err = TestUtil.readJson(res.getContentAsString(), ErrorResponse.class);
-        assertThat(err).isEqualTo(
-                new ErrorResponse(host + "/api/v1/analyze",
-                        HandlerType.POST,
-                        "Package with coordinates [org.non-existent:non-existent:9.9.9] not found")
-        );
     }
 
     private EagerResult fetchByArtifactId(String id) {

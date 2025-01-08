@@ -1,6 +1,5 @@
 package dev.harrel.jarhell.analyze;
 
-import dev.harrel.jarhell.error.ResourceNotFoundException;
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.repo.ArtifactRepository;
 import dev.harrel.jarhell.util.ConcurrentUtil;
@@ -33,13 +32,11 @@ public class AnalyzeEngine {
     }
 
     public CompletableFuture<ArtifactTree> analyze(Gav gav) {
-        Optional<ArtifactTree> artifactTree = artifactRepository.find(gav);
+        Optional<ArtifactTree> artifactTree = artifactRepository.find(gav)
+                .filter(at -> !Boolean.TRUE.equals(at.artifactInfo().unresolved()));
         if (artifactTree.isPresent()) {
             logger.info("Analysis of [{}] is not necessary", gav);
             return CompletableFuture.completedFuture(artifactTree.get());
-        }
-        if (!analyzer.checkIfArtifactExists(gav)) {
-            throw new ResourceNotFoundException(gav);
         }
 
         return CompletableFuture.supplyAsync(() -> doFullAnalysis(gav), Executors.newVirtualThreadPerTaskExecutor());
@@ -52,36 +49,42 @@ public class AnalyzeEngine {
     }
 
     private ArtifactTree doFullAnalysis(Gav gav) {
-        logger.info("START FULL analysis of [{}]", gav);
-        AnalysisOutput output;
-        lock.lock(gav);
         try {
-            Optional<ArtifactTree> artifactTree = artifactRepository.find(gav);
-            if (artifactTree.isPresent()) {
-                return artifactTree.get();
+            logger.info("START FULL analysis of [{}]", gav);
+            AnalysisOutput output;
+            lock.lock(gav);
+            try {
+                Optional<ArtifactTree> artifactTree = artifactRepository.find(gav)
+                        .filter(at -> !Boolean.TRUE.equals(at.artifactInfo().unresolved()));
+                if (artifactTree.isPresent()) {
+                    return artifactTree.get();
+                }
+                output = doBaseAnalysis(gav);
+            } finally {
+                lock.unlock(gav);
             }
-            output = doBaseAnalysis(gav);
+
+            List<DependencyInfo> directDeps;
+            try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+                List<Subtask<DependencyInfo>> partialDepTasks = output.dependencies().directDependencies().stream()
+                        .map(dep -> scope.fork(() -> {
+                            ArtifactTree depTree = doFullAnalysis(dep.gav());
+                            return new DependencyInfo(depTree, dep.optional(), dep.scope());
+                        }))
+                        .toList();
+                ConcurrentUtil.joinScope(scope);
+                directDeps = partialDepTasks.stream().map(Subtask::get).toList();
+            }
+
+            artifactRepository.saveDependencies(gav, output.dependencies().directDependencies());
+            logger.info("END FULL analysis of [{}]", gav);
+            return new ArtifactTree(output.artifactInfo(), directDeps);
+        } catch (Exception e) {
+            logger.warn("Analysis of [{}] failed", gav, e);
+            throw e;
         } finally {
-            lock.unlock(gav);
+            partialAnalysis.remove(gav);
         }
-
-        List<DependencyInfo> directDeps;
-        try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
-            List<Subtask<DependencyInfo>> partialDepTasks = output.dependencies().directDependencies().stream()
-                    .map(dep -> scope.fork(() -> {
-                        ArtifactTree depTree = doFullAnalysis(dep.gav());
-                        return new DependencyInfo(depTree, dep.optional(), dep.scope());
-                    }))
-                    .toList();
-            ConcurrentUtil.joinScope(scope);
-            directDeps = partialDepTasks.stream().map(Subtask::get).toList();
-        }
-
-        artifactRepository.saveDependencies(gav, output.dependencies().directDependencies());
-        // todo: possibly not removed, maybe remove in finally
-        partialAnalysis.remove(gav);
-        logger.info("END FULL analysis of [{}]", gav);
-        return new ArtifactTree(output.artifactInfo(), directDeps);
     }
 
     private AnalysisOutput doBaseAnalysis(Gav gav) {
