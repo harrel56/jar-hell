@@ -44,7 +44,7 @@ public class AnalyzeEngine {
 
     public void saveUnresolved(Gav gav) {
         if (!artifactRepository.exists(gav)) {
-            artifactRepository.saveArtifact(ArtifactInfo.unresolved(gav));
+            artifactRepository.saveArtifact(ArtifactInfo.unresolved(gav, "crawl"));
         }
     }
 

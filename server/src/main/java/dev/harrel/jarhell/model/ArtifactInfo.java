@@ -12,6 +12,8 @@ public record ArtifactInfo(String groupId,
                            String version,
                            String classifier,
                            Boolean unresolved,
+                           Integer unresolvedCount,
+                           String unresolvedReason,
                            LocalDateTime created,
                            Long packageSize,
                            String bytecodeVersion,
@@ -27,14 +29,14 @@ public record ArtifactInfo(String groupId,
                            List<String> classifiers,
                            EffectiveValues effectiveValues,
                            LocalDateTime analyzed) {
-    public static ArtifactInfo unresolved(Gav gav) {
-        return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), true, null,
-                null, null, null, null, null, null, null,
+    public static ArtifactInfo unresolved(Gav gav, String reason) {
+        return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), true, 1, reason,
+                null, null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null);
     }
 
     public ArtifactInfo withEffectiveValues(EffectiveValues effectiveValues) {
-        return new ArtifactInfo(groupId, artifactId, version, classifier, unresolved, created, packageSize, bytecodeVersion,
+        return new ArtifactInfo(groupId, artifactId, version, classifier, unresolved, unresolvedCount, unresolvedReason, created, packageSize, bytecodeVersion,
                 packaging, name, description, url, scmUrl, issuesUrl, inceptionYear, licenses, licenseTypes, classifiers, effectiveValues, analyzed);
     }
 

@@ -158,10 +158,17 @@ public class ArtifactRepository {
     public void saveArtifact(ArtifactInfo artifactInfo) {
         ArtifactProps artifactProps = toArtifactProps(artifactInfo);
         Map<String, Object> propsMap = objectMapper.convertValue(artifactProps, new TypeReference<>() {});
-        propsMap.computeIfAbsent("classifier", k -> "");
+        propsMap.computeIfAbsent("classifier", _ -> "");
         try (var session = session()) {
             session.executeWriteWithoutResult(tx ->
-                    tx.run(new Query("CREATE (a:Artifact $props) SET a.analyzed = localdatetime()", parameters("props", propsMap)))
+                    tx.run("""
+                                    MERGE (a:Artifact {groupId: $props.groupId, artifactId: $props.artifactId, version: $props.version, classifier: $props.classifier})
+                                    WITH a, a.unresolvedCount AS unresolvedCount
+                                    SET a = $props, a.analyzed = localdatetime()
+                                    WITH a, unresolvedCount
+                                    WHERE a.unresolved = true
+                                    SET a.unresolvedCount = coalesce(unresolvedCount, 0) + 1""",
+                            parameters("props", propsMap))
             );
         }
     }
@@ -240,9 +247,9 @@ public class ArtifactRepository {
             }
 
             return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier(),
-                    artifactProps.unresolved(), artifactProps.created(), artifactProps.packageSize(), artifactProps.bytecodeVersion(),
-                    artifactProps.packaging(), artifactProps.name(), artifactProps.description(), artifactProps.url(),
-                    artifactProps.scmUrl(), artifactProps.issuesUrl(), artifactProps.inceptionYear(),
+                    artifactProps.unresolved(), artifactProps.unresolvedCount(), artifactProps.unresolvedReason(), artifactProps.created(),
+                    artifactProps.packageSize(), artifactProps.bytecodeVersion(), artifactProps.packaging(), artifactProps.name(),
+                    artifactProps.description(), artifactProps.url(), artifactProps.scmUrl(), artifactProps.issuesUrl(), artifactProps.inceptionYear(),
                     licenses, licenseTypes, artifactProps.classifiers(), effectiveValues, artifactProps.analyzed());
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
@@ -282,10 +289,10 @@ public class ArtifactRepository {
                         .toList();
             }
             return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(),
-                    artifactInfo.unresolved(), artifactInfo.created(), artifactInfo.packageSize(), artifactInfo.bytecodeVersion(),
-                    artifactInfo.packaging(), artifactInfo.name(), artifactInfo.description(), artifactInfo.url(),
-                    artifactInfo.scmUrl(), artifactInfo.issuesUrl(), artifactInfo.inceptionYear(),
-                    licenses, licenseTypes, artifactInfo.classifiers(), effectiveDependencies,
+                    artifactInfo.unresolved(), artifactInfo.unresolvedCount(), artifactInfo.unresolvedReason(), artifactInfo.created(),
+                    artifactInfo.packageSize(), artifactInfo.bytecodeVersion(), artifactInfo.packaging(), artifactInfo.name(),
+                    artifactInfo.description(), artifactInfo.url(), artifactInfo.scmUrl(), artifactInfo.issuesUrl(),
+                    artifactInfo.inceptionYear(), licenses, licenseTypes, artifactInfo.classifiers(), effectiveDependencies,
                     effectiveUnresolvedDependencies, effectiveOptionalDependencies, effectiveSize,
                     effectiveBytecodeVersion, effectiveLicenseType, effectiveLicenseTypes, null);
         } catch (JsonProcessingException e) {
@@ -300,6 +307,8 @@ public class ArtifactRepository {
                                  String version,
                                  String classifier,
                                  Boolean unresolved,
+                                 Integer unresolvedCount,
+                                 String unresolvedReason,
                                  LocalDateTime created,
                                  Long packageSize,
                                  String bytecodeVersion,

@@ -26,7 +26,7 @@ class AnalyzerTest {
     }
 
     private static ArtifactInfo resolved(Long size, String bytecodeVersion, List<LicenseType> licenseTypes) {
-        return new ArtifactInfo("org.resolved", "resolved", "1.0.0", null, null, null,
+        return new ArtifactInfo("org.resolved", "resolved", "1.0.0", null, null, null, null, null,
                 size, bytecodeVersion, "jar", "resolved", "desc", null, null, null, null,
                 List.of(), licenseTypes, List.of(), null, null);
     }
@@ -36,7 +36,7 @@ class AnalyzerTest {
     }
 
     private static ArtifactInfo unresolved() {
-        return ArtifactInfo.unresolved(new Gav("org.unresolved", "unresolved", "1.0.0", null));
+        return ArtifactInfo.unresolved(new Gav("org.unresolved", "unresolved", "1.0.0", null), "test");
     }
 
     private static DependencyInfo resolvedDep(Long size, String bytecodeVersion, boolean optional) {

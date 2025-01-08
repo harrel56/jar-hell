@@ -3,6 +3,7 @@ package dev.harrel.jarhell.analyze;
 import dev.harrel.jarhell.MavenApiClient;
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.model.descriptor.DescriptorInfo;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +44,7 @@ class Analyzer {
             return createArtifactInfo(gav, filesInfo, packageInfo, descriptorInfo);
         } catch (Exception e) {
             logger.warn("Failed to analyze artifact: {}, marking it as unresolved", gav, e);
-            return ArtifactInfo.unresolved(gav);
+            return ArtifactInfo.unresolved(gav, ExceptionUtils.getRootCauseMessage(e));
         }
     }
 
@@ -95,8 +96,8 @@ class Analyzer {
     }
 
     private ArtifactInfo createArtifactInfo(Gav gav, FilesInfo filesInfo, PackageInfo packageInfo, DescriptorInfo descriptorInfo) {
-        return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), null, packageInfo.created(),
-                packageInfo.size(), packageInfo.bytecodeVersion(), descriptorInfo.packaging(),
+        return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), null, null, null,
+                packageInfo.created(), packageInfo.size(), packageInfo.bytecodeVersion(), descriptorInfo.packaging(),
                 descriptorInfo.name(), descriptorInfo.description(), descriptorInfo.url(),
                 descriptorInfo.scmUrl(), descriptorInfo.issuesUrl(), descriptorInfo.inceptionYear(),
                 descriptorInfo.licenses(), descriptorInfo.licenseTypes(), List.copyOf(filesInfo.classifiers()), null, null);
