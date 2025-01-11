@@ -6,9 +6,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import dev.harrel.jarhell.analyze.AnalyzeEngine;
+import dev.harrel.jarhell.analyze.UnresolvedAnalyzerTask;
 import dev.harrel.jarhell.error.BadRequestException;
 import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.error.ResourceNotFoundException;
+import dev.harrel.jarhell.repo.ArtifactRepository;
 import io.avaje.config.Config;
 import io.avaje.http.api.AvajeJavalinPlugin;
 import io.avaje.http.api.InvalidTypeArgumentException;
@@ -34,6 +37,9 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Factory
 public class Configuration {
@@ -68,6 +74,13 @@ public class Configuration {
         httpClient.setMaxRequestsQueuedPerDestination(Integer.MAX_VALUE);
         httpClient.start();
         return httpClient;
+    }
+
+    @Bean(destroyMethod = "shutdownNow")
+    ScheduledExecutorService unresolvedService(ArtifactRepository repo, AnalyzeEngine analyzeEngine) {
+        ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor(Thread.ofVirtual().factory());
+        service.scheduleAtFixedRate(new UnresolvedAnalyzerTask(repo, analyzeEngine), 1, 5, TimeUnit.MINUTES);
+        return service;
     }
 
     @Bean

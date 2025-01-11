@@ -48,7 +48,7 @@ public class AnalyzeEngine {
         }
     }
 
-    private ArtifactTree doFullAnalysis(Gav gav) {
+    ArtifactTree doFullAnalysis(Gav gav) {
         try {
             logger.info("START FULL analysis of [{}]", gav);
             AnalysisOutput output;
