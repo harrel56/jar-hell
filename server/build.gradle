@@ -120,7 +120,7 @@ tasks.withType(Test).configureEach {
     jvmArgs '--enable-preview'
     environment 'AVAJE_PROFILES', 'dev'
     testLogging {
-        events TestLogEvent.SKIPPED, TestLogEvent.FAILED, TestLogEvent.STANDARD_OUT, TestLogEvent.STANDARD_ERROR
+        events TestLogEvent.SKIPPED, TestLogEvent.FAILED, TestLogEvent.STANDARD_ERROR
         exceptionFormat 'full'
     }
 }
