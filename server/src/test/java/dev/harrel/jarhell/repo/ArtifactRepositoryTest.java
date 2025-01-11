@@ -50,6 +50,20 @@ class ArtifactRepositoryTest {
     }
 
     @Test
+    void creationShouldUpdateAlreadyExistingRecord() {
+        Gav gav = new Gav("x", "y", "1");
+        repo.saveArtifact(artifactInfo(gav));
+        ArtifactInfo artifact = artifactInfo(gav, 100L);
+        repo.saveArtifact(artifact);
+        Optional<ArtifactTree> artifactTree = repo.find(gav);
+
+        assertThat(artifactTree).isPresent();
+        assertThat(artifactTree.get().dependencies()).isEmpty();
+        assertThat(artifactTree.get().artifactInfo().analyzed()).isBeforeOrEqualTo(LocalDateTime.now());
+        assertThat(artifactTree.get().artifactInfo().packageSize()).isEqualTo(100L);
+    }
+
+    @Test
     void shouldCreateNewUnresolvedArtifact() {
         Gav gav = new Gav("x", "y", "1");
         ArtifactInfo artifact = ArtifactInfo.unresolved(gav, "test");
@@ -135,8 +149,12 @@ class ArtifactRepositoryTest {
     }
 
     private static ArtifactInfo artifactInfo(Gav gav) {
+        return artifactInfo(gav, 10L);
+    }
+
+    private static ArtifactInfo artifactInfo(Gav gav, Long packageSize) {
         return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), null, null, null,
-                LocalDateTime.MIN, 10L, "52.0", "jar", "name", "desc", "url", "scmUrl",
+                LocalDateTime.MIN, packageSize, "52.0", "jar", "name", "desc", "url", "scmUrl",
                 "issuesUrl", "1995", List.of(new License("MIT", "https://mit.com")), List.of(LicenseType.MIT), List.of("source"),
                 new ArtifactInfo.EffectiveValues(0, 0, 0, 10L, "52.0", LicenseType.MIT, List.of()),
                 null);
