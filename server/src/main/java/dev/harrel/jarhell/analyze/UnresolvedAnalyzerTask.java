@@ -6,6 +6,8 @@ import dev.harrel.jarhell.util.ConcurrentUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.StructuredTaskScope;
 
@@ -30,12 +32,13 @@ public class UnresolvedAnalyzerTask implements Runnable {
     }
 
     private void doRun() {
+        Instant startTime = Instant.now();
         List<Gav> unresolvedGavs = repo.findAllUnresolved(64, 3);
         logger.info("Fetched {} gavs for reanalysis", unresolvedGavs.size());
         try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
             unresolvedGavs.forEach(analyzeEngine::doFullAnalysis);
             ConcurrentUtil.joinScope(scope);
         }
-        logger.info("Task finished");
+        logger.info("Task finished in {}s", Duration.between(startTime, Instant.now()).toSeconds());
     }
 }
