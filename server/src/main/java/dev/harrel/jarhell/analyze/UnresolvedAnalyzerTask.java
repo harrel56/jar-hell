@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.StructuredTaskScope;
 
 public class UnresolvedAnalyzerTask implements Runnable {
@@ -24,21 +25,21 @@ public class UnresolvedAnalyzerTask implements Runnable {
 
     @Override
     public void run() {
+        Instant startTime = Instant.now();
         try {
             doRun();
         } catch (Exception e) {
             logger.warn("Task failed", e);
         }
+        logger.info("Task finished in {}s", Duration.between(startTime, Instant.now()).toSeconds());
     }
 
     private void doRun() {
-        Instant startTime = Instant.now();
         List<Gav> unresolvedGavs = repo.findAllUnresolved(64, 3);
         logger.info("Fetched {} gavs for reanalysis", unresolvedGavs.size());
         try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
-            unresolvedGavs.forEach(analyzeEngine::doFullAnalysis);
+            unresolvedGavs.forEach(gav -> scope.fork(() -> analyzeEngine.doFullAnalysis(gav)));
             ConcurrentUtil.joinScope(scope);
         }
-        logger.info("Task finished in {}s", Duration.between(startTime, Instant.now()).toSeconds());
     }
 }
