@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.StructuredTaskScope;
 
 public class UnresolvedAnalyzerTask implements Runnable {
@@ -35,7 +34,7 @@ public class UnresolvedAnalyzerTask implements Runnable {
     }
 
     private void doRun() {
-        List<Gav> unresolvedGavs = repo.findAllUnresolved(64, 3);
+        List<Gav> unresolvedGavs = repo.findAllUnresolved(8, 3);
         logger.info("Fetched {} gavs for reanalysis", unresolvedGavs.size());
         try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
             unresolvedGavs.forEach(gav -> scope.fork(() -> analyzeEngine.doFullAnalysis(gav)));

@@ -79,7 +79,7 @@ public class Configuration {
     @Bean(destroyMethod = "shutdownNow")
     ScheduledExecutorService unresolvedService(ArtifactRepository repo, AnalyzeEngine analyzeEngine) {
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor(Thread.ofVirtual().factory());
-        service.scheduleAtFixedRate(new UnresolvedAnalyzerTask(repo, analyzeEngine), 15, 60, TimeUnit.SECONDS);
+        service.scheduleAtFixedRate(new UnresolvedAnalyzerTask(repo, analyzeEngine), 15, 15, TimeUnit.SECONDS);
         return service;
     }
 
