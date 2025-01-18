@@ -35,7 +35,7 @@ public class ArtifactProcessor implements Closeable {
     @PostConstruct
     public void postConstruct() {
         if (!Config.enabled("jar-hell.dev-mode", false)) {
-            start(1);
+//            start(1);
         }
     }
 
