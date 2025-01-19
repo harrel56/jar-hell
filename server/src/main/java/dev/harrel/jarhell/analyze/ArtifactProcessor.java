@@ -24,6 +24,7 @@ public class ArtifactProcessor implements Closeable {
     private final AtomicReference<Future<?>> runFuture = new AtomicReference<>(CompletableFuture.completedFuture(null));
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicInteger concurrency = new AtomicInteger(1);
+    private final AtomicInteger counter = new AtomicInteger(0);
     private final ArtifactRepository repo;
     private final AnalyzeEngine analyzeEngine;
 
@@ -35,7 +36,7 @@ public class ArtifactProcessor implements Closeable {
     @PostConstruct
     public void postConstruct() {
         if (!Config.enabled("jar-hell.dev-mode", false)) {
-//            start(1);
+            start(1);
         }
     }
 
@@ -74,7 +75,7 @@ public class ArtifactProcessor implements Closeable {
             } catch (Exception e) {
                 logger.warn("Batch failed", e);
             }
-            logger.info("Batch finished in {}s", Duration.between(startTime, Instant.now()).toSeconds());
+            logger.info("Batch finished in {}s, processed so far: {}", Duration.between(startTime, Instant.now()).toSeconds(), counter.get());
         }
     }
 
@@ -84,6 +85,7 @@ public class ArtifactProcessor implements Closeable {
         try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
             unresolvedGavs.forEach(gav -> scope.fork(() -> analyzeEngine.doFullAnalysis(gav)));
             ConcurrentUtil.joinScope(scope);
+            counter.addAndGet(unresolvedGavs.size());
         }
     }
 }
