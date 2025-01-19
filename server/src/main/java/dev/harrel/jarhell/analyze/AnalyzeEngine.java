@@ -11,10 +11,7 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Singleton;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.StructuredTaskScope;
+import java.util.concurrent.*;
 import java.util.concurrent.StructuredTaskScope.Subtask;
 
 @Singleton
@@ -125,7 +122,8 @@ public class AnalyzeEngine {
     }
 
     private StructuredTaskScope.ShutdownOnFailure newTaskScope() {
-        return new StructuredTaskScope.ShutdownOnFailure(null, new LimitingThreadFactory(Thread.ofVirtual().factory(), 1));
+        ThreadFactory factory = Thread.ofVirtual().name("analyze-", 0).factory();
+        return new StructuredTaskScope.ShutdownOnFailure("analyze-scope", new LimitingThreadFactory(factory, 8));
     }
 
     private record AnalysisOutput(ArtifactInfo artifactInfo,
