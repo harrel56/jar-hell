@@ -1,5 +1,6 @@
 package dev.harrel.jarhell.analyze;
 
+import dev.harrel.jarhell.LimitingThreadFactory;
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.repo.ArtifactRepository;
 import dev.harrel.jarhell.util.ConcurrentUtil;
@@ -65,7 +66,7 @@ public class AnalyzeEngine {
             }
 
             List<DependencyInfo> directDeps;
-            try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+            try (var scope = newTaskScope()) {
                 List<Subtask<DependencyInfo>> partialDepTasks = output.dependencies().directDependencies().stream()
                         .map(dep -> scope.fork(() -> {
                             ArtifactTree depTree = doFullAnalysis(dep.gav());
@@ -93,7 +94,7 @@ public class AnalyzeEngine {
 
         List<DependencyInfo> partialDeps;
         CollectedDependencies deps = Boolean.TRUE.equals(info.unresolved()) ? CollectedDependencies.empty() : analyzer.analyzeDeps(gav);
-        try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+        try (var scope = newTaskScope()) {
             List<Subtask<DependencyInfo>> partialDepTasks = deps.allDependencies().stream()
                     .map(dep -> scope.fork(() -> {
                         var artifactInfo = analyzePartially(dep.gav());
@@ -121,6 +122,10 @@ public class AnalyzeEngine {
             partialAnalysis.put(gav, info);
         }
         return info;
+    }
+
+    private StructuredTaskScope.ShutdownOnFailure newTaskScope() {
+        return new StructuredTaskScope.ShutdownOnFailure(null, new LimitingThreadFactory(Thread.ofVirtual().factory(), 1));
     }
 
     private record AnalysisOutput(ArtifactInfo artifactInfo,
