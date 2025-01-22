@@ -68,7 +68,7 @@ public class AnalyzeEngine {
 
             artifactRepository.saveDependencies(gav, output.dependencies().directDependencies());
             logger.info("END FULL analysis of [{}]", gav);
-            return new ArtifactTree(output.artifactInfo(), directDeps);
+            return new ArtifactTree(output.artifactInfo(), List.of());
         } catch (Exception e) {
             logger.warn("Analysis of [{}] failed", gav, e);
             throw e;
