@@ -37,19 +37,10 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 @Factory
 public class Configuration {
     private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
-
-    @Bean
-    public ScheduledFuture<?> taskCountLogger(AnalyzeEngine engine) {
-        return Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> logger.info("Task count = {}", engine.taskCount.get()),
-                0, 1, TimeUnit.SECONDS);
-    }
 
     @Bean
     public ObjectMapper objectMapper() {
