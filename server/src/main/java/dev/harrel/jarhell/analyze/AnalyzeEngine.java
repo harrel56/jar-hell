@@ -1,9 +1,7 @@
 package dev.harrel.jarhell.analyze;
 
-import dev.harrel.jarhell.LimitingThreadFactory;
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.repo.ArtifactRepository;
-import dev.harrel.jarhell.util.ConcurrentUtil;
 import dev.harrel.jarhell.util.ParametrizedLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +10,6 @@ import javax.inject.Singleton;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
-import java.util.concurrent.StructuredTaskScope.Subtask;
 
 @Singleton
 public class AnalyzeEngine {
@@ -62,17 +59,12 @@ public class AnalyzeEngine {
                 lock.unlock(gav);
             }
 
-            List<DependencyInfo> directDeps;
-            try (var scope = newTaskScope()) {
-                List<Subtask<DependencyInfo>> partialDepTasks = output.dependencies().directDependencies().stream()
-                        .map(dep -> scope.fork(() -> {
-                            ArtifactTree depTree = doFullAnalysis(dep.gav());
-                            return new DependencyInfo(depTree, dep.optional(), dep.scope());
-                        }))
-                        .toList();
-                ConcurrentUtil.joinScope(scope);
-                directDeps = partialDepTasks.stream().map(Subtask::get).toList();
-            }
+            List<DependencyInfo> directDeps = output.dependencies().directDependencies().stream()
+                    .map(dep -> {
+                        ArtifactTree depTree = doFullAnalysis(dep.gav());
+                        return new DependencyInfo(depTree, dep.optional(), dep.scope());
+                    })
+                    .toList();
 
             artifactRepository.saveDependencies(gav, output.dependencies().directDependencies());
             logger.info("END FULL analysis of [{}]", gav);
@@ -89,18 +81,13 @@ public class AnalyzeEngine {
         logger.info("START BASE analysis of [{}]", gav);
         ArtifactInfo info = analyzePartially(gav);
 
-        List<DependencyInfo> partialDeps;
         CollectedDependencies deps = Boolean.TRUE.equals(info.unresolved()) ? CollectedDependencies.empty() : analyzer.analyzeDeps(gav);
-        try (var scope = newTaskScope()) {
-            List<Subtask<DependencyInfo>> partialDepTasks = deps.allDependencies().stream()
-                    .map(dep -> scope.fork(() -> {
-                        var artifactInfo = analyzePartially(dep.gav());
-                        return new DependencyInfo(new ArtifactTree(artifactInfo, List.of()), dep.optional(), dep.scope());
-                    }))
-                    .toList();
-            ConcurrentUtil.joinScope(scope);
-            partialDeps = partialDepTasks.stream().map(Subtask::get).toList();
-        }
+        List<DependencyInfo> partialDeps = deps.allDependencies().stream()
+                .map(dep -> {
+                    var artifactInfo = analyzePartially(dep.gav());
+                    return new DependencyInfo(new ArtifactTree(artifactInfo, List.of()), dep.optional(), dep.scope());
+                })
+                .toList();
 
         ArtifactInfo.EffectiveValues effectiveValues = analyzer.computeEffectiveValues(info, partialDeps);
         info = info.withEffectiveValues(effectiveValues);
@@ -119,11 +106,6 @@ public class AnalyzeEngine {
             partialAnalysis.put(gav, info);
         }
         return info;
-    }
-
-    private StructuredTaskScope.ShutdownOnFailure newTaskScope() {
-        ThreadFactory factory = Thread.ofVirtual().name("analyze-", 0).factory();
-        return new StructuredTaskScope.ShutdownOnFailure("analyze-scope", new LimitingThreadFactory(factory, 8));
     }
 
     private record AnalysisOutput(ArtifactInfo artifactInfo,
