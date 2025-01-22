@@ -237,7 +237,7 @@ class MavenResolverConfiguration {
         session.setLocalRepositoryManager(repositorySystem.newLocalRepositoryManager(session, new LocalRepository(Config.get("maven.local-repo.path"))));
         session.setRepositoryListener(new LoggingRepositoryListener());
         session.setConfigProperty("aether.dependencyCollector.impl", BfDependencyCollector.NAME);
-        session.setConfigProperty("aether.dependencyCollector.bf.threads", 8);
+        session.setConfigProperty("aether.dependencyCollector.bf.threads", 1);
         session.setConfigProperty(ArtifactDescriptorReaderDelegate.class.getName(), new CustomDescriptorReaderDelegate());
         // for maven profiles activation which depend on jdk version - value doesn't really matter
         session.setSystemProperties(Map.of(
