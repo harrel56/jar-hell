@@ -19,6 +19,7 @@ public class AnalyzeEngine {
     private static final Logger logger = LoggerFactory.getLogger(AnalyzeEngine.class);
 
     public final AtomicLong taskCount = new AtomicLong(0);
+    public final AtomicLong maxTaskCount = new AtomicLong(0);
     private final ParametrizedLock<Gav> lock = new ParametrizedLock<>();
     private final ConcurrentHashMap<Gav, ArtifactInfo> partialAnalysis = new ConcurrentHashMap<>();
 
@@ -51,6 +52,7 @@ public class AnalyzeEngine {
         try {
             logger.info("START FULL analysis of [{}]", gav);
             taskCount.incrementAndGet();
+            maxTaskCount.set(Math.max(taskCount.get(), maxTaskCount.get()));
             AnalysisOutput output;
             lock.lock(gav);
             try {
@@ -96,6 +98,7 @@ public class AnalyzeEngine {
         CollectedDependencies deps = Boolean.TRUE.equals(info.unresolved()) ? CollectedDependencies.empty() : analyzer.analyzeDeps(gav);
         try (var scope = newTaskScope()) {
             taskCount.addAndGet(deps.allDependencies().size());
+            maxTaskCount.set(Math.max(taskCount.get(), maxTaskCount.get()));
             List<Subtask<DependencyInfo>> partialDepTasks = deps.allDependencies().stream()
                     .map(dep -> scope.fork(() -> {
                         var artifactInfo = analyzePartially(dep.gav());

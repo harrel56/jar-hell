@@ -47,7 +47,8 @@ public class Configuration {
 
     @Bean
     public ScheduledFuture<?> taskCountLogger(AnalyzeEngine engine) {
-        return Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> logger.info("Task count = {}", engine.taskCount.get()),
+        return Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() ->
+                        logger.info("Task count = {}, max = {}", engine.taskCount.get(), engine.maxTaskCount.get()),
                 0, 1, TimeUnit.SECONDS);
     }
 
