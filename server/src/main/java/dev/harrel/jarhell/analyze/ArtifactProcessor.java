@@ -1,9 +1,7 @@
 package dev.harrel.jarhell.analyze;
 
 import dev.harrel.jarhell.model.ArtifactTree;
-import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.repo.ArtifactRepository;
-import dev.harrel.jarhell.util.ConcurrentUtil;
 import io.avaje.config.Config;
 import io.avaje.inject.PostConstruct;
 import org.slf4j.Logger;
@@ -54,6 +52,7 @@ public class ArtifactProcessor implements Closeable {
         running.set(false);
         try {
             runFuture.get().get();
+            logger.info("Processor has stopped");
         } catch (ExecutionException e) {
             throw new CompletionException(e);
         } catch (InterruptedException e) {
@@ -63,6 +62,7 @@ public class ArtifactProcessor implements Closeable {
     }
     @Override
     public void close() {
+        logger.info("Shutting down...");
         service.shutdown();
         stop();
     }

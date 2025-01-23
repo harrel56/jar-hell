@@ -117,7 +117,7 @@ public class ArtifactRepository {
     }
 
     public Optional<ArtifactTree> find(Gav gav) {
-        return find(gav, -1);
+        return find(gav, 0);
     }
 
     public Optional<ArtifactTree> find(Gav gav, int depth) {

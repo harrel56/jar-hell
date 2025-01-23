@@ -59,12 +59,9 @@ public class AnalyzeEngine {
                 lock.unlock(gav);
             }
 
-            List<DependencyInfo> directDeps = output.dependencies().directDependencies().stream()
-                    .map(dep -> {
-                        ArtifactTree depTree = doFullAnalysis(dep.gav());
-                        return new DependencyInfo(depTree, dep.optional(), dep.scope());
-                    })
-                    .toList();
+            for (FlatDependency dep : output.dependencies().directDependencies()) {
+                doFullAnalysis(dep.gav());
+            }
 
             artifactRepository.saveDependencies(gav, output.dependencies().directDependencies());
             logger.info("END FULL analysis of [{}]", gav);
