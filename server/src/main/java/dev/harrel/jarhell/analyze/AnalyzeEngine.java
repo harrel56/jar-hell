@@ -2,6 +2,7 @@ package dev.harrel.jarhell.analyze;
 
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.repo.ArtifactRepository;
+import dev.harrel.jarhell.util.ConcurrentUtil;
 import dev.harrel.jarhell.util.ParametrizedLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,8 +60,11 @@ public class AnalyzeEngine {
                 lock.unlock(gav);
             }
 
-            for (FlatDependency dep : output.dependencies().directDependencies()) {
-                doFullAnalysis(dep.gav());
+            try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+                for (FlatDependency dep : output.dependencies().directDependencies()) {
+                    scope.fork(() -> doFullAnalysis(dep.gav()));
+                }
+                ConcurrentUtil.joinScope(scope);
             }
 
             artifactRepository.saveDependencies(gav, output.dependencies().directDependencies());
@@ -78,13 +82,18 @@ public class AnalyzeEngine {
         logger.info("START BASE analysis of [{}]", gav);
         ArtifactInfo info = analyzePartially(gav);
 
+        List<DependencyInfo> partialDeps;
         CollectedDependencies deps = Boolean.TRUE.equals(info.unresolved()) ? CollectedDependencies.empty() : analyzer.analyzeDeps(gav);
-        List<DependencyInfo> partialDeps = deps.allDependencies().stream()
-                .map(dep -> {
-                    var artifactInfo = analyzePartially(dep.gav());
-                    return new DependencyInfo(new ArtifactTree(artifactInfo, List.of()), dep.optional(), dep.scope());
-                })
-                .toList();
+        try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+            List<StructuredTaskScope.Subtask<DependencyInfo>> partialDepTasks = deps.allDependencies().stream()
+                    .map(dep -> scope.fork(() -> {
+                        var artifactInfo = analyzePartially(dep.gav());
+                        return new DependencyInfo(new ArtifactTree(artifactInfo, List.of()), dep.optional(), dep.scope());
+                    }))
+                    .toList();
+            ConcurrentUtil.joinScope(scope);
+            partialDeps = partialDepTasks.stream().map(StructuredTaskScope.Subtask::get).toList();
+        }
 
         ArtifactInfo.EffectiveValues effectiveValues = analyzer.computeEffectiveValues(info, partialDeps);
         info = info.withEffectiveValues(effectiveValues);
