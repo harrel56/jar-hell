@@ -1,8 +1,8 @@
 package dev.harrel.jarhell.analyze;
 
-import dev.harrel.jarhell.model.ArtifactTree;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.repo.ArtifactRepository;
+import dev.harrel.jarhell.util.ConcurrentUtil;
 import io.avaje.config.Config;
 import io.avaje.inject.PostConstruct;
 import org.slf4j.Logger;
