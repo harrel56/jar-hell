@@ -27,7 +27,7 @@ class ArtifactRepositoryTest {
         Gav gav = new Gav("x", "y", "1");
         ArtifactInfo artifact = artifactInfo(gav);
         repo.saveArtifact(artifact);
-        Optional<ArtifactTree> artifactTree = repo.find(gav);
+        Optional<ArtifactTree> artifactTree = repo.find(gav, 1);
 
         assertThat(artifactTree).isPresent();
         assertThat(artifactTree.get().dependencies()).isEmpty();
@@ -41,7 +41,7 @@ class ArtifactRepositoryTest {
         ArtifactInfo artifact = artifactInfo(gav);
         repo.saveArtifact(artifact);
         repo.saveArtifact(artifact);
-        Optional<ArtifactTree> artifactTree = repo.find(gav);
+        Optional<ArtifactTree> artifactTree = repo.find(gav, 1);
 
         assertThat(artifactTree).isPresent();
         assertThat(artifactTree.get().dependencies()).isEmpty();
@@ -55,7 +55,7 @@ class ArtifactRepositoryTest {
         repo.saveArtifact(artifactInfo(gav));
         ArtifactInfo artifact = artifactInfo(gav, 100L);
         repo.saveArtifact(artifact);
-        Optional<ArtifactTree> artifactTree = repo.find(gav);
+        Optional<ArtifactTree> artifactTree = repo.find(gav, 1);
 
         assertThat(artifactTree).isPresent();
         assertThat(artifactTree.get().dependencies()).isEmpty();
@@ -68,7 +68,7 @@ class ArtifactRepositoryTest {
         Gav gav = new Gav("x", "y", "1");
         ArtifactInfo artifact = ArtifactInfo.unresolved(gav, "test");
         repo.saveArtifact(artifact);
-        Optional<ArtifactTree> artifactTree = repo.find(gav);
+        Optional<ArtifactTree> artifactTree = repo.find(gav, 1);
 
         assertThat(artifactTree).isPresent();
         assertThat(artifactTree.get().dependencies()).isEmpty();
@@ -83,7 +83,7 @@ class ArtifactRepositoryTest {
         Gav gav = new Gav("x", "y", "1");
         repo.saveArtifact(ArtifactInfo.unresolved(gav, "test1"));
         repo.saveArtifact(ArtifactInfo.unresolved(gav, "test2"));
-        Optional<ArtifactTree> artifactTree = repo.find(gav);
+        Optional<ArtifactTree> artifactTree = repo.find(gav, 1);
 
         assertThat(artifactTree).isPresent();
         assertThat(artifactTree.get().dependencies()).isEmpty();
@@ -93,7 +93,7 @@ class ArtifactRepositoryTest {
         assertThat(artifactTree.get().artifactInfo().unresolvedReason()).isEqualTo("test2");
 
         repo.saveArtifact(ArtifactInfo.unresolved(gav, "test3"));
-        artifactTree = repo.find(gav);
+        artifactTree = repo.find(gav, 1);
 
         assertThat(artifactTree).isPresent();
         assertThat(artifactTree.get().dependencies()).isEmpty();
@@ -109,7 +109,7 @@ class ArtifactRepositoryTest {
         repo.saveArtifact(ArtifactInfo.unresolved(gav, "test"));
         ArtifactInfo artifact = artifactInfo(gav);
         repo.saveArtifact(artifact);
-        Optional<ArtifactTree> artifactTree = repo.find(gav);
+        Optional<ArtifactTree> artifactTree = repo.find(gav, 1);
 
         assertThat(artifactTree).isPresent();
         assertThat(artifactTree.get().dependencies()).isEmpty();
@@ -122,7 +122,7 @@ class ArtifactRepositoryTest {
         Gav gav = new Gav("x", "y", "1");
         repo.saveArtifact(artifactInfo(gav));
         repo.saveArtifact(ArtifactInfo.unresolved(gav, "test"));
-        Optional<ArtifactTree> artifactTree = repo.find(gav);
+        Optional<ArtifactTree> artifactTree = repo.find(gav, 1);
 
         assertThat(artifactTree).isPresent();
         assertThat(artifactTree.get().dependencies()).isEmpty();
@@ -138,7 +138,7 @@ class ArtifactRepositoryTest {
         repo.saveArtifact(ArtifactInfo.unresolved(gav, "test1"));
         repo.saveArtifact(artifactInfo(gav));
         repo.saveArtifact(ArtifactInfo.unresolved(gav, "test2"));
-        Optional<ArtifactTree> artifactTree = repo.find(gav);
+        Optional<ArtifactTree> artifactTree = repo.find(gav, 1);
 
         assertThat(artifactTree).isPresent();
         assertThat(artifactTree.get().dependencies()).isEmpty();

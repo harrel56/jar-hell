@@ -105,7 +105,7 @@ class AnalyzeControllerTest {
         assertThat(res.getStatus()).isEqualTo(202);
         assertThat(res.getContentAsString()).isEmpty();
 
-        await().atMost(Duration.ofSeconds(5)).until(() -> !fetchByArtifactId("artifact").records().isEmpty());
+        await().atMost(Duration.ofSeconds(5)).until(() -> !fetchByArtifactId("jmail").records().isEmpty());
 
         ContentResponse packageRes = httpClient.GET(host + "/api/v1/packages/com.sanctionco.jmail:jmail:1.6.2");
         assertThat(packageRes.getStatus()).isEqualTo(200);
