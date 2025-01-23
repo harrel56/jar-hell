@@ -1,6 +1,7 @@
 package dev.harrel.jarhell.analyze;
 
 import dev.harrel.jarhell.model.ArtifactTree;
+import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.repo.ArtifactRepository;
 import io.avaje.config.Config;
 import io.avaje.inject.PostConstruct;
@@ -19,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ArtifactProcessor implements Closeable {
     private static final Logger logger = LoggerFactory.getLogger(ArtifactProcessor.class);
 
-    private final ExecutorService service = Executors.newFixedThreadPool(9);
+    private final ExecutorService service = Executors.newSingleThreadExecutor();
     private final AtomicReference<Future<?>> runFuture = new AtomicReference<>(CompletableFuture.completedFuture(null));
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicInteger concurrency = new AtomicInteger(1);
@@ -81,16 +82,12 @@ public class ArtifactProcessor implements Closeable {
     }
 
     private void doRun() {
-        List<Callable<ArtifactTree>> tasks = repo.findAllUnresolved(concurrency.get(), 3).stream()
-                .<Callable<ArtifactTree>> map(gav -> () -> analyzeEngine.doFullAnalysis(gav))
-                .toList();
-        logger.info("Fetched {} gavs for reanalysis", tasks.size());
-        try {
-            service.invokeAll(tasks);
-            counter.addAndGet(tasks.size());
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new CompletionException(e);
+        List<Gav> unresolvedGavs = repo.findAllUnresolved(concurrency.get(), 3);
+        logger.info("Fetched {} gavs for reanalysis", unresolvedGavs.size());
+        try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+            unresolvedGavs.forEach(gav -> scope.fork(() -> analyzeEngine.doFullAnalysis(gav)));
+            ConcurrentUtil.joinScope(scope);
+            counter.addAndGet(unresolvedGavs.size());
         }
     }
 }
