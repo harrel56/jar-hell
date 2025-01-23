@@ -234,6 +234,9 @@ class MavenResolverConfiguration {
     @Bean
     DefaultRepositorySystemSession defaultRepositorySystemSession(RepositorySystem repositorySystem) {
         DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
+        // Settings this to false might make requests to some strange hosts
+        // probably should be switched if supporting multiple repos is the thing
+        session.setIgnoreArtifactDescriptorRepositories(true);
         session.setLocalRepositoryManager(repositorySystem.newLocalRepositoryManager(session, new LocalRepository(Config.get("maven.local-repo.path"))));
         session.setRepositoryListener(new LoggingRepositoryListener());
         session.setConfigProperty("aether.dependencyCollector.impl", BfDependencyCollector.NAME);
