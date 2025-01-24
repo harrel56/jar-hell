@@ -35,6 +35,12 @@ class DatabaseInitializerTest {
         EagerResult indexGaResult = driver.executableQuery("SHOW INDEXES WHERE name = 'index_ga'").execute();
         assertIndex(indexGaResult, List.of("groupId", "artifactId"));
 
+        EagerResult textIndexGroupIdResult = driver.executableQuery("SHOW INDEXES WHERE name = 'text_index_group_id'").execute();
+        assertTextIndex(textIndexGroupIdResult, "groupId");
+
+        EagerResult textIndexArtifactIdResult = driver.executableQuery("SHOW INDEXES WHERE name = 'text_index_artifact_id'").execute();
+        assertTextIndex(textIndexArtifactIdResult, "artifactId");
+
         EagerResult uniqueGavResult = driver.executableQuery("SHOW INDEXES WHERE name = 'unique_gav'").execute();
         assertIndex(uniqueGavResult, List.of("groupId", "artifactId", "version", "classifier"));
 
@@ -70,5 +76,17 @@ class DatabaseInitializerTest {
         assertThat(record.get("labelsOrTypes").asList()).isEqualTo(List.of("Artifact"));
         assertThat(record.get("properties").asList()).isEqualTo(properties);
         assertThat(record.get("indexProvider").asString()).isEqualTo("range-1.0");
+    }
+
+    private void assertTextIndex(EagerResult result, String prop) {
+        assertThat(result.records()).hasSize(1);
+        Record record = result.records().getFirst();
+
+        assertThat(record.get("state").asString()).isEqualTo("ONLINE");
+        assertThat(record.get("populationPercent").asDouble()).isEqualTo(100.0);
+        assertThat(record.get("type").asString()).isEqualTo("TEXT");
+        assertThat(record.get("labelsOrTypes").asList()).isEqualTo(List.of("Artifact"));
+        assertThat(record.get("properties").asList()).isEqualTo(List.of(prop));
+        assertThat(record.get("indexProvider").asString()).isEqualTo("text-2.0");
     }
 }
