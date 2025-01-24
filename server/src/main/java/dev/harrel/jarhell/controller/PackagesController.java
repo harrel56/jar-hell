@@ -34,6 +34,7 @@ class PackagesController {
     }
 
     @Get("/search")
+    //todo actually return {g: '', a: ''}
     List<String> search(@QueryParam String query) {
         if (query == null) {
             throw new BadRequestException("query parameter is required");
