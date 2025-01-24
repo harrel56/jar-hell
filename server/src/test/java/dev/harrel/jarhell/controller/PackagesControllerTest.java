@@ -1,5 +1,6 @@
 package dev.harrel.jarhell.controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import dev.harrel.jarhell.error.ErrorResponse;
@@ -393,6 +394,41 @@ class PackagesControllerTest {
                         HandlerType.GET,
                         "artifactId parameter is required")
         );
+    }
+
+    @Test
+    void shouldFailSearchWithoutQuery() throws InterruptedException, ExecutionException, TimeoutException {
+        String uri = host + "/api/v1/packages/search";
+        ContentResponse res = httpClient.GET(uri);
+
+        assertThat(res.getStatus()).isEqualTo(400);
+        ErrorResponse err = TestUtil.readJson(res.getContentAsString(), ErrorResponse.class);
+        assertThat(err).isEqualTo(
+                new ErrorResponse(uri,
+                        HandlerType.GET,
+                        "query parameter is required")
+        );
+    }
+
+    @Test
+    void shouldSearchByGroupId() throws InterruptedException, ExecutionException, TimeoutException {
+        try (var session = driver.session()) {
+            session.executeWriteWithoutResult(
+                    tx -> tx.run("""
+                            CREATE
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib1', version: '1.0.0'}),
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib2', version: '1.0.0'}),
+                            (:Artifact {groupId: 'org.hello', artifactId: 'lib1', version: '1.0.0'}),
+                            (:Artifact {groupId: 'org.hello', artifactId: 'lib2', version: '1.0.0'})
+                            """)
+            );
+        }
+        String uri = host + "/api/v1/packages/search?query=test";
+        ContentResponse res = httpClient.GET(uri);
+
+        assertThat(res.getStatus()).isEqualTo(200);
+        List<String> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        assertThat(found).containsExactly("org.test:lib1", "org.test:lib2");
     }
 
     static void assertArtifact(JsonNode node,

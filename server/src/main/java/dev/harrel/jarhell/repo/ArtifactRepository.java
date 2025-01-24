@@ -116,6 +116,38 @@ public class ArtifactRepository {
         }
     }
 
+    public List<Gav> search(String token) {
+        try (var session = session()) {
+            return session.executeRead(tx -> {
+                Result res = tx.run("""
+                                MATCH (n:Artifact)
+                                WHERE n.groupId CONTAINS $token
+                                OR n.artifactId CONTAINS $token
+                                RETURN DISTINCT n.groupId, n.artifactId, n.version
+                                LIMIT 40""",
+                        parameters("token", token));
+                return res.list(r ->
+                        new Gav(r.get("n.groupId").asString(), r.get("n.artifactId").asString(), r.get("n.version").asString()));
+            });
+        }
+    }
+
+    public List<Gav> search(String groupId, String artifactId) {
+        try (var session = session()) {
+            return session.executeRead(tx -> {
+                Result res = tx.run("""
+                                MATCH (n:Artifact)
+                                WHERE n.groupId CONTAINS $groupId
+                                AND n.artifactId CONTAINS $artifactId
+                                RETURN DISTINCT n.groupId, n.artifactId, n.version
+                                LIMIT 40""",
+                        parameters("groupId", groupId, "artifactId", artifactId));
+                return res.list(r ->
+                        new Gav(r.get("n.groupId").asString(), r.get("n.artifactId").asString(), r.get("n.version").asString()));
+            });
+        }
+    }
+
     public Optional<ArtifactTree> find(Gav gav) {
         return find(gav, 0);
     }

@@ -33,6 +33,27 @@ class PackagesController {
         return artifactRepository.findAllVersions(groupId, artifactId, classifier);
     }
 
+    @Get("/search")
+    List<String> search(@QueryParam String query) {
+        if (query == null) {
+            throw new BadRequestException("query parameter is required");
+        }
+        if (query.isEmpty()) {
+            return List.of();
+        }
+
+        String[] split = query.split(":");
+        List<Gav> gavs;
+        if (split.length == 1) {
+            gavs = artifactRepository.search(split[0].trim());
+        } else {
+            gavs = artifactRepository.search(split[0].trim(), split[1].trim());
+        }
+        return gavs.stream()
+                .map(gav -> "%s:%s".formatted(gav.groupId(), gav.artifactId()))
+                .toList();
+    }
+
     @Get("/{coordinate}")
     ArtifactTree get(String coordinate, @QueryParam Integer depth) {
         Gav gav = Gav.fromCoordinate(coordinate)
