@@ -428,8 +428,8 @@ class PackagesControllerTest {
         assertThat(res.getStatus()).isEqualTo(200);
         List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(found).containsExactly(
-                new SearchResult("org.test", "lib1"),
-                new SearchResult("org.test", "lib2")
+                new SearchResult("org.test", "lib1", "1.0.0"),
+                new SearchResult("org.test", "lib2", "1.0.0")
         );
     }
 
@@ -447,8 +447,8 @@ class PackagesControllerTest {
         assertThat(res.getStatus()).isEqualTo(200);
         List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(found).containsExactly(
-                new SearchResult("org.test", "lib1"),
-                new SearchResult("org.hello", "lib1")
+                new SearchResult("org.test", "lib1", "1.0.0"),
+                new SearchResult("org.hello", "lib1", "1.0.0")
         );
     }
 
@@ -467,9 +467,9 @@ class PackagesControllerTest {
         assertThat(res.getStatus()).isEqualTo(200);
         List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(found).containsExactly(
-                new SearchResult("org.hello", "lib1"),
-                new SearchResult("org.hello", "lib2"),
-                new SearchResult("org.library", "hello")
+                new SearchResult("org.hello", "lib1", "1.0.0"),
+                new SearchResult("org.hello", "lib2", "1.0.0"),
+                new SearchResult("org.library", "hello", "1.0.0")
         );
     }
 
@@ -488,8 +488,28 @@ class PackagesControllerTest {
         assertThat(res.getStatus()).isEqualTo(200);
         List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(found).containsExactly(
-                new SearchResult("org.hello", "lib1"),
-                new SearchResult("org.hello", "lib2")
+                new SearchResult("org.hello", "lib1", "1.0.0"),
+                new SearchResult("org.hello", "lib2", "1.0.0")
+        );
+    }
+
+    @Test
+    void shouldSearchPackagesOnlyWithMaxVersion() throws InterruptedException, ExecutionException, TimeoutException {
+        insertGavs(List.of(
+                new Gav("org.test", "lib1", "1.0.0"),
+                new Gav("org.test", "lib1", "1.2.1"),
+                new Gav("org.test", "lib1", "2.0.1"),
+                new Gav("org.test", "lib2", "1.0.0"),
+                new Gav("org.test", "lib2", "1.0.1")
+        ));
+        String uri = host + "/api/v1/packages/search?query=org.test:lib";
+        ContentResponse res = httpClient.GET(uri);
+
+        assertThat(res.getStatus()).isEqualTo(200);
+        List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        assertThat(found).containsExactly(
+                new SearchResult("org.test", "lib1", "2.0.1"),
+                new SearchResult("org.test", "lib2", "1.0.1")
         );
     }
 

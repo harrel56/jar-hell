@@ -55,9 +55,10 @@ const Listbox = ({ac}: ListboxProps) => {
         {ac.groupedOptions.length === 0 && <ListboxOption selectable={false}>No results found</ListboxOption>}
         {(ac.groupedOptions as Artifact[]).map((option, index) => {
           const artifactString = toArtifactString(option)
+          const location = '/packages/' + artifactString + (option.latestVersion ? `:${option.latestVersion}` : '')
           const {key, ...optionProps} = ac.getOptionProps({option, index})
           return (
-            <Link key={artifactString} to={`/packages/${artifactString}:${option.latestVersion}`} title={artifactString}>
+            <Link key={artifactString} to={location} title={artifactString}>
               <ListboxOption {...optionProps}>{toShortArtifactString(option)}</ListboxOption>
             </Link>
           )
@@ -80,7 +81,7 @@ export const Autocomplete = () => {
     loading,
     error,
     get
-  } = useFetch<Artifact[]>('/api/v1/maven/search')
+  } = useFetch<Artifact[]>('/api/v1/packages/search')
 
   useLayoutEffect(() => setOptions(data ?? []), [data])
   useLayoutEffect(() => {

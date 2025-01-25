@@ -123,11 +123,11 @@ public class ArtifactRepository {
                                 MATCH (n:Artifact)
                                 WHERE n.groupId CONTAINS $token
                                 OR n.artifactId CONTAINS $token
-                                RETURN DISTINCT n.groupId, n.artifactId, n.version
+                                RETURN DISTINCT n.groupId, n.artifactId
                                 LIMIT 40""",
                         parameters("token", token));
                 return res.list(r ->
-                        new Gav(r.get("n.groupId").asString(), r.get("n.artifactId").asString(), r.get("n.version").asString()));
+                        new Gav(r.get("n.groupId").asString(), r.get("n.artifactId").asString(), "absent"));
             });
         }
     }
@@ -139,11 +139,11 @@ public class ArtifactRepository {
                                 MATCH (n:Artifact)
                                 WHERE n.groupId CONTAINS $groupId
                                 AND n.artifactId CONTAINS $artifactId
-                                RETURN DISTINCT n.groupId, n.artifactId, n.version
+                                RETURN DISTINCT n.groupId, n.artifactId
                                 LIMIT 40""",
                         parameters("groupId", groupId, "artifactId", artifactId));
                 return res.list(r ->
-                        new Gav(r.get("n.groupId").asString(), r.get("n.artifactId").asString(), r.get("n.version").asString()));
+                        new Gav(r.get("n.groupId").asString(), r.get("n.artifactId").asString(), "absent"));
             });
         }
     }
