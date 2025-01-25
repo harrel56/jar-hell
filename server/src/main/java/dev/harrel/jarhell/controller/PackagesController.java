@@ -34,8 +34,7 @@ class PackagesController {
     }
 
     @Get("/search")
-    //todo actually return {g: '', a: ''}
-    List<String> search(@QueryParam String query) {
+    List<SearchResult> search(@QueryParam String query) {
         if (query == null) {
             throw new BadRequestException("query parameter is required");
         }
@@ -51,7 +50,7 @@ class PackagesController {
             gavs = artifactRepository.search(split[0].trim(), split[1].trim());
         }
         return gavs.stream()
-                .map(gav -> "%s:%s".formatted(gav.groupId(), gav.artifactId()))
+                .map(gav -> new SearchResult(gav.groupId(), gav.artifactId()))
                 .toList();
     }
 
@@ -64,4 +63,6 @@ class PackagesController {
                 .orElseThrow(() -> new ResourceNotFoundException(gav));
 
     }
+
+    record SearchResult(String g, String a) {}
 }

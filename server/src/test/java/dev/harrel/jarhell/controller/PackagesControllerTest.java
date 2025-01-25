@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.extension.Host;
+import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.util.TestUtil;
 import io.javalin.http.HandlerType;
 import org.eclipse.jetty.client.HttpClient;
@@ -18,7 +19,10 @@ import org.neo4j.driver.Driver;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
+import static dev.harrel.jarhell.controller.PackagesController.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @EnvironmentTest
@@ -412,23 +416,105 @@ class PackagesControllerTest {
 
     @Test
     void shouldSearchByGroupId() throws InterruptedException, ExecutionException, TimeoutException {
-        try (var session = driver.session()) {
-            session.executeWriteWithoutResult(
-                    tx -> tx.run("""
-                            CREATE
-                            (:Artifact {groupId: 'org.test', artifactId: 'lib1', version: '1.0.0'}),
-                            (:Artifact {groupId: 'org.test', artifactId: 'lib2', version: '1.0.0'}),
-                            (:Artifact {groupId: 'org.hello', artifactId: 'lib1', version: '1.0.0'}),
-                            (:Artifact {groupId: 'org.hello', artifactId: 'lib2', version: '1.0.0'})
-                            """)
-            );
-        }
+        insertGavs(List.of(
+                new Gav("org.test", "lib1", "1.0.0"),
+                new Gav("org.test", "lib2", "1.0.0"),
+                new Gav("org.hello", "lib1", "1.0.0"),
+                new Gav("org.hello", "lib2", "1.0.0")
+        ));
         String uri = host + "/api/v1/packages/search?query=test";
         ContentResponse res = httpClient.GET(uri);
 
         assertThat(res.getStatus()).isEqualTo(200);
-        List<String> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
-        assertThat(found).containsExactly("org.test:lib1", "org.test:lib2");
+        List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        assertThat(found).containsExactly(
+                new SearchResult("org.test", "lib1"),
+                new SearchResult("org.test", "lib2")
+        );
+    }
+
+    @Test
+    void shouldSearchByArtifactId() throws InterruptedException, ExecutionException, TimeoutException {
+        insertGavs(List.of(
+                new Gav("org.test", "lib1", "1.0.0"),
+                new Gav("org.test", "lib2", "1.0.0"),
+                new Gav("org.hello", "lib1", "1.0.0"),
+                new Gav("org.hello", "lib2", "1.0.0")
+        ));
+        String uri = host + "/api/v1/packages/search?query=lib1";
+        ContentResponse res = httpClient.GET(uri);
+
+        assertThat(res.getStatus()).isEqualTo(200);
+        List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        assertThat(found).containsExactly(
+                new SearchResult("org.test", "lib1"),
+                new SearchResult("org.hello", "lib1")
+        );
+    }
+
+    @Test
+    void shouldSearchByEitherGroupIdOrArtifactId() throws InterruptedException, ExecutionException, TimeoutException {
+        insertGavs(List.of(
+                new Gav("org.test", "lib1", "1.0.0"),
+                new Gav("org.test", "lib2", "1.0.0"),
+                new Gav("org.hello", "lib1", "1.0.0"),
+                new Gav("org.hello", "lib2", "1.0.0"),
+                new Gav("org.library", "hello", "1.0.0")
+        ));
+        String uri = host + "/api/v1/packages/search?query=hello";
+        ContentResponse res = httpClient.GET(uri);
+
+        assertThat(res.getStatus()).isEqualTo(200);
+        List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        assertThat(found).containsExactly(
+                new SearchResult("org.hello", "lib1"),
+                new SearchResult("org.hello", "lib2"),
+                new SearchResult("org.library", "hello")
+        );
+    }
+
+    @Test
+    void shouldSearchByGroupIdAndArtifactId() throws InterruptedException, ExecutionException, TimeoutException {
+        insertGavs(List.of(
+                new Gav("org.test", "lib1", "1.0.0"),
+                new Gav("org.test", "lib2", "1.0.0"),
+                new Gav("org.hello", "lib1", "1.0.0"),
+                new Gav("org.hello", "lib2", "1.0.0"),
+                new Gav("org.library", "hello", "1.0.0")
+        ));
+        String uri = host + "/api/v1/packages/search?query=hello:lib";
+        ContentResponse res = httpClient.GET(uri);
+
+        assertThat(res.getStatus()).isEqualTo(200);
+        List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        assertThat(found).containsExactly(
+                new SearchResult("org.hello", "lib1"),
+                new SearchResult("org.hello", "lib2")
+        );
+    }
+
+    @Test
+    void shouldSearchUpTo40Records() throws InterruptedException, ExecutionException, TimeoutException {
+        insertGavs(IntStream.range(0, 60)
+                .mapToObj(i -> new Gav("org.test", "lib" + i, "1.0.0"))
+                .toList()
+        );
+        String uri = host + "/api/v1/packages/search?query=org.test";
+        ContentResponse res = httpClient.GET(uri);
+
+        assertThat(res.getStatus()).isEqualTo(200);
+        List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        assertThat(found).hasSize(40);
+    }
+
+    void insertGavs(List<Gav> gavs) {
+        String statement = gavs.stream()
+                .map(gav -> "(:Artifact {groupId: '%s', artifactId: '%s', version: '%s'})"
+                        .formatted(gav.groupId(), gav.artifactId(), gav.version()))
+                .collect(Collectors.joining(",", "CREATE", ""));
+        try (var session = driver.session()) {
+            session.executeWriteWithoutResult(tx -> tx.run(statement));
+        }
     }
 
     static void assertArtifact(JsonNode node,
