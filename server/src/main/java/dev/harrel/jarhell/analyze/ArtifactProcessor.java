@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class ArtifactProcessor implements Closeable {
     private static final Logger logger = LoggerFactory.getLogger(ArtifactProcessor.class);
+    private static final int UNRESOLVED_LIMIT = 3;
 
     private final ExecutorService service = Executors.newSingleThreadExecutor();
     private final AtomicReference<Future<?>> runFuture = new AtomicReference<>(CompletableFuture.completedFuture(null));
@@ -92,9 +93,20 @@ public class ArtifactProcessor implements Closeable {
     }
 
     private int doRun() {
-        List<Gav> unresolvedGavs = repo.findAllUnresolved(concurrency.get(), 3);
+        List<Gav> unresolvedGavs = repo.findAllUnresolved(concurrency.get(), UNRESOLVED_LIMIT);
         if (!unresolvedGavs.isEmpty()) {
             logger.info("Fetched {} gavs for reanalysis [unresolved]", unresolvedGavs.size());
+            try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+                unresolvedGavs.forEach(gav -> scope.fork(() -> analyzeEngine.doFullAnalysis(gav)));
+                ConcurrentUtil.joinScope(scope);
+            }
+            counter.addAndGet(unresolvedGavs.size());
+            return unresolvedGavs.size();
+        }
+
+        unresolvedGavs = repo.findAllEffectivelyUnresolved(concurrency.get(), UNRESOLVED_LIMIT);
+        if (!unresolvedGavs.isEmpty()) {
+            logger.info("Fetched {} gavs for reanalysis [effectively-unresolved]", unresolvedGavs.size());
             try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
                 unresolvedGavs.forEach(gav -> scope.fork(() -> analyzeEngine.doFullAnalysis(gav)));
                 ConcurrentUtil.joinScope(scope);

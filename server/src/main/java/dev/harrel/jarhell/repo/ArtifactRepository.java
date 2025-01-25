@@ -116,6 +116,28 @@ public class ArtifactRepository {
         }
     }
 
+    public List<Gav> findAllEffectivelyUnresolved(int limit, int unresolvedCountLimit) {
+        try (var session = session()) {
+            return session.executeRead(tx -> {
+                Result res = tx.run("""
+                        MATCH (root:Artifact)
+                        WHERE
+                            root.effectiveUnresolvedDependencies > 0
+                            AND coalesce(root.unresolvedCount, 1) < $unresolvedCountLimit
+                        RETURN root.groupId, root.artifactId, root.version, root.classifier
+                        LIMIT $limit""",
+                        parameters("limit", limit, "unresolvedCountLimit", unresolvedCountLimit)
+                );
+                return res.list(rec -> new Gav(
+                        rec.get("root.groupId").asString(),
+                        rec.get("root.artifactId").asString(),
+                        rec.get("root.version").asString(),
+                        rec.get("root.classifier").asString()
+                ));
+            });
+        }
+    }
+
     public List<Gav> search(String token) {
         try (var session = session()) {
             return session.executeRead(tx -> {
