@@ -30,8 +30,9 @@ class VersionPickerTest {
         assertThat(page.getByText("3.1.x", options)).not().isVisible();
         assertThat(page.getByText("3.2.x", options)).not().isVisible();
 
-        assertThat(page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setExpanded(false)).getByText("items")).hasCount(7);
-        assertThat(page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setExpanded(true))).not().isVisible();
+        assertThat(page).hasURL("/packages/org.test:artifact:3.2.1");
+        assertThat(page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setExpanded(false)).getByText("items")).hasCount(6);
+        assertThat(page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setExpanded(true)).getByText("items")).hasCount(1);
     }
 
     @Test
