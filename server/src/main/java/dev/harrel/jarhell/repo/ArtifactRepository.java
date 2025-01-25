@@ -148,8 +148,10 @@ public class ArtifactRepository {
         }
     }
 
-    public Optional<ArtifactTree> find(Gav gav) {
-        return find(gav, 0);
+    public Optional<ArtifactTree> findResolved(Gav gav) {
+        return find(gav, 0)
+                .filter(at -> !Boolean.TRUE.equals(at.artifactInfo().unresolved()))
+                .filter(at -> at.artifactInfo().effectiveValues().unresolvedDependencies() == 0);
     }
 
     public Optional<ArtifactTree> find(Gav gav, int depth) {
@@ -220,7 +222,7 @@ public class ArtifactRepository {
                                     WITH a, a.unresolvedCount AS unresolvedCount
                                     SET a = $props, a.analyzed = localdatetime()
                                     WITH a, unresolvedCount
-                                    WHERE a.unresolved = true
+                                    WHERE a.unresolved = true OR a.effectiveUnresolvedDependencies > 0
                                     SET a.unresolvedCount = coalesce(unresolvedCount, 0) + 1""",
                             parameters("props", propsMap))
             );

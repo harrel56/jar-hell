@@ -104,9 +104,46 @@ class ArtifactRepositoryTest {
     }
 
     @Test
+    void shouldAddUnresolvedCountForEffectivelyUnresolved() {
+        Gav gav = new Gav("x", "y", "1");
+        repo.saveArtifact(effectivelyUnresolved(gav));
+        repo.saveArtifact(effectivelyUnresolved(gav));
+        Optional<ArtifactTree> artifactTree = repo.find(gav, 1);
+
+        assertThat(artifactTree).isPresent();
+        assertThat(artifactTree.get().dependencies()).isEmpty();
+        assertThat(artifactTree.get().artifactInfo().analyzed()).isBeforeOrEqualTo(LocalDateTime.now());
+        assertThat(artifactTree.get().artifactInfo().unresolved()).isNull();
+        assertThat(artifactTree.get().artifactInfo().unresolvedCount()).isEqualTo(2);
+        assertThat(artifactTree.get().artifactInfo().unresolvedReason()).isNull();
+
+        repo.saveArtifact(effectivelyUnresolved(gav));
+        artifactTree = repo.find(gav, 1);
+
+        assertThat(artifactTree).isPresent();
+        assertThat(artifactTree.get().dependencies()).isEmpty();
+        assertThat(artifactTree.get().artifactInfo().analyzed()).isBeforeOrEqualTo(LocalDateTime.now());
+        assertThat(artifactTree.get().artifactInfo().unresolvedCount()).isEqualTo(3);
+    }
+
+    @Test
     void shouldSwitchFromUnresolvedToResolved() {
         Gav gav = new Gav("x", "y", "1");
         repo.saveArtifact(ArtifactInfo.unresolved(gav, "test"));
+        ArtifactInfo artifact = artifactInfo(gav);
+        repo.saveArtifact(artifact);
+        Optional<ArtifactTree> artifactTree = repo.find(gav, 1);
+
+        assertThat(artifactTree).isPresent();
+        assertThat(artifactTree.get().dependencies()).isEmpty();
+        assertThat(artifactTree.get().artifactInfo().analyzed()).isBeforeOrEqualTo(LocalDateTime.now());
+        assertArtifact(artifactTree.get().artifactInfo(), gav);
+    }
+
+    @Test
+    void shouldSwitchFromEffectivelyUnresolvedToResolved() {
+        Gav gav = new Gav("x", "y", "1");
+        repo.saveArtifact(effectivelyUnresolved(gav));
         ArtifactInfo artifact = artifactInfo(gav);
         repo.saveArtifact(artifact);
         Optional<ArtifactTree> artifactTree = repo.find(gav, 1);
@@ -133,6 +170,21 @@ class ArtifactRepositoryTest {
     }
 
     @Test
+    void shouldSwitchFromResolvedToEffectivelyUnresolved() {
+        Gav gav = new Gav("x", "y", "1");
+        repo.saveArtifact(artifactInfo(gav));
+        repo.saveArtifact(effectivelyUnresolved(gav));
+        Optional<ArtifactTree> artifactTree = repo.find(gav, 1);
+
+        assertThat(artifactTree).isPresent();
+        assertThat(artifactTree.get().dependencies()).isEmpty();
+        assertThat(artifactTree.get().artifactInfo().analyzed()).isBeforeOrEqualTo(LocalDateTime.now());
+        assertThat(artifactTree.get().artifactInfo().unresolved()).isNull();
+        assertThat(artifactTree.get().artifactInfo().unresolvedCount()).isEqualTo(1);
+        assertThat(artifactTree.get().artifactInfo().unresolvedReason()).isNull();
+    }
+
+    @Test
     void shouldSwitchFromUnresolvedToResolvedAndBackToUnresolved() {
         Gav gav = new Gav("x", "y", "1");
         repo.saveArtifact(ArtifactInfo.unresolved(gav, "test1"));
@@ -148,6 +200,22 @@ class ArtifactRepositoryTest {
         assertThat(artifactTree.get().artifactInfo().unresolvedReason()).isEqualTo("test2");
     }
 
+    @Test
+    void shouldSwitchFromEffectivelyUnresolvedToResolvedAndBackToEffectivelyUnresolved() {
+        Gav gav = new Gav("x", "y", "1");
+        repo.saveArtifact(effectivelyUnresolved(gav));
+        repo.saveArtifact(artifactInfo(gav));
+        repo.saveArtifact(effectivelyUnresolved(gav));
+        Optional<ArtifactTree> artifactTree = repo.find(gav, 1);
+
+        assertThat(artifactTree).isPresent();
+        assertThat(artifactTree.get().dependencies()).isEmpty();
+        assertThat(artifactTree.get().artifactInfo().analyzed()).isBeforeOrEqualTo(LocalDateTime.now());
+        assertThat(artifactTree.get().artifactInfo().unresolved()).isNull();
+        assertThat(artifactTree.get().artifactInfo().unresolvedCount()).isEqualTo(1);
+        assertThat(artifactTree.get().artifactInfo().unresolvedReason()).isNull();
+    }
+
     private static ArtifactInfo artifactInfo(Gav gav) {
         return artifactInfo(gav, 10L);
     }
@@ -157,6 +225,14 @@ class ArtifactRepositoryTest {
                 LocalDateTime.MIN, packageSize, "52.0", "jar", "name", "desc", "url", "scmUrl",
                 "issuesUrl", "1995", List.of(new License("MIT", "https://mit.com")), List.of(LicenseType.MIT), List.of("source"),
                 new ArtifactInfo.EffectiveValues(0, 0, 0, 10L, "52.0", LicenseType.MIT, List.of()),
+                null);
+    }
+
+    private static ArtifactInfo effectivelyUnresolved(Gav gav) {
+        return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), null, null, null,
+                LocalDateTime.MIN, 10L, "52.0", "jar", "name", "desc", "url", "scmUrl",
+                "issuesUrl", "1995", List.of(new License("MIT", "https://mit.com")), List.of(LicenseType.MIT), List.of("source"),
+                new ArtifactInfo.EffectiveValues(0, 1, 0, 10L, "52.0", LicenseType.MIT, List.of()),
                 null);
     }
 

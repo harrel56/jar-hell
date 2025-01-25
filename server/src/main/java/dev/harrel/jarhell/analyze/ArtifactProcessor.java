@@ -61,10 +61,11 @@ public class ArtifactProcessor implements Closeable {
             throw new CompletionException(e);
         }
     }
+
     @Override
     public void close() {
         logger.info("Shutting down...");
-        service.shutdown();
+        service.shutdownNow();
         stop();
     }
 
@@ -77,6 +78,7 @@ public class ArtifactProcessor implements Closeable {
                 if (processed == 0) {
                     logger.info("No work to be done. Sleeping for 30 minutes...");
                     Thread.sleep(Duration.ofMinutes(30));
+                    continue;
                 }
             } catch (InterruptedException e) {
                 logger.info("Interrupted. Stopping...");
@@ -91,12 +93,15 @@ public class ArtifactProcessor implements Closeable {
 
     private int doRun() {
         List<Gav> unresolvedGavs = repo.findAllUnresolved(concurrency.get(), 3);
-        logger.info("Fetched {} gavs for reanalysis", unresolvedGavs.size());
-        try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
-            unresolvedGavs.forEach(gav -> scope.fork(() -> analyzeEngine.doFullAnalysis(gav)));
-            ConcurrentUtil.joinScope(scope);
+        if (!unresolvedGavs.isEmpty()) {
+            logger.info("Fetched {} gavs for reanalysis [unresolved]", unresolvedGavs.size());
+            try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+                unresolvedGavs.forEach(gav -> scope.fork(() -> analyzeEngine.doFullAnalysis(gav)));
+                ConcurrentUtil.joinScope(scope);
+            }
             counter.addAndGet(unresolvedGavs.size());
             return unresolvedGavs.size();
         }
+        return 0;
     }
 }

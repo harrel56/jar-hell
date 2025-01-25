@@ -28,8 +28,7 @@ public class AnalyzeEngine {
     }
 
     public CompletableFuture<ArtifactTree> analyze(Gav gav) {
-        Optional<ArtifactTree> artifactTree = artifactRepository.find(gav)
-                .filter(at -> !Boolean.TRUE.equals(at.artifactInfo().unresolved()));
+        Optional<ArtifactTree> artifactTree = artifactRepository.findResolved(gav);
         if (artifactTree.isPresent()) {
             logger.info("Analysis of [{}] is not necessary", gav);
             return CompletableFuture.completedFuture(artifactTree.get());
@@ -50,8 +49,7 @@ public class AnalyzeEngine {
             AnalysisOutput output;
             lock.lock(gav);
             try {
-                Optional<ArtifactTree> artifactTree = artifactRepository.find(gav)
-                        .filter(at -> !Boolean.TRUE.equals(at.artifactInfo().unresolved()));
+                Optional<ArtifactTree> artifactTree = artifactRepository.findResolved(gav);
                 if (artifactTree.isPresent()) {
                     return artifactTree.get();
                 }
