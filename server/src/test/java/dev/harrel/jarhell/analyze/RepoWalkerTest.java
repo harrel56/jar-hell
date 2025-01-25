@@ -29,7 +29,7 @@ class RepoWalkerTest {
         repoWalker.walk(repoUrl, gavs::add).join();
 
         assertThat(gavs).contains(
-                new RepoWalker.ArtifactData("org.test", "artifact", List.of("1.0.10", "1.1.0", "3.0.1")),
+                new RepoWalker.ArtifactData("org.test", "artifact", List.of("1.0.10", "1.1.0", "3.0.1", "3.2.1")),
                 new RepoWalker.ArtifactData("org.test", "pre-cycle", List.of("1.0.0")),
                 new RepoWalker.ArtifactData("org.test", "cycle1", List.of("1.0.0")),
                 new RepoWalker.ArtifactData("org.test", "cycle2", List.of("1.0.0")),
