@@ -428,8 +428,8 @@ class PackagesControllerTest {
         assertThat(res.getStatus()).isEqualTo(200);
         List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(found).containsExactly(
-                new SearchResult("org.test", "lib1", "1.0.0"),
-                new SearchResult("org.test", "lib2", "1.0.0")
+                new SearchResult("org.test", "lib1"),
+                new SearchResult("org.test", "lib2")
         );
     }
 
@@ -447,8 +447,8 @@ class PackagesControllerTest {
         assertThat(res.getStatus()).isEqualTo(200);
         List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(found).containsExactly(
-                new SearchResult("org.test", "lib1", "1.0.0"),
-                new SearchResult("org.hello", "lib1", "1.0.0")
+                new SearchResult("org.test", "lib1"),
+                new SearchResult("org.hello", "lib1")
         );
     }
 
@@ -467,9 +467,9 @@ class PackagesControllerTest {
         assertThat(res.getStatus()).isEqualTo(200);
         List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(found).containsExactly(
-                new SearchResult("org.hello", "lib1", "1.0.0"),
-                new SearchResult("org.hello", "lib2", "1.0.0"),
-                new SearchResult("org.library", "hello", "1.0.0")
+                new SearchResult("org.hello", "lib1"),
+                new SearchResult("org.hello", "lib2"),
+                new SearchResult("org.library", "hello")
         );
     }
 
@@ -488,8 +488,8 @@ class PackagesControllerTest {
         assertThat(res.getStatus()).isEqualTo(200);
         List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(found).containsExactly(
-                new SearchResult("org.hello", "lib1", "1.0.0"),
-                new SearchResult("org.hello", "lib2", "1.0.0")
+                new SearchResult("org.hello", "lib1"),
+                new SearchResult("org.hello", "lib2")
         );
     }
 
@@ -508,8 +508,8 @@ class PackagesControllerTest {
         assertThat(res.getStatus()).isEqualTo(200);
         List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(found).containsExactly(
-                new SearchResult("org.test", "lib1", "2.0.1"),
-                new SearchResult("org.test", "lib2", "1.0.1")
+                new SearchResult("org.test", "lib1"),
+                new SearchResult("org.test", "lib2")
         );
     }
 
