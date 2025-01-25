@@ -172,8 +172,9 @@ public class ArtifactRepository {
 
     public Optional<ArtifactTree> findResolved(Gav gav) {
         return find(gav, 0)
-                .filter(at -> !Boolean.TRUE.equals(at.artifactInfo().unresolved()))
-                .filter(at -> at.artifactInfo().effectiveValues().unresolvedDependencies() == 0);
+                .filter(at -> at.artifactInfo().unresolvedCount() >= 10 ||
+                        !Boolean.TRUE.equals(at.artifactInfo().unresolved()) &&
+                        at.artifactInfo().effectiveValues().unresolvedDependencies() == 0);
     }
 
     public Optional<ArtifactTree> find(Gav gav, int depth) {
