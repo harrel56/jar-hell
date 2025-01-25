@@ -1,10 +1,15 @@
-import {useOutlet} from 'react-router-dom'
+import {useLocation, useOutlet} from 'react-router-dom'
 import {ThemeProvider} from '@/shadcn/components/ThemeProvider'
 import {NavBar} from '@/components/NavBar.tsx'
 import {Autocomplete} from '@/components/Autocomplete.tsx'
+import {useEffect} from 'react'
 
 export const App = () => {
   const outlet = useOutlet()
+  const { pathname } = useLocation()
+
+  useEffect(() => window.scrollTo(0, 0), [pathname])
+
   return (
     <ThemeProvider>
       <div className='px-4 flex flex-col'>
