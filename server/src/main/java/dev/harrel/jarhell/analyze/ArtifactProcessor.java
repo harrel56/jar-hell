@@ -73,7 +73,15 @@ public class ArtifactProcessor implements Closeable {
         while (running.get()) {
             Instant startTime = Instant.now();
             try {
-                doRun();
+                int processed = doRun();
+                if (processed == 0) {
+                    logger.info("No work to be done. Sleeping for 30 minutes...");
+                    Thread.sleep(Duration.ofMinutes(30));
+                }
+            } catch (InterruptedException e) {
+                logger.info("Interrupted. Stopping...");
+                Thread.currentThread().interrupt();
+                running.set(false);
             } catch (Exception e) {
                 logger.warn("Batch failed", e);
             }
@@ -81,13 +89,14 @@ public class ArtifactProcessor implements Closeable {
         }
     }
 
-    private void doRun() {
+    private int doRun() {
         List<Gav> unresolvedGavs = repo.findAllUnresolved(concurrency.get(), 3);
         logger.info("Fetched {} gavs for reanalysis", unresolvedGavs.size());
         try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
             unresolvedGavs.forEach(gav -> scope.fork(() -> analyzeEngine.doFullAnalysis(gav)));
             ConcurrentUtil.joinScope(scope);
             counter.addAndGet(unresolvedGavs.size());
+            return unresolvedGavs.size();
         }
     }
 }
