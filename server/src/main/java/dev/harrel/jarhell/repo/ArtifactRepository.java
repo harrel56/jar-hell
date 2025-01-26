@@ -98,12 +98,12 @@ public class ArtifactRepository {
         try (var session = session()) {
             return session.executeRead(tx -> {
                 Result res = tx.run("""
-                        MATCH (root:Artifact)
-                        WHERE
-                            root.unresolved = true
-                            AND coalesce(root.unresolvedCount, 1) < $unresolvedCountLimit
-                        RETURN root.groupId, root.artifactId, root.version, root.classifier
-                        LIMIT $limit""",
+                                MATCH (root:Artifact)
+                                WHERE
+                                    root.unresolved = true
+                                    AND coalesce(root.unresolvedCount, 1) < $unresolvedCountLimit
+                                RETURN root.groupId, root.artifactId, root.version, root.classifier
+                                LIMIT $limit""",
                         parameters("limit", limit, "unresolvedCountLimit", unresolvedCountLimit)
                 );
                 return res.list(rec -> new Gav(
@@ -120,12 +120,12 @@ public class ArtifactRepository {
         try (var session = session()) {
             return session.executeRead(tx -> {
                 Result res = tx.run("""
-                        MATCH (root:Artifact)
-                        WHERE
-                            root.effectiveUnresolvedDependencies > 0
-                            AND coalesce(root.unresolvedCount, 1) < $unresolvedCountLimit
-                        RETURN root.groupId, root.artifactId, root.version, root.classifier
-                        LIMIT $limit""",
+                                MATCH (root:Artifact)
+                                WHERE
+                                    root.effectiveUnresolvedDependencies > 0
+                                    AND coalesce(root.unresolvedCount, 1) < $unresolvedCountLimit
+                                RETURN root.groupId, root.artifactId, root.version, root.classifier
+                                LIMIT $limit""",
                         parameters("limit", limit, "unresolvedCountLimit", unresolvedCountLimit)
                 );
                 return res.list(rec -> new Gav(
@@ -171,10 +171,16 @@ public class ArtifactRepository {
     }
 
     public Optional<ArtifactTree> findResolved(Gav gav) {
-        return find(gav, 0)
-                .filter(at -> at.artifactInfo().unresolvedCount() >= 10 ||
-                        !Boolean.TRUE.equals(at.artifactInfo().unresolved()) &&
-                        at.artifactInfo().effectiveValues().unresolvedDependencies() == 0);
+        Optional<ArtifactTree> found = find(gav, 0);
+        if (found.isPresent()) {
+            Integer unresolvedCount = Objects.requireNonNullElse(found.get().artifactInfo().unresolvedCount(), 0);
+            if (unresolvedCount >= 10) {
+                return found;
+            }
+        }
+        return found
+                .filter(at -> !Boolean.TRUE.equals(at.artifactInfo().unresolved()))
+                .filter(at -> at.artifactInfo().effectiveValues().unresolvedDependencies() == 0);
     }
 
     public Optional<ArtifactTree> find(Gav gav, int depth) {
@@ -282,7 +288,7 @@ public class ArtifactRepository {
     }
 
     /* Just because of bug: https://github.com/neo4j/neo4j-java-driver/issues/1601
-    * I don't use bookmarks either way so maybe it's even better that way */
+     * I don't use bookmarks either way so maybe it's even better that way */
     private Session session() {
         return driver.session(SessionConfig.builder().withBookmarkManager(null).build());
     }
