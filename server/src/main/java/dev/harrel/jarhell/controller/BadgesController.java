@@ -29,6 +29,7 @@ class BadgesController {
         this.engine = engine;
     }
 
+    // todo: support name & color overrides - maybe even all shields.io config
     @Get("/{metric}/{coordinate}")
     void getMetricBadge(Context ctx, Metric metric, String coordinate) {
         String version;
@@ -73,8 +74,8 @@ class BadgesController {
     }
 
     private final static BigDecimal THOUSAND = new BigDecimal(1_000);
-    private final static BigDecimal MILLION = new BigDecimal(1_000);
-    private final static BigDecimal BILLION = new BigDecimal(1_000);
+    private final static BigDecimal MILLION = new BigDecimal(1_000_000);
+    private final static BigDecimal BILLION = new BigDecimal(1_000_000_000);
 
     private static String formatBytes(Long bytes) {
         if (bytes < 1_000) {
@@ -121,7 +122,7 @@ class BadgesController {
                 }
             }
         },
-        effective_size {
+        total_size {
             @Override
             String getName() {
                 return "total size";
@@ -134,12 +135,12 @@ class BadgesController {
 
             @Override
             Color getColor(ArtifactInfo info) {
-                Long size = info.packageSize();
-                if (size <= 500_000) {
+                Long size = info.effectiveValues().size();
+                if (size <= 1_000_000) {
                     return Color.brightgreen;
-                } else if (size <= 1_500_000) {
+                } else if (size <= 3_000_000) {
                     return Color.yellow;
-                } else if (size <= 5_000_000) {
+                } else if (size <= 8_000_000) {
                     return Color.orange;
                 } else {
                     return Color.red;
@@ -154,6 +155,7 @@ class BadgesController {
 
             @Override
             String getValue(ArtifactInfo info) {
+                // todo
                 return "";
             }
 
@@ -170,6 +172,7 @@ class BadgesController {
 
             @Override
             String getValue(ArtifactInfo info) {
+                // todo
                 return "";
             }
 
