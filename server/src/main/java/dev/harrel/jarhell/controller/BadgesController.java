@@ -16,7 +16,6 @@ import io.javalin.http.HttpStatus;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
-import java.util.function.Function;
 
 @Controller("/api/v1/badges")
 class BadgesController {
@@ -30,37 +29,15 @@ class BadgesController {
         this.engine = engine;
     }
 
-    @Get("/size/{coordinate}")
-    void size(Context ctx, String coordinate) {
-        Function<ArtifactInfo, String> valueGetter = at -> formatBytes(at.packageSize());
-        Function<ArtifactInfo, Color> colorGetter = at -> {
-            Long size = at.packageSize();
-            if (size <= 300_000) {
-                return Color.brightgreen;
-            } else if (size <= 1_000_000) {
-                return Color.yellow;
-            } else if (size <= 2_000_000) {
-                return Color.orange;
-            } else {
-                return Color.red;
-            }
-        };
-
-        toBadge(ctx, coordinate, "package size", valueGetter, colorGetter);
-    }
-
-    private void toBadge(Context ctx,
-                         String coordinate,
-                         String name,
-                         Function<ArtifactInfo, String> valueGetter,
-                         Function<ArtifactInfo, Color> colorGetter) {
+    @Get("/{metric}/{coordinate}")
+    void getMetricBadge(Context ctx, Metric metric, String coordinate) {
         String version;
         String[] split = coordinate.split(":");
         if (split.length == 2) {
             try {
                 version = mavenApiClient.fetchArtifactVersions(split[0], split[1]).getLast();
             } catch (Exception e) {
-                toBadge(ctx, name, "not found", Color.red, Duration.ofDays(7));
+                toBadge(ctx, metric.getName(), "not found", Color.red, Duration.ofDays(7));
                 return;
             }
         } else if (split.length == 3) {
@@ -73,15 +50,15 @@ class BadgesController {
         if (at == null) {
             if (mavenApiClient.checkIfArtifactExists(gav)) {
                 engine.analyze(gav);
-                toBadge(ctx, name, "not analyzed", Color.yellow, Duration.ofMinutes(5));
+                toBadge(ctx, metric.getName(), "not analyzed", Color.yellow, Duration.ofMinutes(5));
             } else {
-                toBadge(ctx, name, "not found", Color.red, Duration.ofDays(7));
+                toBadge(ctx, metric.getName(), "not found", Color.red, Duration.ofDays(7));
             }
         } else {
             if (Boolean.TRUE.equals(at.artifactInfo().unresolved())) {
-                toBadge(ctx, name, "analysis failed", Color.red, Duration.ofDays(1));
+                toBadge(ctx, metric.getName(), "analysis failed", Color.red, Duration.ofDays(1));
             } else {
-                toBadge(ctx, name, valueGetter.apply(at.artifactInfo()), colorGetter.apply(at.artifactInfo()), Duration.ofDays(7));
+                toBadge(ctx, metric.getName(), metric.getValue(at.artifactInfo()), metric.getColor(at.artifactInfo()), Duration.ofDays(7));
             }
         }
     }
@@ -116,5 +93,128 @@ class BadgesController {
 
     enum Color {
         brightgreen, yellow, orange, red
+    }
+
+    enum Metric {
+        size {
+            @Override
+            String getName() {
+                return "package size";
+            }
+
+            @Override
+            String getValue(ArtifactInfo info) {
+                return formatBytes(info.packageSize());
+            }
+
+            @Override
+            Color getColor(ArtifactInfo info) {
+                Long size = info.packageSize();
+                if (size <= 300_000) {
+                    return Color.brightgreen;
+                } else if (size <= 1_000_000) {
+                    return Color.yellow;
+                } else if (size <= 2_000_000) {
+                    return Color.orange;
+                } else {
+                    return Color.red;
+                }
+            }
+        },
+        effective_size {
+            @Override
+            String getName() {
+                return "total size";
+            }
+
+            @Override
+            String getValue(ArtifactInfo info) {
+                return formatBytes(info.effectiveValues().size());
+            }
+
+            @Override
+            Color getColor(ArtifactInfo info) {
+                Long size = info.packageSize();
+                if (size <= 500_000) {
+                    return Color.brightgreen;
+                } else if (size <= 1_500_000) {
+                    return Color.yellow;
+                } else if (size <= 5_000_000) {
+                    return Color.orange;
+                } else {
+                    return Color.red;
+                }
+            }
+        },
+        bytecode {
+            @Override
+            String getName() {
+                return "package bytecode version";
+            }
+
+            @Override
+            String getValue(ArtifactInfo info) {
+                return "";
+            }
+
+            @Override
+            Color getColor(ArtifactInfo info) {
+                return Color.brightgreen;
+            }
+        },
+        effective_bytecode {
+            @Override
+            String getName() {
+                return "effective bytecode version";
+            }
+
+            @Override
+            String getValue(ArtifactInfo info) {
+                return "";
+            }
+
+            @Override
+            Color getColor(ArtifactInfo info) {
+                return Color.brightgreen;
+            }
+        },
+        dependencies {
+            @Override
+            String getName() {
+                return "dependencies";
+            }
+
+            @Override
+            String getValue(ArtifactInfo info) {
+                return info.effectiveValues().requiredDependencies().toString();
+            }
+
+            @Override
+            Color getColor(ArtifactInfo info) {
+                return Color.brightgreen;
+            }
+        },
+        optional_dependencies {
+            @Override
+            String getName() {
+                return "optional dependencies";
+            }
+
+            @Override
+            String getValue(ArtifactInfo info) {
+                return info.effectiveValues().optionalDependencies().toString();
+            }
+
+            @Override
+            Color getColor(ArtifactInfo info) {
+                return Color.brightgreen;
+            }
+        };
+
+        abstract String getName();
+
+        abstract String getValue(ArtifactInfo info);
+
+        abstract Color getColor(ArtifactInfo info);
     }
 }
