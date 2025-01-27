@@ -84,16 +84,29 @@ class BadgesControllerTest {
     }
 
     @Test
-    void findsLatestArtifactVersion() {
+    void findsLatestArtifactVersionForTotalSize() {
         ArtifactInfo.EffectiveValues effectiveValues = mock(ArtifactInfo.EffectiveValues.class);
         when(mavenApiClient.fetchArtifactVersions("org.test", "lib")).thenReturn(List.of("1.0.0", "2.0.0", "2.1.0"));
         when(effectiveValues.size()).thenReturn(123_321L);
         when(artifactInfo.effectiveValues()).thenReturn(effectiveValues);
         when(repo.find(new Gav("org.test", "lib", "2.1.0"), 0)).thenReturn(Optional.of(artifactTree));
-        badgesController.getMetricBadge(ctx, BadgesController.Metric.effective_size, "org.test:lib");
+        badgesController.getMetricBadge(ctx, BadgesController.Metric.total_size, "org.test:lib");
 
         verify(ctx).header(Header.CACHE_CONTROL, "max-age=604800");
         verify(ctx).redirect("https://shields.io/badge/total_size-123.32KB-brightgreen", HttpStatus.SEE_OTHER);
+    }
+
+    @Test
+    void findsLatestArtifactVersionForEffectiveBytecode() {
+        ArtifactInfo.EffectiveValues effectiveValues = mock(ArtifactInfo.EffectiveValues.class);
+        when(mavenApiClient.fetchArtifactVersions("org.test", "lib")).thenReturn(List.of("1.0.0", "2.0.0", "2.1.0"));
+        when(effectiveValues.bytecodeVersion()).thenReturn("52.0");
+        when(artifactInfo.effectiveValues()).thenReturn(effectiveValues);
+        when(repo.find(new Gav("org.test", "lib", "2.1.0"), 0)).thenReturn(Optional.of(artifactTree));
+        badgesController.getMetricBadge(ctx, BadgesController.Metric.effective_bytecode, "org.test:lib");
+
+        verify(ctx).header(Header.CACHE_CONTROL, "max-age=604800");
+        verify(ctx).redirect("https://shields.io/badge/effective_bytecode_version-java_8-brightgreen", HttpStatus.SEE_OTHER);
     }
 
     private static String escapedName(BadgesController.Metric metric) {
