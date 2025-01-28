@@ -30,7 +30,6 @@ class BadgesController {
         this.engine = engine;
     }
 
-    // todo: support name & color overrides - maybe even all shields.io config
     @Get("/{metric}/{coordinate}")
     void getMetricBadge(Context ctx, Metric metric, String coordinate) {
         String version;
@@ -60,14 +59,23 @@ class BadgesController {
             if (Boolean.TRUE.equals(at.artifactInfo().unresolved())) {
                 toBadge(ctx, metric.getName(), "analysis failed", Color.red, Duration.ofDays(1));
             } else {
-                toBadge(ctx, metric.getName(), metric.getValue(at.artifactInfo()), metric.getColor(at.artifactInfo()), Duration.ofDays(7));
+                toBadge(ctx, metric.getName(), metric.getValue(at.artifactInfo()), metric.getColor(at.artifactInfo()), Duration.ofDays(7), true);
             }
         }
     }
 
     private static void toBadge(Context ctx, String name, String value, Color color, Duration cache) {
+        toBadge(ctx,name, value, color, cache, false);
+    }
+
+    private static void toBadge(Context ctx, String name, String value, Color color, Duration cache, boolean includeQueryString) {
+        String queryString = "";
+        if (includeQueryString && ctx.queryString() != null) {
+            queryString = "?" + ctx.queryString();
+        }
+
         ctx.header(Header.CACHE_CONTROL, "max-age=" + cache.toSeconds())
-                .redirect("https://shields.io/badge/%s-%s-%s".formatted(escape(name), escape(value), color), HttpStatus.SEE_OTHER);
+                .redirect("https://shields.io/badge/%s-%s-%s%s".formatted(escape(name), escape(value), color, queryString), HttpStatus.SEE_OTHER);
     }
 
     private static String escape(String value) {

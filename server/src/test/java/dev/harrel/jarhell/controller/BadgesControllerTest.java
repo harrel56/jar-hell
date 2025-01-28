@@ -33,6 +33,7 @@ class BadgesControllerTest {
 
     BadgesControllerTest() {
         when(ctx.header(any(), any())).thenReturn(ctx);
+        when(ctx.queryString()).thenReturn("color=pink");
         when(artifactTree.artifactInfo()).thenReturn(artifactInfo);
     }
 
@@ -85,6 +86,7 @@ class BadgesControllerTest {
 
     @Test
     void findsLatestArtifactVersionForTotalSize() {
+        when(ctx.queryString()).thenReturn(null);
         ArtifactInfo.EffectiveValues effectiveValues = mock(ArtifactInfo.EffectiveValues.class);
         when(mavenApiClient.fetchArtifactVersions("org.test", "lib")).thenReturn(List.of("1.0.0", "2.0.0", "2.1.0"));
         when(effectiveValues.size()).thenReturn(123_321L);
@@ -98,6 +100,7 @@ class BadgesControllerTest {
 
     @Test
     void findsLatestArtifactVersionForEffectiveBytecode() {
+        when(ctx.queryString()).thenReturn(null);
         ArtifactInfo.EffectiveValues effectiveValues = mock(ArtifactInfo.EffectiveValues.class);
         when(mavenApiClient.fetchArtifactVersions("org.test", "lib")).thenReturn(List.of("1.0.0", "2.0.0", "2.1.0"));
         when(effectiveValues.bytecodeVersion()).thenReturn("52.0");
@@ -107,6 +110,24 @@ class BadgesControllerTest {
 
         verify(ctx).header(Header.CACHE_CONTROL, "max-age=604800");
         verify(ctx).redirect("https://shields.io/badge/effective_bytecode_version-java_8-brightgreen", HttpStatus.SEE_OTHER);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "label=test",
+            "style=social&style=plastic",
+            "color=blue,red,snow",
+            "color=blue&labelColor=red&logo=what"
+    })
+    void passesThroughQueryString(String queryString) {
+        when(ctx.queryString()).thenReturn(queryString);
+        when(artifactInfo.packageSize()).thenReturn(1_654_321L);
+        when(repo.find(new Gav("org.test", "lib", "0.0.1"), 0)).thenReturn(Optional.of(artifactTree));
+
+        badgesController.getMetricBadge(ctx, BadgesController.Metric.size, "org.test:lib:0.0.1");
+
+        verify(ctx).header(Header.CACHE_CONTROL, "max-age=604800");
+        verify(ctx).redirect("https://shields.io/badge/package_size-1.65MB-orange?" + queryString, HttpStatus.SEE_OTHER);
     }
 
     private static String escapedName(BadgesController.Metric metric) {
