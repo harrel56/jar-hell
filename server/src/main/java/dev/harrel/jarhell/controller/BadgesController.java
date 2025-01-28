@@ -13,21 +13,36 @@ import io.javalin.http.Context;
 import io.javalin.http.Header;
 import io.javalin.http.HttpStatus;
 
+import java.io.InputStream;
 import java.time.Duration;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import static dev.harrel.jarhell.util.FormatUtil.formatBytecodeVersion;
 import static dev.harrel.jarhell.util.FormatUtil.formatBytes;
 
 @Controller("/api/v1/badges")
 class BadgesController {
+    private static final String ICON_PATH = "/jarhell-mini.png";
+
     private final ArtifactRepository repo;
     private final MavenApiClient mavenApiClient;
     private final AnalyzeEngine engine;
+    private final String logoParamValue;
 
     BadgesController(ArtifactRepository repo, MavenApiClient mavenApiClient, AnalyzeEngine engine) {
         this.repo = repo;
         this.mavenApiClient = mavenApiClient;
         this.engine = engine;
+        try (InputStream is = getClass().getResourceAsStream(ICON_PATH)) {
+            Objects.requireNonNull(is);
+            String encoded = Base64.getEncoder().encodeToString(is.readAllBytes());
+            this.logoParamValue = "data:image/png;base64," + encoded;
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to encode badge icon at " + ICON_PATH, e);
+        }
     }
 
     @Get("/{metric}/{coordinate}")
@@ -64,18 +79,33 @@ class BadgesController {
         }
     }
 
-    private static void toBadge(Context ctx, String name, String value, Color color, Duration cache) {
-        toBadge(ctx,name, value, color, cache, false);
+    private void toBadge(Context ctx, String name, String value, Color color, Duration cache) {
+        toBadge(ctx, name, value, color, cache, false);
     }
 
-    private static void toBadge(Context ctx, String name, String value, Color color, Duration cache, boolean includeQueryString) {
-        String queryString = "";
-        if (includeQueryString && ctx.queryString() != null) {
-            queryString = "?" + ctx.queryString();
-        }
+    private void toBadge(Context ctx, String name, String value, Color color, Duration cache, boolean includeQueryString) {
+        String queryString = buildQueryString(includeQueryString ? ctx.queryParamMap() : Map.of());
 
+        String uri = "https://shields.io/badge/%s-%s-%s%s".formatted(escape(name), escape(value), color, queryString);
         ctx.header(Header.CACHE_CONTROL, "max-age=" + cache.toSeconds())
-                .redirect("https://shields.io/badge/%s-%s-%s%s".formatted(escape(name), escape(value), color, queryString), HttpStatus.SEE_OTHER);
+                .redirect(uri, HttpStatus.SEE_OTHER);
+    }
+
+    private String buildQueryString(Map<String, List<String>> params) {
+        StringBuilder sb = new StringBuilder("?");
+        for (Map.Entry<String, List<String>> entry : params.entrySet()) {
+            sb.append(entry.getKey());
+            sb.append("=");
+            sb.append(String.join(",", entry.getValue()));
+            sb.append("&");
+        }
+        if (!params.containsKey("logo")) {
+            sb.append("logo=");
+            sb.append(logoParamValue);
+            sb.append("&");
+        }
+        sb.deleteCharAt(sb.length() - 1);
+        return sb.toString();
     }
 
     private static String escape(String value) {

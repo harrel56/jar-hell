@@ -15,7 +15,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -33,7 +35,7 @@ class BadgesControllerTest {
 
     BadgesControllerTest() {
         when(ctx.header(any(), any())).thenReturn(ctx);
-        when(ctx.queryString()).thenReturn("color=pink");
+        when(ctx.queryParamMap()).thenReturn(Map.of("color", List.of("pink")));
         when(artifactTree.artifactInfo()).thenReturn(artifactInfo);
     }
 
@@ -51,7 +53,9 @@ class BadgesControllerTest {
         badgesController.getMetricBadge(ctx, metric, "org.test:lib:0.0.1");
 
         verify(ctx).header(Header.CACHE_CONTROL, "max-age=604800");
-        verify(ctx).redirect("https://shields.io/badge/%s-not_found-red".formatted(escapedName(metric)), HttpStatus.SEE_OTHER);
+        verify(ctx).redirect(
+                startsWith("https://shields.io/badge/%s-not_found-red?logo=data:image/png;base64,".formatted(escapedName(metric))),
+                eq(HttpStatus.SEE_OTHER));
     }
 
     @ParameterizedTest
@@ -61,7 +65,9 @@ class BadgesControllerTest {
         badgesController.getMetricBadge(ctx, metric, "org.test:lib:0.0.1");
 
         verify(ctx).header(Header.CACHE_CONTROL, "max-age=300");
-        verify(ctx).redirect("https://shields.io/badge/%s-not_analyzed-yellow".formatted(escapedName(metric)), HttpStatus.SEE_OTHER);
+        verify(ctx).redirect(
+                startsWith("https://shields.io/badge/%s-not_analyzed-yellow?logo=data:image/png;base64,".formatted(escapedName(metric))),
+                eq(HttpStatus.SEE_OTHER));
     }
 
     @ParameterizedTest
@@ -72,7 +78,9 @@ class BadgesControllerTest {
         badgesController.getMetricBadge(ctx, metric, "org.test:lib:0.0.1");
 
         verify(ctx).header(Header.CACHE_CONTROL, "max-age=86400");
-        verify(ctx).redirect("https://shields.io/badge/%s-analysis_failed-red".formatted(escapedName(metric)), HttpStatus.SEE_OTHER);
+        verify(ctx).redirect(
+                startsWith("https://shields.io/badge/%s-analysis_failed-red?logo=data:image/png;base64,".formatted(escapedName(metric))),
+                eq(HttpStatus.SEE_OTHER));
     }
 
     @ParameterizedTest
@@ -81,12 +89,13 @@ class BadgesControllerTest {
         badgesController.getMetricBadge(ctx, metric, "org.test:lib");
 
         verify(ctx).header(Header.CACHE_CONTROL, "max-age=604800");
-        verify(ctx).redirect("https://shields.io/badge/%s-not_found-red".formatted(escapedName(metric)), HttpStatus.SEE_OTHER);
+        verify(ctx).redirect(
+                startsWith("https://shields.io/badge/%s-not_found-red?logo=data:image/png;base64,".formatted(escapedName(metric))),
+                eq(HttpStatus.SEE_OTHER));
     }
 
     @Test
     void findsLatestArtifactVersionForTotalSize() {
-        when(ctx.queryString()).thenReturn(null);
         ArtifactInfo.EffectiveValues effectiveValues = mock(ArtifactInfo.EffectiveValues.class);
         when(mavenApiClient.fetchArtifactVersions("org.test", "lib")).thenReturn(List.of("1.0.0", "2.0.0", "2.1.0"));
         when(effectiveValues.size()).thenReturn(123_321L);
@@ -95,12 +104,13 @@ class BadgesControllerTest {
         badgesController.getMetricBadge(ctx, BadgesController.Metric.total_size, "org.test:lib");
 
         verify(ctx).header(Header.CACHE_CONTROL, "max-age=604800");
-        verify(ctx).redirect("https://shields.io/badge/total_size-123.32KB-brightgreen", HttpStatus.SEE_OTHER);
+        verify(ctx).redirect(
+                startsWith("https://shields.io/badge/total_size-123.32KB-brightgreen?color=pink&logo=data:image/png;base64,"),
+                eq(HttpStatus.SEE_OTHER));
     }
 
     @Test
     void findsLatestArtifactVersionForEffectiveBytecode() {
-        when(ctx.queryString()).thenReturn(null);
         ArtifactInfo.EffectiveValues effectiveValues = mock(ArtifactInfo.EffectiveValues.class);
         when(mavenApiClient.fetchArtifactVersions("org.test", "lib")).thenReturn(List.of("1.0.0", "2.0.0", "2.1.0"));
         when(effectiveValues.bytecodeVersion()).thenReturn("52.0");
@@ -109,25 +119,51 @@ class BadgesControllerTest {
         badgesController.getMetricBadge(ctx, BadgesController.Metric.effective_bytecode, "org.test:lib");
 
         verify(ctx).header(Header.CACHE_CONTROL, "max-age=604800");
-        verify(ctx).redirect("https://shields.io/badge/effective_bytecode_version-java_8-brightgreen", HttpStatus.SEE_OTHER);
+        verify(ctx).redirect(
+                startsWith("https://shields.io/badge/effective_bytecode_version-java_8-brightgreen?color=pink&logo=data:image/png;base64,"),
+                eq(HttpStatus.SEE_OTHER));
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "label=test",
-            "style=social&style=plastic",
-            "color=blue,red,snow",
-            "color=blue&labelColor=red&logo=what"
-    })
-    void passesThroughQueryString(String queryString) {
-        when(ctx.queryString()).thenReturn(queryString);
+    @Test
+    void shouldOverrideLogo() {
+        when(ctx.queryParamMap()).thenReturn(Map.of("logo", List.of("fireship")));
         when(artifactInfo.packageSize()).thenReturn(1_654_321L);
         when(repo.find(new Gav("org.test", "lib", "0.0.1"), 0)).thenReturn(Optional.of(artifactTree));
 
         badgesController.getMetricBadge(ctx, BadgesController.Metric.size, "org.test:lib:0.0.1");
 
         verify(ctx).header(Header.CACHE_CONTROL, "max-age=604800");
-        verify(ctx).redirect("https://shields.io/badge/package_size-1.65MB-orange?" + queryString, HttpStatus.SEE_OTHER);
+        verify(ctx).redirect("https://shields.io/badge/package_size-1.65MB-orange?logo=fireship", HttpStatus.SEE_OTHER);
+    }
+
+    @Test
+    void shouldEraseLogo() {
+        when(ctx.queryParamMap()).thenReturn(Map.of("logo", List.of("")));
+        when(artifactInfo.packageSize()).thenReturn(1_654_321L);
+        when(repo.find(new Gav("org.test", "lib", "0.0.1"), 0)).thenReturn(Optional.of(artifactTree));
+
+        badgesController.getMetricBadge(ctx, BadgesController.Metric.size, "org.test:lib:0.0.1");
+
+        verify(ctx).header(Header.CACHE_CONTROL, "max-age=604800");
+        verify(ctx).redirect("https://shields.io/badge/package_size-1.65MB-orange?logo=", HttpStatus.SEE_OTHER);
+    }
+
+    @Test
+    void shouldPassAlongManyParams() {
+        Map<String, List<String>> map = new LinkedHashMap<>();
+        map.put("style", List.of("plastic"));
+        map.put("label", List.of("hello"));
+        map.put("param", List.of("1", "2", "3"));
+        when(ctx.queryParamMap()).thenReturn(map);
+        when(artifactInfo.packageSize()).thenReturn(1_654_321L);
+        when(repo.find(new Gav("org.test", "lib", "0.0.1"), 0)).thenReturn(Optional.of(artifactTree));
+
+        badgesController.getMetricBadge(ctx, BadgesController.Metric.size, "org.test:lib:0.0.1");
+
+        verify(ctx).header(Header.CACHE_CONTROL, "max-age=604800");
+        verify(ctx).redirect(
+                startsWith("https://shields.io/badge/package_size-1.65MB-orange?style=plastic&label=hello&param=1,2,3&logo=data:image/png;base64,"),
+                eq(HttpStatus.SEE_OTHER));
     }
 
     private static String escapedName(BadgesController.Metric metric) {
