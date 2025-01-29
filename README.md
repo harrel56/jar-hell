@@ -1,6 +1,4 @@
-# Jar Hell
-
-![jarhell](web/static/jarhell.png)
+# Jar Hell ![jarhell](web/static/jarhell.png)
 
 Work in progress
 
