@@ -1,4 +1,4 @@
-import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from '@/shadcn/components/ui/card'
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/shadcn/components/ui/card'
 
 export const Footer = () => {
   return (
@@ -8,29 +8,35 @@ export const Footer = () => {
           <h2
             className='[writing-mode:sideways-lr] text-center text-2xl font-semibold leading-none tracking-tight text-fade'>Recently
             analyzed</h2>
-          <Card className=''>
+          <Card className='min-w-[200px] max-w-[360px]'>
             <CardHeader>
-              <CardTitle>Card Title</CardTitle>
-              <CardDescription>Card Description</CardDescription>
+              <CardDescription>dev.harrel</CardDescription>
+              <CardTitle className='mt-0'>json-schema</CardTitle>
+              <CardDescription>1.7.3</CardDescription>
             </CardHeader>
             <CardContent>
-              <p>Card Content</p>
+              <div className='grid grid-rows-2 grid-cols-[35%_65%] gap-[1px] bg-border'>
+                <div className='p-2 bg-background text-center truncate'>189.93KB</div>
+                <div className='p-2 bg-background text-center truncate'>Java 8</div>
+                <div className='p-2 bg-background text-center truncate'>0 deps</div>
+                <div className='p-2 bg-background text-center truncate'>The Lesser GNU License</div>
+              </div>
             </CardContent>
-            <CardFooter>
-              <p>Card Footer</p>
-            </CardFooter>
           </Card>
-          <Card className=''>
+          <Card className='min-w-[200px] max-w-[360px]'>
             <CardHeader>
-              <CardTitle>Card Title</CardTitle>
-              <CardDescription>Card Description</CardDescription>
+              <CardDescription>dev.harrel</CardDescription>
+              <CardTitle className='mt-0'>json-schema</CardTitle>
+              <CardDescription>1.7.3</CardDescription>
             </CardHeader>
             <CardContent>
-              <p>Card Content</p>
+              <div className='grid grid-rows-2 grid-cols-[35%_65%] gap-[1px] bg-border'>
+                  <div className='p-2 bg-background text-center truncate'>189.93KB</div>
+                  <div className='p-2 bg-background text-center truncate'>Java 8</div>
+                  <div className='p-2 bg-background text-center truncate'>0 deps</div>
+                  <div className='p-2 bg-background text-center truncate'>The Lesser GNU License</div>
+              </div>
             </CardContent>
-            <CardFooter>
-              <p>Card Footer</p>
-            </CardFooter>
           </Card>
         </div>
       </div>
