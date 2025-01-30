@@ -3,6 +3,7 @@ import {ThemeProvider} from '@/shadcn/components/ThemeProvider'
 import {NavBar} from '@/components/NavBar.tsx'
 import {Autocomplete} from '@/components/Autocomplete.tsx'
 import {useEffect} from 'react'
+import {Footer} from '@/components/Footer.tsx'
 
 export const App = () => {
   const outlet = useOutlet()
@@ -19,7 +20,7 @@ export const App = () => {
           {outlet}
         </div>
       </div>
-      <div className='grow max-h-[600px] min-h-[200px] bg-gradient-to-b from-background to-lava-ambient'></div>
+      <Footer/>
     </ThemeProvider>
   )
 }
