@@ -22,6 +22,7 @@ export default {
   			'blue-dim': 'hsl(var(--blue-dim))',
   			'yellow-glass': 'hsl(var(--yellow-glass))',
   			faded: 'hsl(var(--faded))',
+				'lava-ambient': 'hsl(var(--lava-ambient))',
 
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',

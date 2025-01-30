@@ -19,6 +19,7 @@ export const App = () => {
           {outlet}
         </div>
       </div>
+      <div className='grow max-h-[600px] min-h-[200px] bg-gradient-to-b from-background to-lava-ambient'></div>
     </ThemeProvider>
   )
 }
