@@ -170,6 +170,21 @@ public class ArtifactRepository {
         }
     }
 
+    public List<ArtifactInfo> findLatest() {
+        try (var session = session()) {
+            return session.executeRead(tx -> {
+                Result res = tx.run("""
+                                MATCH (n:Artifact)
+                                WHERE n.unresolved IS NULL
+                                AND n.effectiveUnresolvedDependencies = 0
+                                RETURN n
+                                ORDER BY rand()
+                                LIMIT 10""");
+                return res.list(r -> toArtifactInfo(toArtifactProps(r.get("n").asNode())));
+            });
+        }
+    }
+
     public Optional<ArtifactTree> findResolved(Gav gav) {
         Optional<ArtifactTree> found = find(gav, 0);
         if (found.isPresent()) {

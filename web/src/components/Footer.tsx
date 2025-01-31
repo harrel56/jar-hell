@@ -7,87 +7,16 @@ import {
   CarouselNext,
   CarouselPrevious
 } from '@/shadcn/components/ui/Carousel.tsx'
+import {useFetch} from '@/hooks/useFetch.ts'
+import {useEffect} from 'react'
 
 export const Footer = () => {
-  const packages: ResolvedPackage[] = [
-    {
-      groupId: 'dev.harrel',
-      artifactId: 'json-schema',
-      version: '1.7.0',
-      effectiveValues: {
-        size: 189_587,
-        bytecodeVersion: '52.0',
-        requiredDependencies: 0,
-        licenseType: 'MIT'
-      }
-    } as any,
-    {
-      groupId: 'dev.harrel',
-      artifactId: 'json-schema',
-      version: '1.7.1',
-      effectiveValues: {
-        size: 189_587,
-        bytecodeVersion: '52.0',
-        requiredDependencies: 0,
-        licenseType: 'MIT'
-      }
-    } as any,
-    {
-      groupId: 'dev.harrel',
-      artifactId: 'json-schema',
-      version: '1.7.2',
-      effectiveValues: {
-        size: 189_587,
-        bytecodeVersion: '52.0',
-        requiredDependencies: 0,
-        licenseType: 'MIT'
-      }
-    } as any,
-    {
-      groupId: 'dev.harrel',
-      artifactId: 'json-schema',
-      version: '1.7.3',
-      effectiveValues: {
-        size: 189_587,
-        bytecodeVersion: '52.0',
-        requiredDependencies: 0,
-        licenseType: 'MIT'
-      }
-    } as any,
-    {
-      groupId: 'dev.harrel',
-      artifactId: 'json-schema',
-      version: '1.7.4',
-      effectiveValues: {
-        size: 189_587,
-        bytecodeVersion: '52.0',
-        requiredDependencies: 0,
-        licenseType: 'MIT'
-      }
-    } as any,
-    {
-      groupId: 'dev.harrel',
-      artifactId: 'json-schema',
-      version: '1.7.5',
-      effectiveValues: {
-        size: 189_587,
-        bytecodeVersion: '52.0',
-        requiredDependencies: 0,
-        licenseType: 'MIT'
-      }
-    } as any,
-    {
-      groupId: 'dev.harrel',
-      artifactId: 'json-schema',
-      version: '1.7.6',
-      effectiveValues: {
-        size: 189_587,
-        bytecodeVersion: '52.0',
-        requiredDependencies: 0,
-        licenseType: 'MIT'
-      }
-    } as any
-  ]
+  const { data, get } = useFetch<ResolvedPackage[]>('/api/v1/packages/latest')
+  useEffect(() => void(get('')), [])
+
+  if (!data) {
+    return
+  }
   return (
     <div className='grow max-h-[800px] min-h-[800px] bg-gradient-to-b from-background to-lava-ambient py-12 px-4'>
       <div className='max-w-[1400px] m-auto'>
@@ -97,7 +26,7 @@ export const Footer = () => {
           </h2>
           <Carousel opts={({dragFree: true})} className='min-w-0'>
             <CarouselContent className='py-2'>
-              {packages.map(pkg =>
+              {data.map(pkg =>
                 <CarouselItem key={gavToString(pkg)} className='basis-auto'>
                   <PackageCard pkg={pkg}/>
                 </CarouselItem>

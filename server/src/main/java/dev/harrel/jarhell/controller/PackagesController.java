@@ -2,6 +2,7 @@ package dev.harrel.jarhell.controller;
 
 import dev.harrel.jarhell.error.BadRequestException;
 import dev.harrel.jarhell.error.ResourceNotFoundException;
+import dev.harrel.jarhell.model.ArtifactInfo;
 import dev.harrel.jarhell.model.ArtifactTree;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.repo.ArtifactRepository;
@@ -52,6 +53,11 @@ class PackagesController {
         return gavs.stream()
                 .map(gav -> new SearchResult(gav.groupId(), gav.artifactId()))
                 .toList();
+    }
+
+    @Get("/latest")
+    List<ArtifactInfo> getLatest() {
+        return artifactRepository.findLatest();
     }
 
     @Get("/{coordinate}")
