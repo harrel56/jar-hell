@@ -89,16 +89,16 @@ export const Footer = () => {
     } as any
   ]
   return (
-    <div className='grow max-h-[800px] min-h-[800px] bg-gradient-to-b from-background to-lava-ambient p-12'>
+    <div className='grow max-h-[800px] min-h-[800px] bg-gradient-to-b from-background to-lava-ambient py-12 px-4'>
       <div className='max-w-[1400px] m-auto'>
-        <div className='flex gap-16'>
+        <div className='flex gap-16 mr-16'>
           <h2 className='[writing-mode:sideways-lr] text-center text-2xl font-semibold leading-none tracking-tight text-fade'>
             Recently analyzed
           </h2>
           <Carousel opts={({dragFree: true})} className='min-w-0'>
             <CarouselContent className='py-2'>
               {packages.map(pkg =>
-                <CarouselItem key={gavToString(pkg)} className='basis-1/4'>
+                <CarouselItem key={gavToString(pkg)} className='basis-auto'>
                   <PackageCard pkg={pkg}/>
                 </CarouselItem>
               )}
