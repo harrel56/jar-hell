@@ -18,9 +18,7 @@ export const App = () => {
         <div className='px-4 flex flex-col'>
           <NavBar/>
           <Autocomplete/>
-          <div className='max-w-[1400px] w-full self-center pt-12'>
-            {outlet}
-          </div>
+          {outlet}
         </div>
         <Footer/>
       </RecentlyViewedProvider>

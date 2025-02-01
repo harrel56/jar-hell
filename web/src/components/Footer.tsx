@@ -27,7 +27,7 @@ export const Footer = () => {
     return
   }
   return (
-    <div className='grow max-h-[800px] min-h-[800px] bg-gradient-to-b from-background to-lava-ambient py-12 px-4'>
+    <div className='grow bg-gradient-to-b from-background to-lava-ambient pb-6 px-4 pt-12'>
       <div className='max-w-[1400px] m-auto flex flex-col gap-12'>
         <Separator></Separator>
         {Boolean(packagesCount) && <div className='flex flex-col items-center gap-2'>
@@ -39,7 +39,7 @@ export const Footer = () => {
           </span>
         </div>}
         {Boolean(recentlyViewed.length) &&
-          <div className='flex flex-col gap-2 mx-[4.5rem]'>
+          <div className='flex flex-col gap-2 mx-12 lg:mx-[4.5rem]'>
             <h2 className='text-2xl font-semibold leading-none tracking-tight text-fade'>
               Recently viewed
             </h2>
@@ -56,7 +56,7 @@ export const Footer = () => {
             </Carousel>
           </div>}
         {latestPackages &&
-          <div className='flex flex-col gap-2 mx-[4.5rem]'>
+          <div className='flex flex-col gap-2 mx-12 lg:mx-[4.5rem]'>
             <h2 className='text-2xl font-semibold leading-none tracking-tight text-fade'>
               Recently analyzed
             </h2>

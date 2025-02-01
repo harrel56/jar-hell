@@ -26,11 +26,13 @@ export const PackagePage = () => {
   }, [loaderData.analyzedPackages])
 
   return (
-    <div className='flex basis-1 gap-4'>
-      <VersionPicker versions={loaderData.versions} analyzedPackages={analyzedPackages}/>
-      <Separator orientation='vertical' className='h-auto'/>
-      <div className='min-w-[600px] min-h-[400px] w-full flex justify-center px-4'>
-        <Outlet context={{versions: loaderData.versions, analyzedPackages, markAsAnalyzed}}/>
+    <div className='max-w-[1400px] w-full self-center pt-12'>
+      <div className='flex flex-col md:flex-row basis-1 gap-4'>
+        <VersionPicker versions={loaderData.versions} analyzedPackages={analyzedPackages}/>
+        <Separator orientation='vertical' className='h-auto'/>
+        <div className='min-h-[400px] w-full flex justify-center px-4'>
+          <Outlet context={{versions: loaderData.versions, analyzedPackages, markAsAnalyzed}}/>
+        </div>
       </div>
     </div>)
 }
