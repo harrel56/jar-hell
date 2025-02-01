@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.model.descriptor.License;
+import io.avaje.inject.PostConstruct;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.*;
 import org.neo4j.driver.summary.ResultSummary;
@@ -30,10 +31,16 @@ public class ArtifactRepository {
 
     private final Driver driver;
     private final ObjectMapper objectMapper;
+    private final ArtifactStatsHolder artifactStatsHolder = new ArtifactStatsHolder();
 
     public ArtifactRepository(Driver driver, ObjectMapper objectMapper) {
         this.driver = driver;
         this.objectMapper = objectMapper;
+    }
+
+    @PostConstruct
+    public void postConstruct() {
+        artifactStatsHolder.setLatestArtifacts(queryLatest());
     }
 
     public List<ArtifactTree> findAllVersions(String groupId, String artifactId, String classifier) {
@@ -170,19 +177,8 @@ public class ArtifactRepository {
         }
     }
 
-    public List<ArtifactInfo> findLatest() {
-        try (var session = session()) {
-            return session.executeRead(tx -> {
-                Result res = tx.run("""
-                                MATCH (n:Artifact)
-                                WHERE n.unresolved IS NULL
-                                AND n.effectiveUnresolvedDependencies = 0
-                                RETURN n
-                                ORDER BY rand()
-                                LIMIT 10""");
-                return res.list(r -> toArtifactInfo(toArtifactProps(r.get("n").asNode())));
-            });
-        }
+    public List<ArtifactInfo> getLatest() {
+        return artifactStatsHolder.getLatestArtifacts();
     }
 
     public Optional<ArtifactTree> findResolved(Gav gav) {
@@ -271,6 +267,9 @@ public class ArtifactRepository {
                             parameters("props", propsMap))
             );
         }
+        if (!Boolean.TRUE.equals(artifactInfo.unresolved()) && artifactInfo.effectiveValues().unresolvedDependencies() == 0) {
+            artifactStatsHolder.addLatestArtifact(artifactInfo);
+        }
     }
 
     public void saveDependencies(Gav parent, List<FlatDependency> deps) {
@@ -300,6 +299,21 @@ public class ArtifactRepository {
                     AND d.classifier = dep.depGav.classifier
                 MERGE (a)-[:DEPENDS_ON {optional: dep.depProps.optional, scope: dep.depProps.scope}]->(d)""",
                 parameters("dependencies", dependencies)));
+    }
+
+    private List<ArtifactInfo> queryLatest() {
+        try (var session = session()) {
+            return session.executeRead(tx -> {
+                Result res = tx.run("""
+                        MATCH (n:Artifact)
+                        WHERE n.unresolved IS NULL
+                        AND n.effectiveUnresolvedDependencies = 0
+                        RETURN n
+                        ORDER BY n.analyzed DESC
+                        LIMIT 10""");
+                return res.list(r -> toArtifactInfo(toArtifactProps(r.get("n").asNode())));
+            });
+        }
     }
 
     /* Just because of bug: https://github.com/neo4j/neo4j-java-driver/issues/1601

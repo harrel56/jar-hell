@@ -57,7 +57,7 @@ class PackagesController {
 
     @Get("/latest")
     List<ArtifactInfo> getLatest() {
-        return artifactRepository.findLatest();
+        return artifactRepository.getLatest();
     }
 
     @Get("/{coordinate}")
