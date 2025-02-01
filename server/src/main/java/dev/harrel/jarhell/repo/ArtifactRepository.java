@@ -20,6 +20,7 @@ import javax.inject.Singleton;
 import java.io.UncheckedIOException;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -40,7 +41,10 @@ public class ArtifactRepository {
 
     @PostConstruct
     public void postConstruct() {
-        artifactStatsHolder.setLatestArtifacts(queryLatest());
+        Thread.ofVirtual().start(() -> {
+            artifactStatsHolder.setLatestArtifacts(queryLatest());
+            artifactStatsHolder.setAnalyzedCount(queryAnalyzedCount());
+        });
     }
 
     public List<ArtifactTree> findAllVersions(String groupId, String artifactId, String classifier) {
@@ -181,6 +185,11 @@ public class ArtifactRepository {
         return artifactStatsHolder.getLatestArtifacts();
     }
 
+    public int getAnalyzedCount() {
+        return artifactStatsHolder.getAnalyzedCount();
+    }
+
+
     public Optional<ArtifactTree> findResolved(Gav gav) {
         Optional<ArtifactTree> found = find(gav, 0);
         if (found.isPresent()) {
@@ -312,6 +321,19 @@ public class ArtifactRepository {
                         ORDER BY n.analyzed DESC
                         LIMIT 10""");
                 return res.list(r -> toArtifactInfo(toArtifactProps(r.get("n").asNode())));
+            });
+        }
+    }
+
+    private int queryAnalyzedCount() {
+        try (var session = session()) {
+            return session.executeRead(tx -> {
+                Result res = tx.run("""
+                        MATCH (n:Artifact)
+                        WHERE n.unresolved IS NULL
+                        AND n.effectiveUnresolvedDependencies = 0
+                        RETURN count(n) as cnt""");
+                return res.single().get("cnt").asInt();
             });
         }
     }

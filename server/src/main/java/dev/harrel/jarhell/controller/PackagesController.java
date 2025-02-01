@@ -60,6 +60,11 @@ class PackagesController {
         return artifactRepository.getLatest();
     }
 
+    @Get("/count")
+    int getAnalyzedCount() {
+        return artifactRepository.getAnalyzedCount();
+    }
+
     @Get("/{coordinate}")
     ArtifactTree get(String coordinate, @QueryParam Integer depth) {
         Gav gav = Gav.fromCoordinate(coordinate)
