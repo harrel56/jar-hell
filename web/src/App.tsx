@@ -4,6 +4,7 @@ import {NavBar} from '@/components/NavBar.tsx'
 import {Autocomplete} from '@/components/Autocomplete.tsx'
 import {useEffect} from 'react'
 import {Footer} from '@/components/Footer.tsx'
+import {RecentlyViewedProvider} from '@/context/RecentlyViewedProvider.tsx'
 
 export const App = () => {
   const outlet = useOutlet()
@@ -13,14 +14,16 @@ export const App = () => {
 
   return (
     <ThemeProvider>
-      <div className='px-4 flex flex-col'>
-        <NavBar/>
-        <Autocomplete/>
-        <div className='max-w-[1400px] w-full self-center pt-12'>
-          {outlet}
+      <RecentlyViewedProvider>
+        <div className='px-4 flex flex-col'>
+          <NavBar/>
+          <Autocomplete/>
+          <div className='max-w-[1400px] w-full self-center pt-12'>
+            {outlet}
+          </div>
         </div>
-      </div>
-      <Footer/>
+        <Footer/>
+      </RecentlyViewedProvider>
     </ThemeProvider>
   )
 }

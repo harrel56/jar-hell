@@ -18,6 +18,11 @@ export const stringToGav = (str: string): Gav => {
   return {groupId, artifactId, version, classifier}
 }
 
+export const gavEquals = (gav1: Gav, gav2: Gav) => {
+  return gav1.groupId === gav2.groupId && gav1.artifactId === gav2.artifactId
+    && gav1.version === gav2.version && gav1.classifier === gav2.classifier
+}
+
 export const formatBytes = (bytes: number) => {
   if (bytes < 1_000) {
     return bytes + 'B'

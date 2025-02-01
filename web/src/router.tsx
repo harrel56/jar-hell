@@ -52,6 +52,7 @@ export const createRouter = () => createBrowserRouter([
         element: null
       },
       {
+        id: 'package-page',
         errorElement: <ErrorBoundary/>,
         path: '/packages/:gav',
         element: <PackagePage/>,
