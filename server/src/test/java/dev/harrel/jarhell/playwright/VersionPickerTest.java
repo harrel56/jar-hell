@@ -66,7 +66,7 @@ class VersionPickerTest {
         assertThat(page.locator("[aria-current='true']").getByText("Analyzed")).not().isAttached();
 
         assertThat(page.getByText("Analysis is in progress")).isInViewport();
-        assertThat(page.getByText("32.73KB")).isInViewport();
+        assertThat(page.getByText("32.73KB").nth(0)).isInViewport();
         assertThat(page.locator("[aria-current='true']").getByText("Analyzed")).isVisible();
     }
 }
