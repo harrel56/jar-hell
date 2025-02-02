@@ -20,7 +20,6 @@ import javax.inject.Singleton;
 import java.io.UncheckedIOException;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -277,7 +276,7 @@ public class ArtifactRepository {
             );
         }
         if (!Boolean.TRUE.equals(artifactInfo.unresolved()) && artifactInfo.effectiveValues().unresolvedDependencies() == 0) {
-            artifactStatsHolder.addLatestArtifact(artifactInfo);
+            artifactStatsHolder.onArtifactSaved(artifactInfo);
         }
     }
 

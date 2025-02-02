@@ -22,6 +22,12 @@ export const RecentlyViewedProvider = ({children}: PropsWithChildren) => {
       localStorage.setItem('recentlyViewed', JSON.stringify(newArray))
       setRecentlyViewed(newArray)
     }
+    
+    if (gav) {
+      document.title = 'Jar Hell | ' + gav
+    } else {
+      document.title = 'Jar Hell'
+    }
   }, [gav])
 
   return (

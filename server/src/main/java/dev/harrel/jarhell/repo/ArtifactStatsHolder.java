@@ -25,13 +25,14 @@ class ArtifactStatsHolder {
         analyzedCount.set(count);
     }
 
-    void addLatestArtifact(ArtifactInfo artifact) {
+    void onArtifactSaved(ArtifactInfo artifact) {
         try (AutoLock _ = lock.lock()) {
             latest.addFirst(artifact);
             if (latest.size() > SIZE_LIMIT) {
                 latest.removeLast();
             }
         }
+        analyzedCount.incrementAndGet();
     }
 
     List<ArtifactInfo> getLatestArtifacts() {
