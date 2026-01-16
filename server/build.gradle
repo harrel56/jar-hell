@@ -51,7 +51,7 @@ dependencies {
     implementation 'org.apache.maven.resolver:maven-resolver-transport-file:1.9.22'
     implementation 'org.apache.maven.resolver:maven-resolver-connector-basic:1.9.22'
 
-    implementation 'org.neo4j.driver:neo4j-java-driver:5.26.3'
+    implementation 'org.neo4j.driver:neo4j-java-driver:6.0.2'
 
     testImplementation platform('org.junit:junit-bom:5.11.3')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -120,7 +120,7 @@ tasks.withType(JavaExec).configureEach {
 }
 
 tasks.withType(Test).configureEach {
-    jvmArgs '--enable-preview'
+    jvmArgs '--enable-preview', '-XX:+EnableDynamicAgentLoading'
     environment 'AVAJE_PROFILES', 'dev'
     testLogging {
         events TestLogEvent.SKIPPED, TestLogEvent.FAILED, TestLogEvent.STANDARD_ERROR
