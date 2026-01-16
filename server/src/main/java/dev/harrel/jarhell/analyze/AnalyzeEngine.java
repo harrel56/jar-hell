@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
 
+import static java.util.concurrent.StructuredTaskScope.open;
+
 @Singleton
 public class AnalyzeEngine {
     private static final Logger logger = LoggerFactory.getLogger(AnalyzeEngine.class);
@@ -58,7 +60,7 @@ public class AnalyzeEngine {
                 lock.unlock(gav);
             }
 
-            try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+            try (var scope = open(StructuredTaskScope.Joiner.awaitAllSuccessfulOrThrow())) {
                 for (FlatDependency dep : output.dependencies().directDependencies()) {
                     scope.fork(() -> doFullAnalysis(dep.gav()));
                 }
@@ -82,7 +84,7 @@ public class AnalyzeEngine {
 
         List<DependencyInfo> partialDeps;
         CollectedDependencies deps = Boolean.TRUE.equals(info.unresolved()) ? CollectedDependencies.empty() : analyzer.analyzeDeps(gav);
-        try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+        try (var scope = open(StructuredTaskScope.Joiner.awaitAllSuccessfulOrThrow())) {
             List<StructuredTaskScope.Subtask<DependencyInfo>> partialDepTasks = deps.allDependencies().stream()
                     .map(dep -> scope.fork(() -> {
                         var artifactInfo = analyzePartially(dep.gav());

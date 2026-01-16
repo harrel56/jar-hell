@@ -6,9 +6,9 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.StructuredTaskScope;
 
 public final class ConcurrentUtil {
-    public static void joinScope(StructuredTaskScope.ShutdownOnFailure scope) {
+    public static void joinScope(StructuredTaskScope scope) {
         try {
-            scope.join().throwIfFailed(CompletionException::new);
+            scope.join();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new CompletionException(e);

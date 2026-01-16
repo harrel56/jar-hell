@@ -17,6 +17,7 @@ import org.jsoup.nodes.Document;
 
 import javax.inject.Singleton;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -29,6 +30,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static java.util.concurrent.StructuredTaskScope.*;
 
 @Singleton
 public class MavenApiClient {
@@ -70,7 +73,7 @@ public class MavenApiClient {
     }
 
     public List<String> fetchArtifactVersions(String groupId, String artifactId) {
-        try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+        try (var scope = open(Joiner.awaitAllSuccessfulOrThrow())) {
             Subtask<List<String>> dirVersions = scope.fork(() -> fetchVersionsFromDir(groupId, artifactId));
             Subtask<List<String>> metadataVersions = scope.fork(() -> fetchVersionsFromMetadata(groupId, artifactId));
             ConcurrentUtil.joinScope(scope);
@@ -155,7 +158,7 @@ public class MavenApiClient {
 
     private ContentResponse fetchRaw(String url) {
         try {
-            return httpClient.GET(url, 16 * 1024 * 1024);
+            return httpClient.sendGet(URI.create(url), 5L);
         } catch (ExecutionException | TimeoutException e) {
             throw new IllegalArgumentException("HTTP fetch failed for url [%s]".formatted(url), e);
         } catch (InterruptedException e) {

@@ -37,7 +37,7 @@ public class MavenApiClientTest {
 
     @Test
     void artifactExistsFor200() throws Exception {
-        when(httpClient.GET((String) any(), anyInt())).thenReturn(new ContentResponseMock(200, null));
+        when(httpClient.sendGet((String) any(), anyInt())).thenReturn(new ContentResponseMock(200, null));
         boolean res = mavenApiClient.checkIfArtifactExists(new Gav("a", "b", "1.0.0"));
 
         assertThat(res).isTrue();
@@ -47,7 +47,7 @@ public class MavenApiClientTest {
     @ParameterizedTest
     @ValueSource(ints = {201, 300, 400, 401, 403, 404, 500, 501, 502, 503})
     void artifactDoesNotExistForOtherStatus(int status) throws Exception {
-        when(httpClient.GET((String) any(), anyInt())).thenReturn(new ContentResponseMock(status, null));
+        when(httpClient.sendGet((String) any(), anyInt())).thenReturn(new ContentResponseMock(status, null));
         boolean res = mavenApiClient.checkIfArtifactExists(new Gav("a", "b", "1.0.0"));
 
         assertThat(res).isFalse();
@@ -81,8 +81,8 @@ public class MavenApiClientTest {
         ContentResponseMock metadataHttpRes = new ContentResponseMock(200, """
                 <version>1.0.0</version>
                 <version>1.5.1</version>""");
-        when(httpClient.GET(eq(DIR_URL), anyInt())).thenReturn(dirHttpRes);
-        when(httpClient.GET(eq(METADATA_URL), anyInt())).thenReturn(metadataHttpRes);
+        when(httpClient.sendGet(eq(DIR_URL), anyInt())).thenReturn(dirHttpRes);
+        when(httpClient.sendGet(eq(METADATA_URL), anyInt())).thenReturn(metadataHttpRes);
         List<String> res = mavenApiClient.fetchArtifactVersions("dev.harrel", "oops.hello");
 
         assertThat(res).containsExactly(
@@ -112,7 +112,7 @@ public class MavenApiClientTest {
     @Test
     void failsIfDirAndMetadataVersionsAreEmpty() throws Exception {
         ContentResponseMock httpRes = new ContentResponseMock(200, "what?");
-        when(httpClient.GET((String) any(), anyInt())).thenReturn(httpRes);
+        when(httpClient.sendGet((String) any(), anyInt())).thenReturn(httpRes);
 
         assertThatThrownBy(() -> mavenApiClient.fetchArtifactVersions("dev.harrel", "oops.hello"))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -124,8 +124,8 @@ public class MavenApiClientTest {
         ContentResponseMock metadataHttpRes = new ContentResponseMock(200, """
                 <version>1.0.0</version>
                 <version>1.5.1</version>""");
-        when(httpClient.GET(eq(DIR_URL), anyInt())).thenReturn(httpRes);
-        when(httpClient.GET(eq(METADATA_URL), anyInt())).thenReturn(metadataHttpRes);
+        when(httpClient.sendGet(eq(DIR_URL), anyInt())).thenReturn(httpRes);
+        when(httpClient.sendGet(eq(METADATA_URL), anyInt())).thenReturn(metadataHttpRes);
 
         List<String> res = mavenApiClient.fetchArtifactVersions("dev.harrel", "oops.hello");
 
@@ -136,8 +136,8 @@ public class MavenApiClientTest {
     void ignoresMetadataVersionsIf404() throws Exception {
         ContentResponseMock httpRes = new ContentResponseMock(200, "<a href=\"1.0.0/\"></a>");
         ContentResponseMock metadataHttpRes = new ContentResponseMock(404, "error");
-        when(httpClient.GET(eq(DIR_URL), anyInt())).thenReturn(httpRes);
-        when(httpClient.GET(eq(METADATA_URL), anyInt())).thenReturn(metadataHttpRes);
+        when(httpClient.sendGet(eq(DIR_URL), anyInt())).thenReturn(httpRes);
+        when(httpClient.sendGet(eq(METADATA_URL), anyInt())).thenReturn(metadataHttpRes);
 
         List<String> res = mavenApiClient.fetchArtifactVersions("dev.harrel", "oops.hello");
 
@@ -148,8 +148,8 @@ public class MavenApiClientTest {
     void failsIfDirVersionsFail() throws Exception {
         ContentResponseMock metadataHttpRes = new ContentResponseMock(200, "");
         IllegalArgumentException iae = new IllegalArgumentException();
-        when(httpClient.GET(eq(DIR_URL), anyInt())).thenThrow(iae);
-        when(httpClient.GET(eq(METADATA_URL), anyInt())).thenReturn(metadataHttpRes);
+        when(httpClient.sendGet(eq(DIR_URL), anyInt())).thenThrow(iae);
+        when(httpClient.sendGet(eq(METADATA_URL), anyInt())).thenReturn(metadataHttpRes);
 
         assertThatThrownBy(() -> mavenApiClient.fetchArtifactVersions("dev.harrel", "oops.hello"))
                 .isInstanceOf(CompletionException.class)
@@ -160,8 +160,8 @@ public class MavenApiClientTest {
     void failsIfMetadataVersionsFail() throws Exception {
         ContentResponseMock dirHttpRes = new ContentResponseMock(200, "");
         IllegalArgumentException iae = new IllegalArgumentException();
-        when(httpClient.GET(eq(DIR_URL), anyInt())).thenReturn(dirHttpRes);
-        when(httpClient.GET(eq(METADATA_URL), anyInt())).thenThrow(iae);
+        when(httpClient.sendGet(eq(DIR_URL), anyInt())).thenReturn(dirHttpRes);
+        when(httpClient.sendGet(eq(METADATA_URL), anyInt())).thenThrow(iae);
 
         assertThatThrownBy(() -> mavenApiClient.fetchArtifactVersions("dev.harrel", "oops.hello"))
                 .isInstanceOf(CompletionException.class)
