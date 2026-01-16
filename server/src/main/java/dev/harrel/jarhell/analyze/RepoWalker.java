@@ -34,8 +34,8 @@ public class RepoWalker {
 
     private final CustomHttpClient httpClient;
     /* server.bolt.thread_pool_max_size has default of 400 */
-    private static final int CONSUMER_POOL_SIZE = 128;
-    private static final int HTTP_POOL_SIZE = 64 * Runtime.getRuntime().availableProcessors();
+    private static final int CONSUMER_POOL_SIZE = 32;
+    private static final int HTTP_POOL_SIZE = 16 * Runtime.getRuntime().availableProcessors();
     private final ExecutorService consumerService = Executors.newFixedThreadPool(CONSUMER_POOL_SIZE, Thread.ofVirtual().factory());
     private final ExecutorService httpService = Executors.newFixedThreadPool(HTTP_POOL_SIZE, Thread.ofVirtual().factory());
 
@@ -83,8 +83,8 @@ public class RepoWalker {
         }
         ContentResponse res;
         try {
-            res = httpClient.GET(uri, 16 * 1024 * 1024);
-        } catch (ExecutionException | TimeoutException e) {
+            res = httpClient.sendGetWithRetries(uri, 10);
+        } catch (RuntimeException e) {
             logger.warn("HTTP call failed for url [{}]", uri, e);
             return failure(state.failedRequestsCount());
         } catch (InterruptedException e) {
