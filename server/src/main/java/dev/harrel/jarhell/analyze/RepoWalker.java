@@ -83,7 +83,7 @@ public class RepoWalker {
         }
         ContentResponse res;
         try {
-            res = httpClient.sendGetWithRetries(uri, 10);
+            res = httpClient.sendGetWithRetries(uri, 0);
         } catch (RuntimeException e) {
             logger.warn("HTTP call failed for url [{}]", uri, e);
             return failure(state.failedRequestsCount());

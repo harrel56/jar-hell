@@ -11,9 +11,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.StructuredTaskScope;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -23,8 +25,8 @@ import static org.mockito.Mockito.when;
 
 public class MavenApiClientTest {
     private static final String CONTENT_URL = Config.get("maven.repo-url");
-    private static final String DIR_URL = CONTENT_URL + "/dev%2Fharrel%2Foops.hello";
-    private static final String METADATA_URL = CONTENT_URL + "/dev%2Fharrel%2Foops.hello%2Fmaven-metadata.xml";
+    private static final URI DIR_URL = URI.create(CONTENT_URL + "/dev%2Fharrel%2Foops.hello");
+    private static final URI METADATA_URL = URI.create(CONTENT_URL + "/dev%2Fharrel%2Foops.hello%2Fmaven-metadata.xml");
 
     private CustomHttpClient httpClient;
     private MavenApiClient mavenApiClient;
@@ -37,7 +39,7 @@ public class MavenApiClientTest {
 
     @Test
     void artifactExistsFor200() throws Exception {
-        when(httpClient.sendGet((String) any(), anyInt())).thenReturn(new ContentResponseMock(200, null));
+        when(httpClient.sendGet(any(), anyLong())).thenReturn(new ContentResponseMock(200, null));
         boolean res = mavenApiClient.checkIfArtifactExists(new Gav("a", "b", "1.0.0"));
 
         assertThat(res).isTrue();
@@ -47,7 +49,7 @@ public class MavenApiClientTest {
     @ParameterizedTest
     @ValueSource(ints = {201, 300, 400, 401, 403, 404, 500, 501, 502, 503})
     void artifactDoesNotExistForOtherStatus(int status) throws Exception {
-        when(httpClient.sendGet((String) any(), anyInt())).thenReturn(new ContentResponseMock(status, null));
+        when(httpClient.sendGet(any(), anyLong())).thenReturn(new ContentResponseMock(status, null));
         boolean res = mavenApiClient.checkIfArtifactExists(new Gav("a", "b", "1.0.0"));
 
         assertThat(res).isFalse();
@@ -81,8 +83,8 @@ public class MavenApiClientTest {
         ContentResponseMock metadataHttpRes = new ContentResponseMock(200, """
                 <version>1.0.0</version>
                 <version>1.5.1</version>""");
-        when(httpClient.sendGet(eq(DIR_URL), anyInt())).thenReturn(dirHttpRes);
-        when(httpClient.sendGet(eq(METADATA_URL), anyInt())).thenReturn(metadataHttpRes);
+        when(httpClient.sendGet(eq(DIR_URL), anyLong())).thenReturn(dirHttpRes);
+        when(httpClient.sendGet(eq(METADATA_URL), anyLong())).thenReturn(metadataHttpRes);
         List<String> res = mavenApiClient.fetchArtifactVersions("dev.harrel", "oops.hello");
 
         assertThat(res).containsExactly(
@@ -112,7 +114,7 @@ public class MavenApiClientTest {
     @Test
     void failsIfDirAndMetadataVersionsAreEmpty() throws Exception {
         ContentResponseMock httpRes = new ContentResponseMock(200, "what?");
-        when(httpClient.sendGet((String) any(), anyInt())).thenReturn(httpRes);
+        when(httpClient.sendGet(any(), anyLong())).thenReturn(httpRes);
 
         assertThatThrownBy(() -> mavenApiClient.fetchArtifactVersions("dev.harrel", "oops.hello"))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -124,8 +126,8 @@ public class MavenApiClientTest {
         ContentResponseMock metadataHttpRes = new ContentResponseMock(200, """
                 <version>1.0.0</version>
                 <version>1.5.1</version>""");
-        when(httpClient.sendGet(eq(DIR_URL), anyInt())).thenReturn(httpRes);
-        when(httpClient.sendGet(eq(METADATA_URL), anyInt())).thenReturn(metadataHttpRes);
+        when(httpClient.sendGet(eq(DIR_URL), anyLong())).thenReturn(httpRes);
+        when(httpClient.sendGet(eq(METADATA_URL), anyLong())).thenReturn(metadataHttpRes);
 
         List<String> res = mavenApiClient.fetchArtifactVersions("dev.harrel", "oops.hello");
 
@@ -136,8 +138,8 @@ public class MavenApiClientTest {
     void ignoresMetadataVersionsIf404() throws Exception {
         ContentResponseMock httpRes = new ContentResponseMock(200, "<a href=\"1.0.0/\"></a>");
         ContentResponseMock metadataHttpRes = new ContentResponseMock(404, "error");
-        when(httpClient.sendGet(eq(DIR_URL), anyInt())).thenReturn(httpRes);
-        when(httpClient.sendGet(eq(METADATA_URL), anyInt())).thenReturn(metadataHttpRes);
+        when(httpClient.sendGet(eq(DIR_URL), anyLong())).thenReturn(httpRes);
+        when(httpClient.sendGet(eq(METADATA_URL), anyLong())).thenReturn(metadataHttpRes);
 
         List<String> res = mavenApiClient.fetchArtifactVersions("dev.harrel", "oops.hello");
 
@@ -148,11 +150,11 @@ public class MavenApiClientTest {
     void failsIfDirVersionsFail() throws Exception {
         ContentResponseMock metadataHttpRes = new ContentResponseMock(200, "");
         IllegalArgumentException iae = new IllegalArgumentException();
-        when(httpClient.sendGet(eq(DIR_URL), anyInt())).thenThrow(iae);
-        when(httpClient.sendGet(eq(METADATA_URL), anyInt())).thenReturn(metadataHttpRes);
+        when(httpClient.sendGet(eq(DIR_URL), anyLong())).thenThrow(iae);
+        when(httpClient.sendGet(eq(METADATA_URL), anyLong())).thenReturn(metadataHttpRes);
 
         assertThatThrownBy(() -> mavenApiClient.fetchArtifactVersions("dev.harrel", "oops.hello"))
-                .isInstanceOf(CompletionException.class)
+                .isInstanceOf(StructuredTaskScope.FailedException.class)
                 .hasCause(iae);
     }
 
@@ -160,11 +162,11 @@ public class MavenApiClientTest {
     void failsIfMetadataVersionsFail() throws Exception {
         ContentResponseMock dirHttpRes = new ContentResponseMock(200, "");
         IllegalArgumentException iae = new IllegalArgumentException();
-        when(httpClient.sendGet(eq(DIR_URL), anyInt())).thenReturn(dirHttpRes);
-        when(httpClient.sendGet(eq(METADATA_URL), anyInt())).thenThrow(iae);
+        when(httpClient.sendGet(eq(DIR_URL), anyLong())).thenReturn(dirHttpRes);
+        when(httpClient.sendGet(eq(METADATA_URL), anyLong())).thenThrow(iae);
 
         assertThatThrownBy(() -> mavenApiClient.fetchArtifactVersions("dev.harrel", "oops.hello"))
-                .isInstanceOf(CompletionException.class)
+                .isInstanceOf(StructuredTaskScope.FailedException.class)
                 .hasCause(iae);
     }
 

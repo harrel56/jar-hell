@@ -42,11 +42,11 @@ class RepoWalkerTest {
     @Test
     void doesntFailForFailedRequests() throws ExecutionException, InterruptedException, TimeoutException {
         CustomHttpClient httpClient = mock(CustomHttpClient.class);
-        when(httpClient.sendGet((URI) any(), anyInt())).thenReturn(new MavenApiClientTest.ContentResponseMock(200, """
+        when(httpClient.sendGetWithRetries((URI) any(), anyInt())).thenReturn(new MavenApiClientTest.ContentResponseMock(200, """
                 <a href="../">../</a>
                 <a href="path/">path/</a>
                 """));
-        when(httpClient.sendGet(argThat(uriEndsWith("/path/")), anyInt())).thenReturn(new MavenApiClientTest.ContentResponseMock(404, "err"));
+        when(httpClient.sendGetWithRetries(argThat(uriEndsWith("/path/")), anyInt())).thenReturn(new MavenApiClientTest.ContentResponseMock(404, "err"));
 
         new RepoWalker(httpClient).walk(repoUrl, _ -> {}).get();
     }
