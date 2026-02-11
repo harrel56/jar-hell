@@ -1,4 +1,4 @@
-FROM eclipse-temurin:23-alpine
+FROM eclipse-temurin:25-alpine
 ARG BUILD_VERSION=unknown
 ENV BUILD_VERSION=${BUILD_VERSION}
 COPY build/*.jar app.jar
