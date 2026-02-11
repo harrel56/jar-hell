@@ -65,7 +65,7 @@ Content-Type: application/json
 ### crawl
 POST https://jarhell.harrel.dev/technical/v1/crawl
 Content-Type: application/json
-Authorization: Bearer c2128092-cf82-48b5-9aba-c3335be846a7
+Authorization: Bearer
 
 ### crawl local
 POST http://localhost:8060/technical/v1/crawl
