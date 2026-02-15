@@ -32,7 +32,7 @@ public class MavenIndexService {
     public void scanIndex() {
         Instant start = Instant.now();
         WritableResourceHandler local = new PathWritableResourceHandler(Path.of("/index/"));
-        ResourceHandler remote = new UriResourceHandler(Config.getURI("maven.repo-url"));
+        ResourceHandler remote = new UriResourceHandler(Config.getURI("maven.repo-url").resolve("/maven2/.index"));
         int chunks = 0, rows = 0, saved = 0;
         logger.info("Starting index scanning...");
         try (IndexReader indexReader = new IndexReader(local, remote)) {
