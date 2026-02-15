@@ -50,6 +50,7 @@ dependencies {
     implementation 'org.apache.maven.resolver:maven-resolver-transport-http:1.9.22'
     implementation 'org.apache.maven.resolver:maven-resolver-transport-file:1.9.22'
     implementation 'org.apache.maven.resolver:maven-resolver-connector-basic:1.9.22'
+    implementation 'org.apache.maven.indexer:indexer-reader:7.1.6'
 
     implementation 'org.neo4j.driver:neo4j-java-driver:6.0.2'
 

@@ -2,6 +2,7 @@ FROM eclipse-temurin:25-alpine
 ARG BUILD_VERSION=unknown
 ENV BUILD_VERSION=${BUILD_VERSION}
 COPY build/*.jar app.jar
+VOLUME /index
 
 EXPOSE 8060
 HEALTHCHECK CMD wget --timeout=5 --no-verbose --tries=1 --spider http://localhost:8060 || exit 1
