@@ -280,6 +280,33 @@ public class ArtifactRepository {
         }
     }
 
+    /**
+     * Saves given gavs as unresolved artifacts in a single transaction.
+     * Artifacts that are already present are left untouched.
+     *
+     * @return number of newly created artifacts
+     */
+    public int saveUnresolvedBatch(List<Gav> gavs, String reason) {
+        List<Map<String, Object>> batch = gavs.stream()
+                .map(gav -> {
+                    ArtifactProps artifactProps = toArtifactProps(ArtifactInfo.unresolved(gav, reason));
+                    Map<String, Object> propsMap = objectMapper.convertValue(artifactProps, new TypeReference<Map<String, Object>>() {});
+                    propsMap.computeIfAbsent("classifier", _ -> "");
+                    return propsMap;
+                })
+                .toList();
+        try (var session = session()) {
+            return session.executeWrite(tx ->
+                    tx.run(new Query("""
+                                    UNWIND $batch AS props
+                                    MERGE (a:Artifact {groupId: props.groupId, artifactId: props.artifactId, version: props.version, classifier: props.classifier})
+                                    ON CREATE SET a = props, a.analyzed = localdatetime()""",
+                            parameters("batch", batch))
+                    ).consume().counters().nodesCreated()
+            );
+        }
+    }
+
     public void saveDependencies(Gav parent, List<FlatDependency> deps) {
         try (var session = session()) {
             session.executeWriteWithoutResult(tx -> saveDependencies(tx, parent, deps));

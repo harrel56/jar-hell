@@ -71,3 +71,8 @@ Authorization: Bearer
 POST http://localhost:8060/technical/v1/crawl
 Content-Type: application/json
 Authorization: Bearer test
+
+### refresh index local
+POST http://localhost:8060/technical/v1/refresh-index
+Content-Type: application/json
+Authorization: Bearer test

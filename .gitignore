@@ -7,3 +7,6 @@ server/build
 
 web/dist
 web/node_modules
+
+/index/
+nexus-maven-repository-index*
