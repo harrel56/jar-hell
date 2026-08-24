@@ -1,4 +1,4 @@
-import {Gav, ResolvedPackage, stringToGav} from './util.ts'
+import {Gav, Package, ResolvedPackage, stringToGav} from './util.ts'
 import {createBrowserRouter, redirect} from 'react-router-dom'
 import {App} from './App.tsx'
 import {ClientError, ErrorBoundary, NotFoundError} from './ErrorBoundary.tsx'
@@ -6,26 +6,14 @@ import {PackagePage} from './components/PackagePage.tsx'
 import {ArtifactInfoContainer} from '@/components/ArtifactInfoContainer.tsx'
 
 export interface PackageLoaderData {
-  versions: string[]
-  analyzedPackages: ResolvedPackage[]
+  packages: Package[]
 }
 
 const serverUrl = import.meta.env.VITE_SERVER_URL
 
 const loadPackageData = async (gav: Gav): Promise<PackageLoaderData | Response> => {
   const queryString = `groupId=${gav.groupId}&artifactId=${gav.artifactId}`
-  const versionsPromise = fetch(`${serverUrl}/api/v1/maven/versions?${queryString}`)
-    .then(async res => {
-      const json = await res.json()
-      if (res.ok) {
-        return (json as string[]).toReversed()
-      } else if (res.status === 400) {
-        throw new NotFoundError(`Package not found`)
-      } else {
-        throw Error(json.message)
-      }
-    })
-  const analyzedPackagesPromise = fetch(`${serverUrl}/api/v1/packages?${queryString}`)
+  const packagesPromise = fetch(`${serverUrl}/api/v1/packages?${queryString}`)
     .then(async res => {
       const json = await res.json()
       if (res.ok) {
@@ -35,11 +23,11 @@ const loadPackageData = async (gav: Gav): Promise<PackageLoaderData | Response> 
       }
     })
 
-  const versions = await versionsPromise
+  const packages = await packagesPromise
   if (!gav.version) {
-    return redirect(`/packages/${gav.groupId}:${gav.artifactId}:${versions[0]}`)
+    return redirect(`/packages/${gav.groupId}:${gav.artifactId}:${packages.at(-1)?.version}`)
   }
-  return {versions: versions, analyzedPackages: await analyzedPackagesPromise}
+  return {packages}
 }
 
 export const createRouter = () => createBrowserRouter([

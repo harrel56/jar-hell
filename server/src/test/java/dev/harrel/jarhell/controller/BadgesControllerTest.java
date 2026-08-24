@@ -97,7 +97,7 @@ class BadgesControllerTest {
     @Test
     void findsLatestArtifactVersionForTotalSize() {
         ArtifactInfo.EffectiveValues effectiveValues = mock(ArtifactInfo.EffectiveValues.class);
-        when(mavenApiClient.fetchArtifactVersions("org.test", "lib")).thenReturn(List.of("1.0.0", "2.0.0", "2.1.0"));
+        when(repo.findAllVersions("org.test", "lib", null)).thenReturn(List.of(at("1.0.0"), at("2.0.0"), at("2.1.0")));
         when(effectiveValues.size()).thenReturn(123_321L);
         when(artifactInfo.effectiveValues()).thenReturn(effectiveValues);
         when(repo.find(new Gav("org.test", "lib", "2.1.0"), 0)).thenReturn(Optional.of(artifactTree));
@@ -112,7 +112,7 @@ class BadgesControllerTest {
     @Test
     void findsLatestArtifactVersionForEffectiveBytecode() {
         ArtifactInfo.EffectiveValues effectiveValues = mock(ArtifactInfo.EffectiveValues.class);
-        when(mavenApiClient.fetchArtifactVersions("org.test", "lib")).thenReturn(List.of("1.0.0", "2.0.0", "2.1.0"));
+        when(repo.findAllVersions("org.test", "lib", null)).thenReturn(List.of(at("1.0.0"), at("2.0.0"), at("2.1.0")));
         when(effectiveValues.bytecodeVersion()).thenReturn("52.0");
         when(artifactInfo.effectiveValues()).thenReturn(effectiveValues);
         when(repo.find(new Gav("org.test", "lib", "2.1.0"), 0)).thenReturn(Optional.of(artifactTree));
@@ -168,5 +168,9 @@ class BadgesControllerTest {
 
     private static String escapedName(BadgesController.Metric metric) {
         return metric.getName().replace(' ', '_');
+    }
+
+    private static ArtifactTree at(String version) {
+        return new ArtifactTree(ArtifactInfo.unresolved(new Gav("g", "a", version), ""), List.of());
     }
 }

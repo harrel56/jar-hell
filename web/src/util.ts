@@ -113,6 +113,7 @@ export type Package = UnresolvedPackage | ResolvedPackage
 
 export interface UnresolvedPackage extends Gav {
   unresolved: true
+  unresolvedReason: string
 }
 
 export interface Dependency {
