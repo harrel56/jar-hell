@@ -1,7 +1,6 @@
 package dev.harrel.jarhell;
 
 import dev.harrel.jarhell.model.Gav;
-import io.avaje.config.Config;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpFields;
