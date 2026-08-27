@@ -24,6 +24,7 @@ repositories {
 dependencies {
     web project(path: ':web', configuration: 'output')
 
+    implementation 'org.jspecify:jspecify:1.0.0'
     implementation 'org.apache.commons:commons-lang3:3.17.0' // can be possibly removed
 
     implementation ('io.avaje:avaje-inject:10.3-javax') {

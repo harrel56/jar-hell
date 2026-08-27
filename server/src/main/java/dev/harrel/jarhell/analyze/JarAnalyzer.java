@@ -1,31 +1,38 @@
 package dev.harrel.jarhell.analyze;
 
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.lang.classfile.Attributes;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
 import java.lang.reflect.AccessFlag;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
+import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
+@NullMarked
 @Singleton
 class JarAnalyzer {
     private static final String MULTI_RELEASE_PREFIX = "META-INF/versions/";
     private static final String MODULE_INFO = "module-info.class";
 
     JarInfo analyzeJar(JarInputStream jis) throws IOException {
-        Map<ContentType, Content> contents = new EnumMap<>(ContentType.class);
-        SortedMap<Integer, Integer> multiReleaseVersions = new TreeMap<>();
-        int maxBytecodeVersion = 0;
+        Map<ContentType, ContentAggregate> contents = new EnumMap<>(ContentType.class);
+        BytecodeVersion bytecodeVersion = null;
+        boolean multiReleaseJar = false;
+
+        Manifest manifest = jis.getManifest();
+        if (manifest != null) {
+            String mrJar = manifest.getMainAttributes().getValue("Multi-Release");
+            if ("true".equals(mrJar)) {
+                multiReleaseJar = true;
+            }
+        }
 
         JarEntry entry;
         while ((entry = jis.getNextJarEntry()) != null) {
@@ -35,59 +42,31 @@ class JarAnalyzer {
             String name = entry.getName();
             if (!name.endsWith(".class")) {
                 jis.closeEntry();
-                mergeContent(contents, ContentType.RESOURCES, entry);
+                contents.computeIfAbsent(ContentType.RESOURCE, _ -> new ContentAggregate()).addEntry(entry);
                 continue;
             }
 
-            ClassModel classModel = parseClass(jis.readAllBytes());
-            mergeContent(contents, resolveContentType(classModel), entry);
+            ClassModel classModel;
+            try {
+                classModel = ClassFile.of().parse(jis.readAllBytes());
+                contents.computeIfAbsent(resolveContentType(classModel), _ -> new ContentAggregate()).addEntry(entry);
+            } catch (IllegalArgumentException e) {
+                contents.computeIfAbsent(ContentType.INVALID, _ -> new ContentAggregate()).addEntry(entry);
+                continue;
+            }
 
-            Integer multiReleaseVersion = resolveMultiReleaseVersion(name);
-            if (multiReleaseVersion != null) {
-                multiReleaseVersions.merge(multiReleaseVersion, 1, Integer::sum);
-            } else if (classModel != null && !name.endsWith(MODULE_INFO)) {
-                maxBytecodeVersion = Math.max(maxBytecodeVersion, classModel.majorVersion());
+            if (!name.startsWith(MULTI_RELEASE_PREFIX) && !name.endsWith(MODULE_INFO)) {
+                BytecodeVersion bc = new BytecodeVersion(classModel.majorVersion(), classModel.minorVersion());
+                if (bytecodeVersion == null || bytecodeVersion.compareTo(bc) < 0) {
+                    bytecodeVersion = bc;
+                }
             }
         }
 
-        return new JarInfo(Map.copyOf(contents),
-                maxBytecodeVersion == 0 ? null : maxBytecodeVersion,
-                Collections.unmodifiableSortedMap(multiReleaseVersions));
-    }
-
-    /** Returns the {@code META-INF/versions/<N>} release of an entry, or {@code null} if it is not versioned. */
-    private static Integer resolveMultiReleaseVersion(String name) {
-        if (!name.startsWith(MULTI_RELEASE_PREFIX)) {
-            return null;
-        }
-        int slashIndex = name.indexOf('/', MULTI_RELEASE_PREFIX.length());
-        if (slashIndex < 0) {
-            return null;
-        }
-        try {
-            return Integer.valueOf(name.substring(MULTI_RELEASE_PREFIX.length(), slashIndex));
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private static void mergeContent(Map<ContentType, Content> contents, ContentType contentType, JarEntry entry) {
-        Content content = new Content(1, Math.max(entry.getSize(), 0), Math.max(entry.getCompressedSize(), 0));
-        contents.merge(contentType, content, Content::add);
-    }
-
-    private ClassModel parseClass(byte[] classBytes) {
-        try {
-            return ClassFile.of().parse(classBytes);
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
+        return new JarInfo(toContents(contents), Objects.toString(bytecodeVersion, null), multiReleaseJar);
     }
 
     private ContentType resolveContentType(ClassModel classModel) {
-        if (classModel == null) {
-            return ContentType.UNKNOWN;
-        }
         return classModel.findAttribute(Attributes.sourceFile())
                 .map(attr -> attr.sourceFile().stringValue())
                 .map(JarAnalyzer::resolveExtension)
@@ -99,6 +78,15 @@ class JarAnalyzer {
         int dotIndex = sourceFile.lastIndexOf('.');
         return dotIndex < 0 ? "" : sourceFile.substring(dotIndex + 1).toLowerCase();
     }
+
+    private static Map<ContentType, Content> toContents(Map<ContentType, ContentAggregate> map) {
+        return map.entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> e.getValue().toContent()));
+    }
+
+    record JarInfo(Map<ContentType, Content> contents,
+                   @Nullable String bytecodeVersion,
+                   boolean multiReleaseJar) {}
 
     enum ContentType {
         JAVA("java"),
@@ -120,12 +108,12 @@ class JarAnalyzer {
         WHILEY("whiley"),
         KAWA("scm"),
         JASMIN("j"),
-        /** Class file with no {@code SourceFile} attribute, flagged as {@code ACC_SYNTHETIC}. */
-        SYNTHETIC,
-        /** Class file that could not be attributed to any known language. */
-        UNKNOWN,
-        /** Any jar entry that is not a class file. */
-        RESOURCES;
+
+        SYNTHETIC, // unknown source file with synthetic flag
+        UNKNOWN, // unknown source file or unknown extension
+        INVALID, // parsing classfile failed
+
+        RESOURCE; // non .class file
 
         private static final Map<String, ContentType> BY_EXTENSION = Arrays.stream(values())
                 .flatMap(type -> type.extensions.stream().map(ext -> Map.entry(ext, type)))
@@ -142,17 +130,36 @@ class JarAnalyzer {
         }
     }
 
-    /**
-     * @param maxBytecodeVersion highest class file major version among base classes, {@code null} if there are none
-     * @param multiReleaseVersions {@code META-INF/versions/<N>} release to class count, empty if not a multi-release jar
-     */
-    record JarInfo(Map<ContentType, Content> contents,
-                   Integer maxBytecodeVersion,
-                   SortedMap<Integer, Integer> multiReleaseVersions) {}
+    record Content(int count, long size, long compressedSize) {}
 
-    record Content(int count, long size, long compressedSize) {
-        Content add(Content other) {
-            return new Content(count + other.count, size + other.size, compressedSize + other.compressedSize);
+    private static final class ContentAggregate {
+        int count;
+        long size, compressedSize;
+
+        void addEntry(JarEntry entry) {
+            count++;
+            size += Math.max(entry.getSize(), 0);
+            compressedSize += Math.max(entry.getCompressedSize(), 0);
+        }
+
+        Content toContent() {
+            return new Content(count, size, compressedSize);
+        }
+    }
+
+    private record BytecodeVersion(int major, int minor) implements Comparable<BytecodeVersion> {
+        private static final Comparator<BytecodeVersion> COMPARATOR = Comparator
+                .comparingInt(BytecodeVersion::major)
+                .thenComparingInt(BytecodeVersion::minor);
+
+        @Override
+        public String toString() {
+            return major + "." + minor;
+        }
+
+        @Override
+        public int compareTo(BytecodeVersion o) {
+            return COMPARATOR.compare(this, o);
         }
     }
 }
