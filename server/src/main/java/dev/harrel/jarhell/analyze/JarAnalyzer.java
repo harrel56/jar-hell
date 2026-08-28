@@ -13,11 +13,13 @@ import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @NullMarked
 @Singleton
 class JarAnalyzer {
+    private static final Pattern MR_MODULE_INFO = Pattern.compile("META-INF/versions/\\d+/module-info.class");
     private static final String MULTI_RELEASE_PREFIX = "META-INF/versions/";
     private static final String MODULE_INFO = "module-info.class";
     private static final int MAX_ENTRY_SIZE = 2 * 1024 * 1024;
@@ -27,15 +29,21 @@ class JarAnalyzer {
         Map<ContentType, ContentAggregate> contents = new EnumMap<>(ContentType.class);
         BytecodeVersion bytecodeVersion = null;
         boolean multiReleaseJar = false;
+        ModuleType moduleType = ModuleType.UNNAMED;
+        String moduleName = null;
         long totalSize = 0;
 
         Manifest manifest = jis.getManifest();
         if (manifest != null) {
             // let's ignore manifest size for the sake of simplicity
             contents.computeIfAbsent(ContentType.RESOURCE, _ -> new ContentAggregate()).count++;
+
             String mrJar = manifest.getMainAttributes().getValue("Multi-Release");
-            if ("true".equals(mrJar)) {
-                multiReleaseJar = true;
+            multiReleaseJar = "true".equals(mrJar);
+
+            moduleName = manifest.getMainAttributes().getValue("Automatic-Module-Name");
+            if (moduleName != null) {
+                moduleType = ModuleType.AUTOMATIC;
             }
         }
 
@@ -64,7 +72,6 @@ class JarAnalyzer {
             ClassModel classModel;
             try {
                 classModel = ClassFile.of().parse(bytes);
-                classModel.findAttribute(Attributes.module()).ifPresent(attr -> attr.moduleName().name().stringValue());
                 contents.computeIfAbsent(resolveContentType(classModel), _ -> new ContentAggregate()).addEntry(entry);
             } catch (IllegalArgumentException e) {
                 contents.computeIfAbsent(ContentType.INVALID, _ -> new ContentAggregate()).addEntry(entry);
@@ -77,9 +84,18 @@ class JarAnalyzer {
                     bytecodeVersion = bc;
                 }
             }
+
+            if (name.equals(MODULE_INFO) || multiReleaseJar && MR_MODULE_INFO.matcher(name).matches()) {
+                Optional<String> mName = classModel.findAttribute(Attributes.module()).map(attr -> attr.moduleName().name().stringValue());
+                if (mName.isPresent()) {
+                    moduleType = ModuleType.NAMED;
+                    moduleName = mName.get();
+                }
+            }
         }
 
-        return new JarInfo(toContents(contents), Objects.toString(bytecodeVersion, null), multiReleaseJar);
+        return new JarInfo(toContents(contents), Objects.toString(bytecodeVersion, null), multiReleaseJar,
+                 moduleType, moduleName);
     }
 
     private ContentType resolveContentType(ClassModel classModel) {
@@ -112,7 +128,9 @@ class JarAnalyzer {
 
     record JarInfo(Map<ContentType, Content> contents,
                    @Nullable String bytecodeVersion,
-                   boolean multiReleaseJar) {}
+                   boolean multiReleaseJar,
+                   ModuleType moduleType,
+                   @Nullable String moduleName) {}
 
     enum ContentType {
         JAVA("java"),
@@ -157,6 +175,8 @@ class JarAnalyzer {
     }
 
     record Content(int count, long size, long compressedSize) {}
+
+    enum ModuleType { NAMED, AUTOMATIC, UNNAMED }
 
     private static final class ContentAggregate {
         int count;
