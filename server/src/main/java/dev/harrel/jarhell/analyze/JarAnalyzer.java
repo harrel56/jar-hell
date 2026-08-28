@@ -20,14 +20,19 @@ import java.util.stream.Collectors;
 class JarAnalyzer {
     private static final String MULTI_RELEASE_PREFIX = "META-INF/versions/";
     private static final String MODULE_INFO = "module-info.class";
+    private static final int MAX_ENTRY_SIZE = 2 * 1024 * 1024;
+    private static final long MAX_TOTAL_SIZE = 1024L * 1024 * 1024;
 
     JarInfo analyzeJar(JarInputStream jis) throws IOException {
         Map<ContentType, ContentAggregate> contents = new EnumMap<>(ContentType.class);
         BytecodeVersion bytecodeVersion = null;
         boolean multiReleaseJar = false;
+        long totalSize = 0;
 
         Manifest manifest = jis.getManifest();
         if (manifest != null) {
+            // let's ignore manifest size for the sake of simplicity
+            contents.computeIfAbsent(ContentType.RESOURCE, _ -> new ContentAggregate()).count++;
             String mrJar = manifest.getMainAttributes().getValue("Multi-Release");
             if ("true".equals(mrJar)) {
                 multiReleaseJar = true;
@@ -39,16 +44,27 @@ class JarAnalyzer {
             if (entry.isDirectory()) {
                 continue;
             }
+
             String name = entry.getName();
             if (!name.endsWith(".class")) {
                 jis.closeEntry();
+                totalSize = verifyTotalSize(entry, totalSize);
                 contents.computeIfAbsent(ContentType.RESOURCE, _ -> new ContentAggregate()).addEntry(entry);
+                continue;
+            }
+
+            byte[] bytes = jis.readNBytes(MAX_ENTRY_SIZE + 1);
+            jis.closeEntry();
+            totalSize = verifyTotalSize(entry, totalSize);
+            if (bytes.length > MAX_ENTRY_SIZE) {
+                contents.computeIfAbsent(ContentType.INVALID, _ -> new ContentAggregate()).addEntry(entry);
                 continue;
             }
 
             ClassModel classModel;
             try {
-                classModel = ClassFile.of().parse(jis.readAllBytes());
+                classModel = ClassFile.of().parse(bytes);
+                classModel.findAttribute(Attributes.module()).ifPresent(attr -> attr.moduleName().name().stringValue());
                 contents.computeIfAbsent(resolveContentType(classModel), _ -> new ContentAggregate()).addEntry(entry);
             } catch (IllegalArgumentException e) {
                 contents.computeIfAbsent(ContentType.INVALID, _ -> new ContentAggregate()).addEntry(entry);
@@ -80,8 +96,18 @@ class JarAnalyzer {
     }
 
     private static Map<ContentType, Content> toContents(Map<ContentType, ContentAggregate> map) {
-        return map.entrySet().stream()
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> e.getValue().toContent()));
+        EnumMap<ContentType, Content> res = new EnumMap<>(ContentType.class);
+        map.forEach((k, v) -> res.put(k, v.toContent()));
+        return Collections.unmodifiableMap(res);
+    }
+
+    // entry.getSize() is only reliable after reading or closing current entry
+    private static long verifyTotalSize(JarEntry entry, long totalSize) throws IOException {
+        totalSize += Math.max(entry.getSize(), 0);
+        if (totalSize > MAX_TOTAL_SIZE) {
+            throw new IOException("Exceeded maximum jar size (%d)".formatted(MAX_TOTAL_SIZE));
+        }
+        return totalSize;
     }
 
     record JarInfo(Map<ContentType, Content> contents,
@@ -111,7 +137,7 @@ class JarAnalyzer {
 
         SYNTHETIC, // unknown source file with synthetic flag
         UNKNOWN, // unknown source file or unknown extension
-        INVALID, // parsing classfile failed
+        INVALID, // parsing classfile failed or too big
 
         RESOURCE; // non .class file
 
