@@ -14,13 +14,16 @@ import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @NullMarked
 @Singleton
 class JarAnalyzer {
-    private static final Pattern MR_MODULE_INFO = Pattern.compile("META-INF/versions/\\d+/module-info\\.class");
+    private static final Pattern BUILD_JDK_REGEX = Pattern.compile("(?<ver>1\\.\\d+|\\d+)");
+    private static final Pattern MR_MODULE_INFO_REGEX = Pattern.compile("META-INF/versions/\\d+/module-info\\.class");
+    private static final String SERVICES_PREFIX = "META-INF/services/";
     private static final String MULTI_RELEASE_PREFIX = "META-INF/versions/";
     private static final String MODULE_INFO = "module-info.class";
     private static final String PACKAGE_INFO = "package-info.class";
@@ -28,23 +31,32 @@ class JarAnalyzer {
     private static final long MAX_TOTAL_SIZE = 1024L * 1024 * 1024;
 
     JarInfo analyzeJar(JarInputStream jis) throws IOException {
+        long totalSize = 0;
         Map<ContentType, ContentAggregate> contents = new EnumMap<>(ContentType.class);
         Map<ClassType, Integer> publicClasses = new EnumMap<>(ClassType.class);
         int nonPublicClasses = 0;
         BytecodeVersion bytecodeVersion = null;
+        String buildJdk = null;
         boolean multiReleaseJar = false;
+        boolean executable = false;
+        Set<String> services = new LinkedHashSet<>();
         ModuleType moduleType = ModuleType.UNNAMED;
         String moduleName = null;
-        long totalSize = 0;
 
         Manifest manifest = jis.getManifest();
         if (manifest != null) {
             // let's ignore manifest size for the sake of simplicity
             contents.computeIfAbsent(ContentType.RESOURCE, _ -> new ContentAggregate()).count++;
 
+            buildJdk = manifest.getMainAttributes().getValue("Build-Jdk-Spec");
+            if (buildJdk == null) {
+                buildJdk = parseBuildJdk(manifest.getMainAttributes().getValue("Build-Jdk"));
+            }
+
             String mrJar = manifest.getMainAttributes().getValue("Multi-Release");
             multiReleaseJar = "true".equals(mrJar);
 
+            executable = manifest.getMainAttributes().getValue("Main-Class") != null;
             moduleName = manifest.getMainAttributes().getValue("Automatic-Module-Name");
             if (moduleName != null) {
                 moduleType = ModuleType.AUTOMATIC;
@@ -58,6 +70,10 @@ class JarAnalyzer {
             }
 
             String name = entry.getName();
+            if (name.startsWith(SERVICES_PREFIX)) {
+                services.add(name.substring(SERVICES_PREFIX.length()));
+            }
+
             if (!name.endsWith(".class")) {
                 jis.closeEntry();
                 totalSize = verifyTotalSize(entry, totalSize);
@@ -82,9 +98,8 @@ class JarAnalyzer {
                 continue;
             }
 
-            // do not count MR classes, module-info, package-info and synthetic classes
-            if (!name.startsWith(MULTI_RELEASE_PREFIX) && !name.endsWith(MODULE_INFO) && !name.endsWith(PACKAGE_INFO) && !classModel.flags().has(AccessFlag.SYNTHETIC)) {
-                if (isPublic(classModel)) {
+            if (shouldCountClassType(name, classModel)) {
+                if (classModel.flags().has(AccessFlag.PUBLIC)) {
                     publicClasses.merge(ClassType.from(classModel), 1, Integer::sum);
                 } else {
                     nonPublicClasses++;
@@ -98,7 +113,7 @@ class JarAnalyzer {
                 }
             }
 
-            if (name.equals(MODULE_INFO) || multiReleaseJar && MR_MODULE_INFO.matcher(name).matches()) {
+            if (name.equals(MODULE_INFO) || multiReleaseJar && MR_MODULE_INFO_REGEX.matcher(name).matches()) {
                 Optional<String> mName = classModel.findAttribute(Attributes.module()).map(attr -> attr.moduleName().name().stringValue());
                 if (mName.isPresent()) {
                     moduleType = ModuleType.NAMED;
@@ -108,12 +123,28 @@ class JarAnalyzer {
         }
 
         return new JarInfo(toContents(contents), Collections.unmodifiableMap(publicClasses), nonPublicClasses, Objects.toString(bytecodeVersion, null),
-                multiReleaseJar, moduleType, moduleName);
+                buildJdk, multiReleaseJar, executable, Collections.unmodifiableSet(services), moduleType, moduleName);
     }
 
-    private static boolean isPublic(ClassModel classModel) {
-        // ignore local & anonymous classes, protected nested classes will be treated as public
-        return classModel.findAttribute(Attributes.enclosingMethod()).isEmpty() && classModel.flags().has(AccessFlag.PUBLIC);
+    /*
+    17 -> 17
+    1.8 -> 1.8
+    1.8.0 -> 1.8
+    1.8_245 -> 1.8
+    17.0.1-dev -> 17
+     */
+    private static @Nullable String parseBuildJdk(@Nullable String buildJdk) {
+        if (buildJdk == null) {
+            return null;
+        }
+        Matcher matcher = BUILD_JDK_REGEX.matcher(buildJdk);
+        return matcher.lookingAt() ? matcher.group("ver") : null;
+    }
+
+    // do not count MR classes, module-info, package-info, local, anonymous and synthetic classes
+    private static boolean shouldCountClassType(String name, ClassModel classModel) {
+        return !name.startsWith(MULTI_RELEASE_PREFIX) && !name.endsWith(MODULE_INFO) && !name.endsWith(PACKAGE_INFO)
+                && !classModel.flags().has(AccessFlag.SYNTHETIC) && classModel.findAttribute(Attributes.enclosingMethod()).isEmpty();
     }
 
     private static Map<ContentType, Content> toContents(Map<ContentType, ContentAggregate> map) {
@@ -135,7 +166,10 @@ class JarAnalyzer {
                    Map<ClassType, Integer> publicClasses,
                    int nonPublicClasses,
                    @Nullable String bytecodeVersion,
+                   @Nullable String buildJdk,
                    boolean multiReleaseJar,
+                   boolean executable,
+                   Set<String> services,
                    ModuleType moduleType,
                    @Nullable String moduleName) {}
 
@@ -198,6 +232,10 @@ class JarAnalyzer {
         }
 
         static ContentType from(ClassModel classModel) {
+            // treat explicitly module-info.class as java
+            if (classModel.flags().has(AccessFlag.MODULE)) {
+                return ContentType.JAVA;
+            }
             return classModel.findAttribute(Attributes.sourceFile())
                     .map(attr -> attr.sourceFile().stringValue())
                     .map(ContentType::resolveExtension)
