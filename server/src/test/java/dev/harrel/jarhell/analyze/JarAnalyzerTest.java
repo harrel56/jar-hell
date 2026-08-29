@@ -109,6 +109,24 @@ class JarAnalyzerTest {
         assertThat(info.buildJdk()).isEqualTo("21");
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"true", "TRUE", "True", "tRuE"})
+    void shouldDetectMultiReleaseJar(String multiRelease) throws IOException {
+        JarBuilder builder = new JarBuilder().manifest(Map.entry("Multi-Release", multiRelease));
+        JarInfo info = analyze(builder);
+
+        assertThat(info.multiReleaseJar()).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"false", "yes", "", " true"})
+    void shouldNotDetectMultiReleaseJar(String multiRelease) throws IOException {
+        JarBuilder builder = new JarBuilder().manifest(Map.entry("Multi-Release", multiRelease));
+        JarInfo info = analyze(builder);
+
+        assertThat(info.multiReleaseJar()).isFalse();
+    }
+
     @Test
     void shouldCountContentTypePerLanguage() throws IOException {
         JarBuilder builder = new JarBuilder().manifest()

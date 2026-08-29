@@ -35,6 +35,10 @@ final class JarBuilder {
         return this;
     }
 
+    JarBuilder dirEntry(String path) {
+        return entry(path.endsWith("/") ? path : path + "/", new byte[0]);
+    }
+
     JarBuilder entry(String path, byte[] content) {
         entries.put(path, content);
         return this;

@@ -54,7 +54,7 @@ class JarAnalyzer {
             }
 
             String mrJar = manifest.getMainAttributes().getValue("Multi-Release");
-            multiReleaseJar = "true".equals(mrJar);
+            multiReleaseJar = "true".equalsIgnoreCase(mrJar);
 
             executable = manifest.getMainAttributes().getValue("Main-Class") != null;
             moduleName = manifest.getMainAttributes().getValue("Automatic-Module-Name");
