@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.lang.classfile.AccessFlags;
 import java.lang.classfile.Attributes;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
@@ -19,14 +20,17 @@ import java.util.stream.Collectors;
 @NullMarked
 @Singleton
 class JarAnalyzer {
-    private static final Pattern MR_MODULE_INFO = Pattern.compile("META-INF/versions/\\d+/module-info.class");
+    private static final Pattern MR_MODULE_INFO = Pattern.compile("META-INF/versions/\\d+/module-info\\.class");
     private static final String MULTI_RELEASE_PREFIX = "META-INF/versions/";
     private static final String MODULE_INFO = "module-info.class";
+    private static final String PACKAGE_INFO = "package-info.class";
     private static final int MAX_ENTRY_SIZE = 2 * 1024 * 1024;
     private static final long MAX_TOTAL_SIZE = 1024L * 1024 * 1024;
 
     JarInfo analyzeJar(JarInputStream jis) throws IOException {
         Map<ContentType, ContentAggregate> contents = new EnumMap<>(ContentType.class);
+        Map<ClassType, Integer> publicClasses = new EnumMap<>(ClassType.class);
+        int nonPublicClasses = 0;
         BytecodeVersion bytecodeVersion = null;
         boolean multiReleaseJar = false;
         ModuleType moduleType = ModuleType.UNNAMED;
@@ -72,10 +76,19 @@ class JarAnalyzer {
             ClassModel classModel;
             try {
                 classModel = ClassFile.of().parse(bytes);
-                contents.computeIfAbsent(resolveContentType(classModel), _ -> new ContentAggregate()).addEntry(entry);
+                contents.computeIfAbsent(ContentType.from(classModel), _ -> new ContentAggregate()).addEntry(entry);
             } catch (IllegalArgumentException e) {
                 contents.computeIfAbsent(ContentType.INVALID, _ -> new ContentAggregate()).addEntry(entry);
                 continue;
+            }
+
+            // do not count MR classes, module-info, package-info and synthetic classes
+            if (!name.startsWith(MULTI_RELEASE_PREFIX) && !name.endsWith(MODULE_INFO) && !name.endsWith(PACKAGE_INFO) && !classModel.flags().has(AccessFlag.SYNTHETIC)) {
+                if (isPublic(classModel)) {
+                    publicClasses.merge(ClassType.from(classModel), 1, Integer::sum);
+                } else {
+                    nonPublicClasses++;
+                }
             }
 
             if (!name.startsWith(MULTI_RELEASE_PREFIX) && !name.endsWith(MODULE_INFO)) {
@@ -94,21 +107,13 @@ class JarAnalyzer {
             }
         }
 
-        return new JarInfo(toContents(contents), Objects.toString(bytecodeVersion, null), multiReleaseJar,
-                 moduleType, moduleName);
+        return new JarInfo(toContents(contents), Collections.unmodifiableMap(publicClasses), nonPublicClasses, Objects.toString(bytecodeVersion, null),
+                multiReleaseJar, moduleType, moduleName);
     }
 
-    private ContentType resolveContentType(ClassModel classModel) {
-        return classModel.findAttribute(Attributes.sourceFile())
-                .map(attr -> attr.sourceFile().stringValue())
-                .map(JarAnalyzer::resolveExtension)
-                .map(ContentType::fromExtension)
-                .orElseGet(() -> classModel.flags().has(AccessFlag.SYNTHETIC) ? ContentType.SYNTHETIC : ContentType.UNKNOWN);
-    }
-
-    private static String resolveExtension(String sourceFile) {
-        int dotIndex = sourceFile.lastIndexOf('.');
-        return dotIndex < 0 ? "" : sourceFile.substring(dotIndex + 1).toLowerCase();
+    private static boolean isPublic(ClassModel classModel) {
+        // ignore local & anonymous classes, protected nested classes will be treated as public
+        return classModel.findAttribute(Attributes.enclosingMethod()).isEmpty() && classModel.flags().has(AccessFlag.PUBLIC);
     }
 
     private static Map<ContentType, Content> toContents(Map<ContentType, ContentAggregate> map) {
@@ -127,10 +132,33 @@ class JarAnalyzer {
     }
 
     record JarInfo(Map<ContentType, Content> contents,
+                   Map<ClassType, Integer> publicClasses,
+                   int nonPublicClasses,
                    @Nullable String bytecodeVersion,
                    boolean multiReleaseJar,
                    ModuleType moduleType,
                    @Nullable String moduleName) {}
+
+    enum ClassType {
+        CLASS, ABSTRACT_CLASS, INTERFACE, ANNOTATION, ENUM, RECORD;
+
+        static ClassType from(ClassModel classModel) {
+            AccessFlags flags = classModel.flags();
+            if (flags.has(AccessFlag.ANNOTATION)) { // before INTERFACE
+                return ClassType.ANNOTATION;
+            } else if (flags.has(AccessFlag.INTERFACE)) {
+                return ClassType.INTERFACE;
+            } else if (flags.has(AccessFlag.ENUM)) {
+                return ClassType.ENUM;
+            } else if (flags.has(AccessFlag.ABSTRACT)) {
+                return ClassType.ABSTRACT_CLASS;
+            } else if (classModel.findAttribute(Attributes.record()).isPresent()) {
+                return ClassType.RECORD;
+            } else {
+                return ClassType.CLASS;
+            }
+        }
+    }
 
     enum ContentType {
         JAVA("java"),
@@ -169,8 +197,17 @@ class JarAnalyzer {
             this.extensions = Set.of(extensions);
         }
 
-        static ContentType fromExtension(String extension) {
-            return BY_EXTENSION.getOrDefault(extension, UNKNOWN);
+        static ContentType from(ClassModel classModel) {
+            return classModel.findAttribute(Attributes.sourceFile())
+                    .map(attr -> attr.sourceFile().stringValue())
+                    .map(ContentType::resolveExtension)
+                    .map(ext -> BY_EXTENSION.getOrDefault(ext, UNKNOWN))
+                    .orElseGet(() -> classModel.flags().has(AccessFlag.SYNTHETIC) ? ContentType.SYNTHETIC : ContentType.UNKNOWN);
+        }
+
+        private static String resolveExtension(String sourceFile) {
+            int dotIndex = sourceFile.lastIndexOf('.');
+            return dotIndex < 0 ? "" : sourceFile.substring(dotIndex + 1).toLowerCase();
         }
     }
 
