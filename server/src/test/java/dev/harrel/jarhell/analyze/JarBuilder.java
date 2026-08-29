@@ -1,45 +1,37 @@
 package dev.harrel.jarhell.analyze;
 
+import org.jspecify.annotations.Nullable;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.classfile.ClassElement;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.attribute.SourceFileAttribute;
 import java.lang.constant.ClassDesc;
-import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.jar.Attributes;
-import java.util.jar.JarEntry;
-import java.util.jar.JarInputStream;
-import java.util.jar.JarOutputStream;
-import java.util.jar.Manifest;
+import java.util.jar.*;
 
-/**
- * Builds jars in memory for {@link JarAnalyzer} tests, so no binary fixtures are committed.
- * Class files are synthesized with the classfile API, which lets tests set flags, attributes
- * and bytecode versions that javac would not emit.
- */
 final class JarBuilder {
     private final Map<String, byte[]> entries = new LinkedHashMap<>();
     private Manifest manifest;
 
-    static JarBuilder jar() {
-        return new JarBuilder();
-    }
-
-    /** Adds a manifest with just {@code Manifest-Version} if none was created yet. */
-    JarBuilder manifest() {
-        if (manifest == null) {
-            manifest = new Manifest();
-            manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+    @SafeVarargs
+    final JarBuilder manifest(Map.Entry<String, String>... attributes) {
+        manifest = new Manifest();
+        manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+        for (Map.Entry<String, String> attr : attributes) {
+            manifest.getMainAttributes().putValue(attr.getKey(), attr.getValue());
         }
         return this;
     }
 
-    JarBuilder mainAttribute(String name, String value) {
-        manifest();
-        manifest.getMainAttributes().putValue(name, value);
+    JarBuilder classEntry(String path, String name, @Nullable String sourceFile, int flags, int majorVersion,
+                          ClassElement... elements) {
+        String entryPath = path.isEmpty() ? name + ".class" : path + "/" + name + ".class";
+        String className = path.isEmpty() ? name : path.replace('/', '.') + "." + name;
+        entries.put(entryPath, classFile(className, sourceFile, flags, majorVersion, elements));
         return this;
     }
 
@@ -48,12 +40,7 @@ final class JarBuilder {
         return this;
     }
 
-    /** Adds a public class compiled to Java 17 with a {@code SourceFile} of {@code <SimpleName>.java}. */
-    JarBuilder javaClass(String binaryName) {
-        return entry(pathOf(binaryName), publicClass(binaryName));
-    }
-
-    JarInputStream open() throws IOException {
+    JarInputStream toStream() throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try (JarOutputStream jos = manifest == null ? new JarOutputStream(out) : new JarOutputStream(out, manifest)) {
             for (Map.Entry<String, byte[]> entry : entries.entrySet()) {
@@ -65,26 +52,17 @@ final class JarBuilder {
         return new JarInputStream(new ByteArrayInputStream(out.toByteArray()));
     }
 
-    static String pathOf(String binaryName) {
-        return binaryName.replace('.', '/') + ".class";
-    }
-
-    static byte[] publicClass(String binaryName) {
-        return classFile(binaryName, simpleNameOf(binaryName) + ".java",
-                ClassFile.ACC_PUBLIC | ClassFile.ACC_SUPER, ClassFile.JAVA_17_VERSION);
-    }
-
-    static byte[] classFile(String binaryName, String sourceFile, int flags, int majorVersion) {
+    static byte[] classFile(String binaryName, @Nullable String sourceFile, int flags, int majorVersion,
+                            ClassElement... elements) {
         return ClassFile.of().build(ClassDesc.of(binaryName), classBuilder -> {
             classBuilder.withVersion(majorVersion, 0);
             classBuilder.withFlags(flags);
             if (sourceFile != null) {
                 classBuilder.with(SourceFileAttribute.of(sourceFile));
             }
+            for (ClassElement element : elements) {
+                classBuilder.with(element);
+            }
         });
-    }
-
-    private static String simpleNameOf(String binaryName) {
-        return binaryName.substring(binaryName.lastIndexOf('.') + 1);
     }
 }
