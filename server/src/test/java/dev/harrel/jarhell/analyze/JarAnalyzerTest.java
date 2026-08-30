@@ -471,7 +471,7 @@ class JarAnalyzerTest {
     }
 
     private static ModuleAttribute module(String name) {
-        return ModuleAttribute.of(ModuleDesc.of(name), moduleBuilder -> {});
+        return ModuleAttribute.of(ModuleDesc.of(name), _ -> {});
     }
 
     private static InnerClassesAttribute innerClass(String name, String innerName, int flags) {
