@@ -11,18 +11,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.lang.classfile.ClassFile;
-import java.lang.classfile.Interfaces;
-import java.lang.classfile.attribute.EnclosingMethodAttribute;
-import java.lang.classfile.attribute.InnerClassInfo;
-import java.lang.classfile.attribute.InnerClassesAttribute;
-import java.lang.classfile.attribute.ModuleAttribute;
-import java.lang.classfile.attribute.RecordAttribute;
+import java.lang.classfile.attribute.*;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.constant.ModuleDesc;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.jar.JarInputStream;
@@ -411,6 +404,28 @@ class JarAnalyzerTest {
         assertThat(info.contents().get(ContentType.RESOURCE).count()).isEqualTo(1);
         assertThat(info.services()).containsExactly("com.example.Service");
         assertThat(info.publicClasses()).containsExactly(entry(ClassType.CLASS, 1));
+    }
+
+    @Test
+    void shouldCollectServices() throws IOException {
+        JarBuilder builder = new JarBuilder()
+                .entry("META-INF/services/com.example.Service", "com.example.Impl".getBytes(UTF_8))
+                .entry("META-INF/services/com.example.OtherService", "com.example.OtherImpl".getBytes(UTF_8));
+        JarInfo info = analyze(builder);
+
+        assertThat(info.services()).containsExactlyInAnyOrder("com.example.Service", "com.example.OtherService");
+        assertThat(info.contents().get(ContentType.RESOURCE).count()).isEqualTo(2);
+    }
+
+    @Test
+    void shouldIgnoreVersionedServices() throws IOException {
+        JarBuilder builder = new JarBuilder()
+                .manifest(Map.entry("Multi-Release", "true"))
+                .entry("META-INF/versions/9/META-INF/services/com.example.Service", "com.example.Impl".getBytes(UTF_8));
+        JarInfo info = analyze(builder);
+
+        assertThat(info.services()).isEmpty();
+        assertThat(info.contents().get(ContentType.RESOURCE).count()).isEqualTo(2);
     }
 
     private static ModuleAttribute module(String name) {
