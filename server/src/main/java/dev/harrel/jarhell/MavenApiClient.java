@@ -24,8 +24,6 @@ import java.util.stream.Collectors;
 public class MavenApiClient {
     private static final String CONTENT_URL = Config.get("maven.repo-url");
 
-    public static final Pattern HTML_VERSIONS_PATTERN = Pattern.compile("\\d+.*/");
-
     private final CustomHttpClient httpClient;
 
     MavenApiClient(CustomHttpClient httpClient) {
