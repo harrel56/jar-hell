@@ -11,6 +11,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.lang.classfile.ClassFile;
+import java.lang.classfile.Interfaces;
 import java.lang.classfile.attribute.EnclosingMethodAttribute;
 import java.lang.classfile.attribute.InnerClassInfo;
 import java.lang.classfile.attribute.InnerClassesAttribute;
@@ -20,6 +21,8 @@ import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.constant.ModuleDesc;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.jar.JarInputStream;
@@ -32,6 +35,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 class JarAnalyzerTest {
     private static final int PUBLIC_CLASS = ClassFile.ACC_PUBLIC | ClassFile.ACC_SUPER;
+    private static final int MAX_ENTRY_SIZE = 2 * 1024 * 1024;
 
     private final JarAnalyzer analyzer = new JarAnalyzer();
 
@@ -195,6 +199,17 @@ class JarAnalyzerTest {
         assertThat(info.contents().get(ContentType.INVALID).count()).isEqualTo(1);
         assertThat(info.publicClasses()).containsExactly(entry(ClassType.CLASS, 1));
         assertThat(info.bytecodeVersion()).isEqualTo("52.0");
+    }
+
+    @Test
+    void shouldMarkClassExceedingMaxEntrySizeAsInvalid() throws IOException {
+        JarBuilder builder = new JarBuilder().entry("com/example/Big.class", new byte[MAX_ENTRY_SIZE + 1]);
+        JarInfo info = analyze(builder);
+
+        assertThat(info.contents()).containsOnlyKeys(ContentType.INVALID);
+        assertThat(info.contents().get(ContentType.INVALID).count()).isEqualTo(1);
+        assertThat(info.publicClasses()).isEmpty();
+        assertThat(info.bytecodeVersion()).isNull();
     }
 
     @ParameterizedTest
