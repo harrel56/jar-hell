@@ -11,6 +11,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.lang.classfile.ClassFile;
+import java.lang.classfile.ClassFileVersion;
 import java.lang.classfile.attribute.*;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
@@ -68,7 +69,7 @@ class JarAnalyzerTest {
 
     @Test
     void shouldAnalyzeSinglePublicClass() throws IOException {
-        JarBuilder builder = new JarBuilder().manifest().classEntry("com/example", "Simple", "Simple.java", PUBLIC_CLASS, 52);
+        JarBuilder builder = new JarBuilder().manifest().classEntry("com/example", "Simple", "Simple.java", PUBLIC_CLASS, ClassFileVersion.of(52, 0));
         JarInfo info = analyze(builder);
 
         assertThat(info.publicClasses()).containsExactly(entry(ClassType.CLASS, 1));
@@ -133,13 +134,13 @@ class JarAnalyzerTest {
     @Test
     void shouldCountContentTypePerLanguage() throws IOException {
         JarBuilder builder = new JarBuilder().manifest()
-                .classEntry("com/example", "JavaClass", "JavaClass.java", PUBLIC_CLASS, 52)
-                .classEntry("com/example/hello", "Hello", "Hello.java", PUBLIC_CLASS, 61)
-                .classEntry("com/example", "KotlinClass", "KotlinClass.kt", PUBLIC_CLASS, 52)
-                .classEntry("com/example", "KotlinScript", "KotlinScript.kts", PUBLIC_CLASS, 52)
-                .classEntry("com/example", "ScalaClass", "ScalaClass.scala", PUBLIC_CLASS, 52)
-                .classEntry("com/example", "GroovyClass", "GroovyClass.groovy", PUBLIC_CLASS, 52)
-                .classEntry("com/example", "ClojureClass", "ClojureClass.clj", PUBLIC_CLASS, 52);
+                .classEntry("com/example", "JavaClass", "JavaClass.java", PUBLIC_CLASS, ClassFileVersion.of(52, 0))
+                .classEntry("com/example/hello", "Hello", "Hello.java", PUBLIC_CLASS, ClassFileVersion.of(61, 0))
+                .classEntry("com/example", "KotlinClass", "KotlinClass.kt", PUBLIC_CLASS, ClassFileVersion.of(52, 0))
+                .classEntry("com/example", "KotlinScript", "KotlinScript.kts", PUBLIC_CLASS, ClassFileVersion.of(52, 0))
+                .classEntry("com/example", "ScalaClass", "ScalaClass.scala", PUBLIC_CLASS, ClassFileVersion.of(52, 0))
+                .classEntry("com/example", "GroovyClass", "GroovyClass.groovy", PUBLIC_CLASS, ClassFileVersion.of(52, 0))
+                .classEntry("com/example", "ClojureClass", "ClojureClass.clj", PUBLIC_CLASS, ClassFileVersion.of(52, 0));
         JarInfo info = analyze(builder);
 
         assertThat(info.contents().get(ContentType.JAVA).count()).isEqualTo(2);
@@ -153,7 +154,7 @@ class JarAnalyzerTest {
     @ParameterizedTest
     @MethodSource("contentTypes")
     void shouldResolveContentType(@Nullable String sourceFile, int flags, ContentType expected) throws IOException {
-        JarBuilder builder = new JarBuilder().classEntry("com/example", "Klass", sourceFile, flags, 52);
+        JarBuilder builder = new JarBuilder().classEntry("com/example", "Klass", sourceFile, flags, ClassFileVersion.of(52, 0));
         JarInfo info = analyze(builder);
 
         assertThat(info.contents().get(expected).count()).isEqualTo(1);
@@ -163,7 +164,7 @@ class JarAnalyzerTest {
     @NullSource
     @ValueSource(strings = {"module-info.java", "module-info.kt"})
     void shouldTreatModuleInfoAsJava(@Nullable String sourceFile) throws IOException {
-        JarBuilder builder = new JarBuilder().classEntry("", "module-info", sourceFile, ClassFile.ACC_MODULE, 61);
+        JarBuilder builder = new JarBuilder().classEntry("", "module-info", sourceFile, ClassFile.ACC_MODULE, ClassFileVersion.of(61, 0));
         JarInfo info = analyze(builder);
 
         assertThat(info.contents().get(ContentType.JAVA).count()).isEqualTo(1);
@@ -185,7 +186,7 @@ class JarAnalyzerTest {
     void shouldMarkUnparsableClassAsInvalidAndContinue() throws IOException {
         JarBuilder builder = new JarBuilder()
                 .entry("com/example/Broken.class", new byte[]{1, 2, 3})
-                .classEntry("com/example", "Valid", "Valid.java", PUBLIC_CLASS, 52);
+                .classEntry("com/example", "Valid", "Valid.java", PUBLIC_CLASS, ClassFileVersion.of(52, 0));
         JarInfo info = analyze(builder);
 
         assertThat(info.contents().get(ContentType.JAVA).count()).isEqualTo(1);
@@ -205,10 +206,41 @@ class JarAnalyzerTest {
         assertThat(info.bytecodeVersion()).isNull();
     }
 
+    @Test
+    void shouldResolveHighestBytecodeVersion() throws IOException {
+        JarBuilder builder = new JarBuilder()
+                .classEntry("com/example", "Old", "Old.java", PUBLIC_CLASS, ClassFileVersion.of(49, 0))
+                .classEntry("com/example", "New", "New.java", PUBLIC_CLASS, ClassFileVersion.of(61, 0))
+                .classEntry("com/example", "Mid", "Mid.java", PUBLIC_CLASS, ClassFileVersion.of(52, 0));
+        JarInfo info = analyze(builder);
+
+        assertThat(info.bytecodeVersion()).isEqualTo("61.0");
+    }
+
+    @Test
+    void shouldReportPreviewMinorVersionInBytecodeVersion() throws IOException {
+        JarBuilder builder = new JarBuilder()
+                .classEntry("com/example", "Normal", "Normal.java", PUBLIC_CLASS, ClassFileVersion.of(65, 0))
+                .classEntry("com/example", "Preview", "Preview.java", PUBLIC_CLASS, ClassFileVersion.of(65, 0xFFFF));
+        JarInfo info = analyze(builder);
+
+        assertThat(info.bytecodeVersion()).isEqualTo("65.65535");
+    }
+
+    @Test
+    void shouldCompareBytecodeVersionsByMinorVersion() throws IOException {
+        JarBuilder builder = new JarBuilder()
+                .classEntry("com/example", "Zero", "Zero.java", PUBLIC_CLASS, ClassFileVersion.of(45, 0))
+                .classEntry("com/example", "Three", "Three.java", PUBLIC_CLASS, ClassFileVersion.of(45, 3));
+        JarInfo info = analyze(builder);
+
+        assertThat(info.bytecodeVersion()).isEqualTo("45.3");
+    }
+
     @ParameterizedTest
     @MethodSource("classTypes")
     void shouldResolveClassType(int flags, ClassType expected) throws IOException {
-        JarBuilder builder = new JarBuilder().classEntry("com/example", "Klass", "Klass.java", flags, 52);
+        JarBuilder builder = new JarBuilder().classEntry("com/example", "Klass", "Klass.java", flags, ClassFileVersion.of(52, 0));
         JarInfo info = analyze(builder);
 
         assertThat(info.publicClasses()).containsExactly(entry(expected, 1));
@@ -217,7 +249,7 @@ class JarAnalyzerTest {
     @Test
     void shouldResolveRecordClassType() throws IOException {
         JarBuilder builder = new JarBuilder().classEntry("com/example", "Rec", "Rec.java",
-                PUBLIC_CLASS | ClassFile.ACC_FINAL, 61, RecordAttribute.of());
+                PUBLIC_CLASS | ClassFile.ACC_FINAL, ClassFileVersion.of(61, 0), RecordAttribute.of());
         JarInfo info = analyze(builder);
 
         assertThat(info.publicClasses()).containsExactly(entry(ClassType.RECORD, 1));
@@ -226,8 +258,8 @@ class JarAnalyzerTest {
     @Test
     void shouldCountNonPublicClasses() throws IOException {
         JarBuilder builder = new JarBuilder()
-                .classEntry("com/example", "Pub", "Pub.java", PUBLIC_CLASS, 52)
-                .classEntry("com/example", "PackagePrivate", "PackagePrivate.java", ClassFile.ACC_SUPER, 52);
+                .classEntry("com/example", "Pub", "Pub.java", PUBLIC_CLASS, ClassFileVersion.of(52, 0))
+                .classEntry("com/example", "PackagePrivate", "PackagePrivate.java", ClassFile.ACC_SUPER, ClassFileVersion.of(52, 0));
         JarInfo info = analyze(builder);
 
         assertThat(info.publicClasses()).containsExactly(entry(ClassType.CLASS, 1));
@@ -239,10 +271,10 @@ class JarAnalyzerTest {
         // javac emits ACC_PUBLIC for both public and protected nested classes,
         // the source modifier only survives in the InnerClasses attribute
         JarBuilder builder = new JarBuilder()
-                .classEntry("com/example", "Outer", "Outer.java", PUBLIC_CLASS, 52)
-                .classEntry("com/example", "Outer$Pub", "Outer.java", PUBLIC_CLASS, 52,
+                .classEntry("com/example", "Outer", "Outer.java", PUBLIC_CLASS, ClassFileVersion.of(52, 0))
+                .classEntry("com/example", "Outer$Pub", "Outer.java", PUBLIC_CLASS, ClassFileVersion.of(52, 0),
                         innerClass("Outer$Pub", "Pub", ClassFile.ACC_PUBLIC))
-                .classEntry("com/example", "Outer$Prot", "Outer.java", PUBLIC_CLASS, 52,
+                .classEntry("com/example", "Outer$Prot", "Outer.java", PUBLIC_CLASS, ClassFileVersion.of(52, 0),
                         innerClass("Outer$Prot", "Prot", ClassFile.ACC_PROTECTED));
         JarInfo info = analyze(builder);
 
@@ -256,8 +288,8 @@ class JarAnalyzerTest {
                 Optional.of("run"), Optional.of(MethodTypeDesc.of(ConstantDescs.CD_void)));
         JarBuilder builder = new JarBuilder()
                 // ACC_PUBLIC proves they are skipped outright, not just filed as non-public
-                .classEntry("com/example", "Outer$1", "Outer.java", PUBLIC_CLASS, 52, enclosing)
-                .classEntry("com/example", "Outer$1Local", "Outer.java", ClassFile.ACC_SUPER, 52, enclosing);
+                .classEntry("com/example", "Outer$1", "Outer.java", PUBLIC_CLASS, ClassFileVersion.of(52, 0), enclosing)
+                .classEntry("com/example", "Outer$1Local", "Outer.java", ClassFile.ACC_SUPER, ClassFileVersion.of(52, 0), enclosing);
         JarInfo info = analyze(builder);
 
         assertThat(info.publicClasses()).isEmpty();
@@ -268,11 +300,11 @@ class JarAnalyzerTest {
     @Test
     void shouldExcludeSyntheticAndDescriptorClasses() throws IOException {
         JarBuilder builder = new JarBuilder()
-                .classEntry("com/example", "Switch", "Switch.java", PUBLIC_CLASS | ClassFile.ACC_SYNTHETIC, 52)
-                .classEntry("", "module-info", null, ClassFile.ACC_MODULE, 61)
+                .classEntry("com/example", "Switch", "Switch.java", PUBLIC_CLASS | ClassFile.ACC_SYNTHETIC, ClassFileVersion.of(52, 0))
+                .classEntry("", "module-info", null, ClassFile.ACC_MODULE, ClassFileVersion.of(61, 0))
                 // not synthetic, so only the name excludes it
                 .classEntry("com/example", "package-info", "package-info.java",
-                        ClassFile.ACC_INTERFACE | ClassFile.ACC_ABSTRACT, 52);
+                        ClassFile.ACC_INTERFACE | ClassFile.ACC_ABSTRACT, ClassFileVersion.of(52, 0));
         JarInfo info = analyze(builder);
 
         assertThat(info.publicClasses()).isEmpty();
@@ -282,9 +314,9 @@ class JarAnalyzerTest {
     @Test
     void shouldNotCountMultiReleaseClassesTwice() throws IOException {
         JarBuilder builder = new JarBuilder()
-                .classEntry("com/example", "Simple", "Simple.java", PUBLIC_CLASS, 52)
+                .classEntry("com/example", "Simple", "Simple.java", PUBLIC_CLASS, ClassFileVersion.of(52, 0))
                 .entry("META-INF/versions/17/com/example/Simple.class",
-                        JarBuilder.classFile("com.example.Simple", "Simple.java", PUBLIC_CLASS, 61));
+                        JarBuilder.classFile("com.example.Simple", "Simple.java", PUBLIC_CLASS, ClassFileVersion.of(61, 0)));
         JarInfo info = analyze(builder);
 
         assertThat(info.publicClasses()).containsExactly(entry(ClassType.CLASS, 1));
@@ -295,13 +327,23 @@ class JarAnalyzerTest {
     }
 
     @Test
+    void shouldDetectAutomaticModuleName() throws IOException {
+        JarBuilder builder = new JarBuilder().manifest(Map.entry("Automatic-Module-Name", "com.example.automatic"));
+        JarInfo info = analyze(builder);
+
+        assertThat(info.moduleType()).isEqualTo(ModuleType.AUTOMATIC);
+        assertThat(info.moduleName()).isEqualTo("com.example.automatic");
+    }
+
+    @Test
     void shouldDetectRootModuleInfo() throws IOException {
         JarBuilder builder = new JarBuilder()
-                .classEntry("", "module-info", null, ClassFile.ACC_MODULE, 61, module("com.example.mod"));
+                .classEntry("", "module-info", null, ClassFile.ACC_MODULE, ClassFileVersion.of(61, 0), module("com.example.mod"));
         JarInfo info = analyze(builder);
 
         assertThat(info.moduleType()).isEqualTo(ModuleType.NAMED);
         assertThat(info.moduleName()).isEqualTo("com.example.mod");
+        assertThat(info.bytecodeVersion()).isNull();
     }
 
     @ParameterizedTest
@@ -309,7 +351,7 @@ class JarAnalyzerTest {
     void shouldDetectVersionedModuleInfo(int version) throws IOException {
         JarBuilder builder = new JarBuilder()
                 .manifest(Map.entry("Multi-Release", "true"))
-                .classEntry("META-INF/versions/" + version, "module-info", null, ClassFile.ACC_MODULE, 61,
+                .classEntry("META-INF/versions/" + version, "module-info", null, ClassFile.ACC_MODULE, ClassFileVersion.of(61, 0),
                         module("com.example.mod"));
         JarInfo info = analyze(builder);
 
@@ -321,7 +363,7 @@ class JarAnalyzerTest {
     void shouldIgnoreVersionedModuleInfoWhenNotMultiRelease() throws IOException {
         JarBuilder builder = new JarBuilder()
                 .manifest()
-                .classEntry("META-INF/versions/9", "module-info", null, ClassFile.ACC_MODULE, 61,
+                .classEntry("META-INF/versions/9", "module-info", null, ClassFile.ACC_MODULE, ClassFileVersion.of(61, 0),
                         module("com.example.mod"));
         JarInfo info = analyze(builder);
 
@@ -332,7 +374,7 @@ class JarAnalyzerTest {
     @Test
     void shouldIgnoreModuleInfoAtNestedPath() throws IOException {
         JarBuilder builder = new JarBuilder()
-                .classEntry("com/foo", "module-info", null, ClassFile.ACC_MODULE, 61, module("com.example.mod"));
+                .classEntry("com/foo", "module-info", null, ClassFile.ACC_MODULE, ClassFileVersion.of(61, 0), module("com.example.mod"));
         JarInfo info = analyze(builder);
 
         assertThat(info.moduleType()).isEqualTo(ModuleType.UNNAMED);
@@ -342,7 +384,7 @@ class JarAnalyzerTest {
     @Test
     void shouldNotDetectModuleForClassNamedModuleInfo() throws IOException {
         JarBuilder builder = new JarBuilder()
-                .classEntry("", "module-info", "module-info.java", PUBLIC_CLASS, 61);
+                .classEntry("", "module-info", "module-info.java", PUBLIC_CLASS, ClassFileVersion.of(61, 0));
         JarInfo info = analyze(builder);
 
         assertThat(info.moduleType()).isEqualTo(ModuleType.UNNAMED);
@@ -353,7 +395,7 @@ class JarAnalyzerTest {
     void shouldPreferModuleInfoOverAutomaticModuleName() throws IOException {
         JarBuilder builder = new JarBuilder()
                 .manifest(Map.entry("Automatic-Module-Name", "com.example.automatic"))
-                .classEntry("", "module-info", null, ClassFile.ACC_MODULE, 61, module("com.example.mod"));
+                .classEntry("", "module-info", null, ClassFile.ACC_MODULE, ClassFileVersion.of(61, 0), module("com.example.mod"));
         JarInfo info = analyze(builder);
 
         assertThat(info.moduleType()).isEqualTo(ModuleType.NAMED);
@@ -365,8 +407,8 @@ class JarAnalyzerTest {
         // entries keep insertion order, so the versioned descriptor is read last and wins
         JarBuilder builder = new JarBuilder()
                 .manifest(Map.entry("Multi-Release", "true"))
-                .classEntry("", "module-info", null, ClassFile.ACC_MODULE, 61, module("com.example.root"))
-                .classEntry("META-INF/versions/9", "module-info", null, ClassFile.ACC_MODULE, 61,
+                .classEntry("", "module-info", null, ClassFile.ACC_MODULE, ClassFileVersion.of(61, 0), module("com.example.root"))
+                .classEntry("META-INF/versions/9", "module-info", null, ClassFile.ACC_MODULE, ClassFileVersion.of(61, 0),
                         module("com.example.versioned"));
         JarInfo info = analyze(builder);
 
@@ -394,7 +436,7 @@ class JarAnalyzerTest {
         JarBuilder builder = new JarBuilder()
                 .dirEntry("com")
                 .dirEntry("com/example")
-                .classEntry("com/example", "Simple", "Simple.java", PUBLIC_CLASS, 52)
+                .classEntry("com/example", "Simple", "Simple.java", PUBLIC_CLASS, ClassFileVersion.of(52, 0))
                 .dirEntry("META-INF")
                 .dirEntry("META-INF/services")
                 .entry("META-INF/services/com.example.Service", "com.example.Impl".getBytes(UTF_8));

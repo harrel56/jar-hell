@@ -7,6 +7,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.classfile.ClassElement;
 import java.lang.classfile.ClassFile;
+import java.lang.classfile.ClassFileVersion;
 import java.lang.classfile.attribute.SourceFileAttribute;
 import java.lang.constant.ClassDesc;
 import java.util.LinkedHashMap;
@@ -27,11 +28,11 @@ final class JarBuilder {
         return this;
     }
 
-    JarBuilder classEntry(String path, String name, @Nullable String sourceFile, int flags, int majorVersion,
+    JarBuilder classEntry(String path, String name, @Nullable String sourceFile, int flags, ClassFileVersion version,
                           ClassElement... elements) {
         String entryPath = path.isEmpty() ? name + ".class" : path + "/" + name + ".class";
         String className = path.isEmpty() ? name : path.replace('/', '.') + "." + name;
-        entries.put(entryPath, classFile(className, sourceFile, flags, majorVersion, elements));
+        entries.put(entryPath, classFile(className, sourceFile, flags, version, elements));
         return this;
     }
 
@@ -56,10 +57,10 @@ final class JarBuilder {
         return new JarInputStream(new ByteArrayInputStream(out.toByteArray()));
     }
 
-    static byte[] classFile(String binaryName, @Nullable String sourceFile, int flags, int majorVersion,
+    static byte[] classFile(String binaryName, @Nullable String sourceFile, int flags, ClassFileVersion version,
                             ClassElement... elements) {
         return ClassFile.of().build(ClassDesc.of(binaryName), classBuilder -> {
-            classBuilder.withVersion(majorVersion, 0);
+            classBuilder.with(version);
             classBuilder.withFlags(flags);
             if (sourceFile != null) {
                 classBuilder.with(SourceFileAttribute.of(sourceFile));
