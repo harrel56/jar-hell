@@ -5,6 +5,7 @@ import dev.harrel.jarhell.analyze.AnalyzeEngine;
 import dev.harrel.jarhell.error.BadRequestException;
 import dev.harrel.jarhell.model.ArtifactInfo;
 import dev.harrel.jarhell.model.ArtifactTree;
+import dev.harrel.jarhell.model.BytecodeVersion;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.repo.ArtifactRepository;
 import io.javalin.http.Context;
@@ -113,7 +114,7 @@ class BadgesControllerTest {
     void findsLatestArtifactVersionForEffectiveBytecode() {
         ArtifactInfo.EffectiveValues effectiveValues = mock(ArtifactInfo.EffectiveValues.class);
         when(repo.findAllVersions("org.test", "lib", null)).thenReturn(List.of(at("1.0.0"), at("2.0.0"), at("2.1.0")));
-        when(effectiveValues.bytecodeVersion()).thenReturn("52.0");
+        when(effectiveValues.bytecodeVersion()).thenReturn(new BytecodeVersion(52, 0));
         when(artifactInfo.effectiveValues()).thenReturn(effectiveValues);
         when(repo.find(new Gav("org.test", "lib", "2.1.0"), 0)).thenReturn(Optional.of(artifactTree));
         badgesController.getMetricBadge(ctx, BadgesController.Metric.effective_bytecode, "org.test:lib");

@@ -1,16 +1,16 @@
 package dev.harrel.jarhell.repo;
 
+import dev.harrel.jarhell.analyze.JarAnalyzer;
 import dev.harrel.jarhell.extension.EnvironmentTest;
-import dev.harrel.jarhell.model.ArtifactInfo;
-import dev.harrel.jarhell.model.ArtifactTree;
-import dev.harrel.jarhell.model.Gav;
-import dev.harrel.jarhell.model.LicenseType;
+import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.model.descriptor.License;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -222,18 +222,23 @@ class ArtifactRepositoryTest {
 
     private static ArtifactInfo artifactInfo(Gav gav, Long packageSize) {
         return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), null, null, null,
-                LocalDateTime.MIN, packageSize, "52.0", "jar", "name", "desc", "url", "scmUrl",
-                "issuesUrl", "1995", List.of(new License("MIT", "https://mit.com")), List.of(LicenseType.MIT), List.of("source"),
-                new ArtifactInfo.EffectiveValues(0, 0, 0, 10L, "52.0", LicenseType.MIT, List.of()),
+                LocalDateTime.MIN, packageSize, "jar", "name", "desc", "url", "scmUrl",
+                "issuesUrl", "1995", List.of(new License("MIT", "https://mit.com")), List.of(LicenseType.MIT), List.of("source"), List.of("pom", "jar", "module "),
+                jarInfo(), new ArtifactInfo.EffectiveValues(0, 0, 0, 10L, new BytecodeVersion(52, 0), LicenseType.MIT, List.of()),
                 null);
     }
 
     private static ArtifactInfo effectivelyUnresolved(Gav gav) {
         return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), null, null, null,
-                LocalDateTime.MIN, 10L, "52.0", "jar", "name", "desc", "url", "scmUrl",
-                "issuesUrl", "1995", List.of(new License("MIT", "https://mit.com")), List.of(LicenseType.MIT), List.of("source"),
-                new ArtifactInfo.EffectiveValues(0, 1, 0, 10L, "52.0", LicenseType.MIT, List.of()),
+                LocalDateTime.MIN, 10L, "jar", "name", "desc", "url", "scmUrl",
+                "issuesUrl", "1995", List.of(new License("MIT", "https://mit.com")), List.of(LicenseType.MIT), List.of("source"), List.of("pom", "jar", "module "),
+                jarInfo(), new ArtifactInfo.EffectiveValues(0, 1, 0, 10L, new BytecodeVersion(52, 0), LicenseType.MIT, List.of()),
                 null);
+    }
+
+    private static JarAnalyzer.JarInfo jarInfo() {
+        return new JarAnalyzer.JarInfo(Map.of(), Map.of(), 1, new BytecodeVersion(52, 0),
+                "17", true, false, Set.of("service1"), JarAnalyzer.ModuleType.AUTOMATIC, "moduleName");
     }
 
     private void assertArtifact(ArtifactInfo info, Gav gav) {

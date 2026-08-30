@@ -1,5 +1,6 @@
 package dev.harrel.jarhell.analyze;
 
+import dev.harrel.jarhell.model.BytecodeVersion;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -20,7 +21,7 @@ import java.util.stream.Collectors;
 
 @NullMarked
 @Singleton
-class JarAnalyzer {
+public final class JarAnalyzer {
     private static final Pattern BUILD_JDK_REGEX = Pattern.compile("(?<ver>1\\.\\d+|\\d+)");
     private static final Pattern MR_MODULE_INFO_REGEX = Pattern.compile("META-INF/versions/\\d+/module-info\\.class");
     private static final String SERVICES_PREFIX = "META-INF/services/";
@@ -122,7 +123,7 @@ class JarAnalyzer {
             }
         }
 
-        return new JarInfo(toContents(contents), Collections.unmodifiableMap(publicClasses), nonPublicClasses, Objects.toString(bytecodeVersion, null),
+        return new JarInfo(toContents(contents), Collections.unmodifiableMap(publicClasses), nonPublicClasses, bytecodeVersion,
                 buildJdk, multiReleaseJar, executable, Collections.unmodifiableSet(services), moduleType, moduleName);
     }
 
@@ -162,18 +163,18 @@ class JarAnalyzer {
         return totalSize;
     }
 
-    record JarInfo(Map<ContentType, Content> contents,
-                   Map<ClassType, Integer> publicClasses,
-                   int nonPublicClasses,
-                   @Nullable String bytecodeVersion,
-                   @Nullable String buildJdk,
-                   boolean multiReleaseJar,
-                   boolean executable,
-                   Set<String> services,
-                   ModuleType moduleType,
-                   @Nullable String moduleName) {}
+    public record JarInfo(Map<ContentType, Content> contents,
+                          Map<ClassType, Integer> publicClasses,
+                          int nonPublicClasses,
+                          @Nullable BytecodeVersion bytecodeVersion,
+                          @Nullable String buildJdk,
+                          boolean multiReleaseJar,
+                          boolean executable,
+                          Set<String> services,
+                          ModuleType moduleType,
+                          @Nullable String moduleName) {}
 
-    enum ClassType {
+    public enum ClassType {
         CLASS, ABSTRACT_CLASS, INTERFACE, ANNOTATION, ENUM, RECORD;
 
         static ClassType from(ClassModel classModel) {
@@ -194,7 +195,7 @@ class JarAnalyzer {
         }
     }
 
-    enum ContentType {
+    public enum ContentType {
         JAVA("java"),
         KOTLIN("kt", "kts"),
         SCALA("scala", "sc"),
@@ -249,9 +250,9 @@ class JarAnalyzer {
         }
     }
 
-    record Content(int count, long size, long compressedSize) {}
+    public record Content(int count, long size, long compressedSize) {}
 
-    enum ModuleType { NAMED, AUTOMATIC, UNNAMED }
+    public enum ModuleType { NAMED, AUTOMATIC, UNNAMED }
 
     private static final class ContentAggregate {
         int count;
@@ -265,22 +266,6 @@ class JarAnalyzer {
 
         Content toContent() {
             return new Content(count, size, compressedSize);
-        }
-    }
-
-    private record BytecodeVersion(int major, int minor) implements Comparable<BytecodeVersion> {
-        private static final Comparator<BytecodeVersion> COMPARATOR = Comparator
-                .comparingInt(BytecodeVersion::major)
-                .thenComparingInt(BytecodeVersion::minor);
-
-        @Override
-        public String toString() {
-            return major + "." + minor;
-        }
-
-        @Override
-        public int compareTo(BytecodeVersion o) {
-            return COMPARATOR.compare(this, o);
         }
     }
 }

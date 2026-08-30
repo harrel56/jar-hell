@@ -18,7 +18,7 @@ class JarAnalyzerRealJarTest {
     void shouldAnalyzeJsonSchemaJar() throws IOException {
         JarInfo info = analyze("json-schema-1.9.1.jar");
 
-        assertThat(info.bytecodeVersion()).isEqualTo("52.0");
+        assertThat(info.bytecodeVersion()).hasToString("52.0");
         assertThat(info.buildJdk()).isNull();
         assertThat(info.multiReleaseJar()).isFalse();
         assertThat(info.executable()).isFalse();
@@ -43,7 +43,7 @@ class JarAnalyzerRealJarTest {
     void shouldAnalyzeTinylogApiJar() throws IOException {
         JarInfo info = analyze("tinylog-api-2.7.0.jar");
 
-        assertThat(info.bytecodeVersion()).isEqualTo("50.0");
+        assertThat(info.bytecodeVersion()).hasToString("50.0");
         assertThat(info.buildJdk()).isEqualTo("9");
         assertThat(info.multiReleaseJar()).isTrue();
         assertThat(info.executable()).isFalse();

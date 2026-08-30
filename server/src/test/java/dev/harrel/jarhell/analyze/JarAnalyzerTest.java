@@ -74,7 +74,7 @@ class JarAnalyzerTest {
 
         assertThat(info.publicClasses()).containsExactly(entry(ClassType.CLASS, 1));
         assertThat(info.nonPublicClasses()).isZero();
-        assertThat(info.bytecodeVersion()).isEqualTo("52.0");
+        assertThat(info.bytecodeVersion()).hasToString("52.0");
         assertThat(info.contents()).containsOnlyKeys(ContentType.JAVA, ContentType.RESOURCE);
 
         Content java = info.contents().get(ContentType.JAVA);
@@ -192,7 +192,7 @@ class JarAnalyzerTest {
         assertThat(info.contents().get(ContentType.JAVA).count()).isEqualTo(1);
         assertThat(info.contents().get(ContentType.INVALID).count()).isEqualTo(1);
         assertThat(info.publicClasses()).containsExactly(entry(ClassType.CLASS, 1));
-        assertThat(info.bytecodeVersion()).isEqualTo("52.0");
+        assertThat(info.bytecodeVersion()).hasToString("52.0");
     }
 
     @Test
@@ -214,7 +214,7 @@ class JarAnalyzerTest {
                 .classEntry("com/example", "Mid", "Mid.java", PUBLIC_CLASS, ClassFileVersion.of(52, 0));
         JarInfo info = analyze(builder);
 
-        assertThat(info.bytecodeVersion()).isEqualTo("61.0");
+        assertThat(info.bytecodeVersion()).hasToString("61.0");
     }
 
     @Test
@@ -224,7 +224,7 @@ class JarAnalyzerTest {
                 .classEntry("com/example", "Preview", "Preview.java", PUBLIC_CLASS, ClassFileVersion.of(65, 0xFFFF));
         JarInfo info = analyze(builder);
 
-        assertThat(info.bytecodeVersion()).isEqualTo("65.65535");
+        assertThat(info.bytecodeVersion()).hasToString("65.65535");
     }
 
     @Test
@@ -234,7 +234,7 @@ class JarAnalyzerTest {
                 .classEntry("com/example", "Three", "Three.java", PUBLIC_CLASS, ClassFileVersion.of(45, 3));
         JarInfo info = analyze(builder);
 
-        assertThat(info.bytecodeVersion()).isEqualTo("45.3");
+        assertThat(info.bytecodeVersion()).hasToString("45.3");
     }
 
     @ParameterizedTest
@@ -322,7 +322,7 @@ class JarAnalyzerTest {
         assertThat(info.publicClasses()).containsExactly(entry(ClassType.CLASS, 1));
         assertThat(info.nonPublicClasses()).isZero();
         // the versioned copy is excluded from the bytecode version too
-        assertThat(info.bytecodeVersion()).isEqualTo("52.0");
+        assertThat(info.bytecodeVersion()).hasToString("52.0");
         assertThat(info.contents().get(ContentType.JAVA).count()).isEqualTo(2);
     }
 

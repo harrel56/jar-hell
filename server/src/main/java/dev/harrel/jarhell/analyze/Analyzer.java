@@ -64,8 +64,10 @@ class Analyzer {
                 requiredDeps.stream()
                         .mapToLong(a -> Objects.requireNonNullElse(a.packageSize(), 0L))
                         .sum();
-        String bytecodeVersion = Stream.concat(Stream.of(info), requiredDeps.stream())
-                .map(ArtifactInfo::bytecodeVersion)
+        BytecodeVersion bytecodeVersion = Stream.concat(Stream.of(info), requiredDeps.stream())
+                .map(ArtifactInfo::jarInfo)
+                .filter(Objects::nonNull)
+                .map(JarAnalyzer.JarInfo::bytecodeVersion)
                 .filter(Objects::nonNull)
                 .max(Comparator.naturalOrder())
                 .orElse(null);
@@ -97,10 +99,11 @@ class Analyzer {
 
     private ArtifactInfo createArtifactInfo(Gav gav, FilesInfo filesInfo, PackageInfo packageInfo, DescriptorInfo descriptorInfo) {
         return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), null, null, null,
-                packageInfo.created(), packageInfo.size(), packageInfo.bytecodeVersion(), descriptorInfo.packaging(),
+                packageInfo.created(), packageInfo.size(), descriptorInfo.packaging(),
                 descriptorInfo.name(), descriptorInfo.description(), descriptorInfo.url(),
                 descriptorInfo.scmUrl(), descriptorInfo.issuesUrl(), descriptorInfo.inceptionYear(),
-                descriptorInfo.licenses(), descriptorInfo.licenseTypes(), List.copyOf(filesInfo.classifiers()), null, null);
+                descriptorInfo.licenses(), descriptorInfo.licenseTypes(), List.copyOf(filesInfo.classifiers()), List.copyOf(filesInfo.extensions()),
+                packageInfo.jarInfo(), null, null);
     }
 
     private void traverseDeps(ArtifactTree at,

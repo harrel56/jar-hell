@@ -2,6 +2,7 @@ package dev.harrel.jarhell.controller;
 
 import dev.harrel.jarhell.MavenApiClient;
 import dev.harrel.jarhell.analyze.AnalyzeEngine;
+import dev.harrel.jarhell.analyze.JarAnalyzer;
 import dev.harrel.jarhell.error.BadRequestException;
 import dev.harrel.jarhell.model.ArtifactInfo;
 import dev.harrel.jarhell.model.ArtifactTree;
@@ -15,10 +16,7 @@ import io.javalin.http.HttpStatus;
 
 import java.io.InputStream;
 import java.time.Duration;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static dev.harrel.jarhell.util.FormatUtil.formatBytecodeVersion;
 import static dev.harrel.jarhell.util.FormatUtil.formatBytes;
@@ -175,7 +173,11 @@ class BadgesController {
 
             @Override
             String getValue(ArtifactInfo info) {
-                return formatBytecodeVersion(info.bytecodeVersion());
+                String bc = Optional.ofNullable(info.jarInfo())
+                        .map(JarAnalyzer.JarInfo::bytecodeVersion)
+                        .map(Object::toString)
+                        .orElse(null);
+                return formatBytecodeVersion(bc);
             }
 
             @Override
@@ -191,7 +193,11 @@ class BadgesController {
 
             @Override
             String getValue(ArtifactInfo info) {
-                return formatBytecodeVersion(info.effectiveValues().bytecodeVersion());
+                String bc = Optional.ofNullable(info.effectiveValues())
+                        .map(ArtifactInfo.EffectiveValues::bytecodeVersion)
+                        .map(Object::toString)
+                        .orElse(null);
+                return formatBytecodeVersion(bc);
             }
 
             @Override

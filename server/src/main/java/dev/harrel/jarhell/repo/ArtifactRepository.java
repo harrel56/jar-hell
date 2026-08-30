@@ -3,9 +3,11 @@ package dev.harrel.jarhell.repo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.harrel.jarhell.analyze.JarAnalyzer;
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.model.descriptor.License;
 import io.avaje.inject.PostConstruct;
+import org.jspecify.annotations.Nullable;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.*;
 import org.neo4j.driver.summary.ResultSummary;
@@ -391,6 +393,24 @@ public class ArtifactRepository {
                 licenseTypes = artifactProps.licenseTypes().stream().map(LicenseType::valueOf).toList();
             }
 
+            JarAnalyzer.JarInfo jarInfo = null;
+            if (artifactProps.jarContents() != null && artifactProps.jarPublicClasses() != null) {
+                Map<JarAnalyzer.ContentType, JarAnalyzer.Content> jarContents = objectMapper.readValue(artifactProps.jarContents(), new TypeReference<>() {});
+                Map<JarAnalyzer.ClassType, Integer> jarPublicClasses = objectMapper.readValue(artifactProps.jarPublicClasses(), new TypeReference<>() {});
+                jarInfo = new JarAnalyzer.JarInfo(
+                        jarContents,
+                        jarPublicClasses,
+                        artifactProps.jarNonPublicClasses(),
+                        artifactProps.jarBytecodeVersion() == null ? null : BytecodeVersion.from(artifactProps.jarBytecodeVersion()),
+                        artifactProps.jarBuildJdk(),
+                        artifactProps.jarMultiRelease(),
+                        artifactProps.jarExecutable(),
+                        artifactProps.jarServices(),
+                        JarAnalyzer.ModuleType.valueOf(artifactProps.jarModuleType()),
+                        artifactProps.jarModuleName()
+                );
+            }
+
             ArtifactInfo.EffectiveValues effectiveValues = null;
             if (artifactProps.effectiveLicenseType() != null && artifactProps.effectiveLicenseTypes() != null) {
                 LicenseType effectiveLicenseType = LicenseType.valueOf(artifactProps.effectiveLicenseType());
@@ -403,16 +423,16 @@ public class ArtifactRepository {
                         artifactProps.effectiveUnresolvedDependencies(),
                         artifactProps.effectiveOptionalDependencies(),
                         artifactProps.effectiveSize(),
-                        artifactProps.effectiveBytecodeVersion(),
+                        artifactProps.effectiveBytecodeVersion() == null ? null : BytecodeVersion.from(artifactProps.effectiveBytecodeVersion()),
                         effectiveLicenseType,
                         effectiveLicenseTypes);
             }
 
             return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier(),
                     artifactProps.unresolved(), artifactProps.unresolvedCount(), artifactProps.unresolvedReason(), artifactProps.created(),
-                    artifactProps.packageSize(), artifactProps.bytecodeVersion(), artifactProps.packaging(), artifactProps.name(),
+                    artifactProps.packageSize(), artifactProps.packaging(), artifactProps.name(),
                     artifactProps.description(), artifactProps.url(), artifactProps.scmUrl(), artifactProps.issuesUrl(), artifactProps.inceptionYear(),
-                    licenses, licenseTypes, artifactProps.classifiers(), effectiveValues, artifactProps.analyzed());
+                    licenses, licenseTypes, artifactProps.classifiers(), artifactProps.extensions(), jarInfo, effectiveValues, artifactProps.analyzed());
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
@@ -432,6 +452,31 @@ public class ArtifactRepository {
             if (artifactInfo.licenseTypes() != null && !artifactInfo.licenseTypes().isEmpty()) {
                 licenseTypes = artifactInfo.licenseTypes().stream().map(Enum::name).toList();
             }
+
+            String jarContents = null;
+            String jarPublicClasses = null;
+            Integer jarNonPublicClasses = null;
+            String jarBytecodeVersion = null;
+            String jarBuildJdk = null;
+            Boolean jarMultiRelease = null;
+            Boolean jarExecutable = null;
+            Set<String> jarServices = null;
+            String jarModuleType = null;
+            String jarModuleName = null;
+            if (artifactInfo.jarInfo() != null) {
+                JarAnalyzer.JarInfo jarInfo = artifactInfo.jarInfo();
+                jarContents = objectMapper.writeValueAsString(jarInfo.contents());
+                jarPublicClasses = objectMapper.writeValueAsString(jarInfo.publicClasses());
+                jarNonPublicClasses = jarInfo.nonPublicClasses();
+                jarBytecodeVersion = jarInfo.bytecodeVersion().toString();
+                jarBuildJdk = jarInfo.buildJdk();
+                jarMultiRelease = jarInfo.multiReleaseJar();
+                jarExecutable = jarInfo.executable();
+                jarServices = jarInfo.services();
+                jarModuleType = jarInfo.moduleType().name();
+                jarModuleName = jarInfo.moduleName();
+            }
+
             Integer effectiveDependencies = null;
             Integer effectiveUnresolvedDependencies = null;
             Integer effectiveOptionalDependencies = null;
@@ -444,7 +489,7 @@ public class ArtifactRepository {
                 effectiveUnresolvedDependencies = artifactInfo.effectiveValues().unresolvedDependencies();
                 effectiveOptionalDependencies = artifactInfo.effectiveValues().optionalDependencies();
                 effectiveSize = artifactInfo.effectiveValues().size();
-                effectiveBytecodeVersion = artifactInfo.effectiveValues().bytecodeVersion();
+                effectiveBytecodeVersion = Objects.toString(artifactInfo.effectiveValues().bytecodeVersion(), null);
                 effectiveLicenseType = artifactInfo.effectiveValues().licenseType().name();
                 effectiveLicenseTypes = artifactInfo.effectiveValues().licenseTypes().stream()
                         .map(entry -> "%s;%s".formatted(entry.getKey().name(), entry.getValue()))
@@ -452,10 +497,12 @@ public class ArtifactRepository {
             }
             return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(),
                     artifactInfo.unresolved(), artifactInfo.unresolvedCount(), artifactInfo.unresolvedReason(), artifactInfo.created(),
-                    artifactInfo.packageSize(), artifactInfo.bytecodeVersion(), artifactInfo.packaging(), artifactInfo.name(),
+                    artifactInfo.packageSize(), artifactInfo.packaging(), artifactInfo.name(),
                     artifactInfo.description(), artifactInfo.url(), artifactInfo.scmUrl(), artifactInfo.issuesUrl(),
-                    artifactInfo.inceptionYear(), licenses, licenseTypes, artifactInfo.classifiers(), effectiveDependencies,
-                    effectiveUnresolvedDependencies, effectiveOptionalDependencies, effectiveSize,
+                    artifactInfo.inceptionYear(), licenses, licenseTypes, artifactInfo.classifiers(), artifactInfo.extensions(),
+                    jarContents, jarPublicClasses, jarNonPublicClasses, jarBytecodeVersion, jarBuildJdk, jarMultiRelease,
+                    jarExecutable, jarServices, jarModuleType, jarModuleName,
+                    effectiveDependencies, effectiveUnresolvedDependencies, effectiveOptionalDependencies, effectiveSize,
                     effectiveBytecodeVersion, effectiveLicenseType, effectiveLicenseTypes, null);
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
@@ -473,7 +520,6 @@ public class ArtifactRepository {
                                  String unresolvedReason,
                                  LocalDateTime created,
                                  Long packageSize,
-                                 String bytecodeVersion,
                                  String packaging,
                                  String name,
                                  String description,
@@ -484,6 +530,21 @@ public class ArtifactRepository {
                                  String licenses,
                                  List<String> licenseTypes,
                                  List<String> classifiers,
+                                 List<String> extensions,
+
+                                 // JarInfo
+                                 String jarContents,
+                                 String jarPublicClasses,
+                                 Integer jarNonPublicClasses,
+                                 String jarBytecodeVersion,
+                                 String jarBuildJdk,
+                                 Boolean jarMultiRelease,
+                                 Boolean jarExecutable,
+                                 Set<String> jarServices,
+                                 String jarModuleType,
+                                 String jarModuleName,
+
+                                 // EffectiveValues
                                  Integer effectiveRequiredDependencies,
                                  Integer effectiveUnresolvedDependencies,
                                  Integer effectiveOptionalDependencies,

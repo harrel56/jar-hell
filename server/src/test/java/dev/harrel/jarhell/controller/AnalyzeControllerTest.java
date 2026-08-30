@@ -1,8 +1,10 @@
 package dev.harrel.jarhell.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import dev.harrel.jarhell.analyze.JarAnalyzer;
 import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.extension.Host;
+import dev.harrel.jarhell.model.BytecodeVersion;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.LicenseType;
 import dev.harrel.jarhell.util.TestUtil;
@@ -17,6 +19,7 @@ import org.neo4j.driver.EagerResult;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -175,15 +178,33 @@ class AnalyzeControllerTest {
                 Map.entry("packageSize", 30629L),
                 Map.entry("version", "1.6.2"),
                 Map.entry("url", "https://github.com/RohanNagar/jmail"),
-                Map.entry("bytecodeVersion", "52.0"),
                 Map.entry("licenseTypes", List.of(LicenseType.MIT.name())),
                 Map.entry("classifiers", List.of("javadoc", "sources")),
+                Map.entry("extensions", List.of("jar", "pom")),
+                Map.entry("jarInfo", Map.of(
+                        "contents", Map.of(
+                                JarAnalyzer.ContentType.JAVA, new JarAnalyzer.Content(16, 49197, 23678),
+                                JarAnalyzer.ContentType.RESOURCE, new JarAnalyzer.Content(3, 10988, 2422)
+                        ),
+                        "publicClasses", Map.of(
+                                JarAnalyzer.ClassType.CLASS, 11,
+                                JarAnalyzer.ClassType.ENUM, 1
+                        ),
+                        "nonPublicClasses", 2,
+                        "bytecodeVersion", new BytecodeVersion(52, 0),
+                        "buildJdk", "21",
+                        "multiReleaseJar", false,
+                        "executable", false,
+                        "services", Set.of(),
+                        "moduleType", JarAnalyzer.ModuleType.NAMED.name(),
+                        "moduleName", "com.sanctionco.jmail"
+                )),
                 Map.entry("effectiveValues", Map.of(
                         "requiredDependencies", 0L,
                         "unresolvedDependencies", 0L,
                         "optionalDependencies", 0L,
                         "size", 30629L,
-                        "bytecodeVersion", "52.0",
+                        "bytecodeVersion", new BytecodeVersion(52, 0),
                         "licenseType", LicenseType.MIT.name(),
                         "licenseTypes", List.of(Map.of(LicenseType.MIT.name(), 1L))
                 ))
