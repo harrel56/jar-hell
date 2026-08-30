@@ -1,10 +1,6 @@
 package dev.harrel.jarhell.analyze;
 
-import dev.harrel.jarhell.analyze.JarAnalyzer.ClassType;
-import dev.harrel.jarhell.analyze.JarAnalyzer.Content;
-import dev.harrel.jarhell.analyze.JarAnalyzer.ContentType;
-import dev.harrel.jarhell.analyze.JarAnalyzer.JarInfo;
-import dev.harrel.jarhell.analyze.JarAnalyzer.ModuleType;
+import dev.harrel.jarhell.analyze.JarAnalyzer.*;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -18,14 +14,15 @@ import java.lang.classfile.ClassFile;
 import java.lang.classfile.attribute.EnclosingMethodAttribute;
 import java.lang.classfile.attribute.InnerClassInfo;
 import java.lang.classfile.attribute.InnerClassesAttribute;
+import java.lang.classfile.attribute.ModuleAttribute;
 import java.lang.classfile.attribute.RecordAttribute;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.MethodTypeDesc;
+import java.lang.constant.ModuleDesc;
 import java.util.Map;
 import java.util.Optional;
 import java.util.jar.JarInputStream;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -125,6 +122,15 @@ class JarAnalyzerTest {
         JarInfo info = analyze(builder);
 
         assertThat(info.multiReleaseJar()).isFalse();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"com.example.Main", "not a class name!", "123", " ", ""})
+    void shouldDetectExecutableJar(String mainClass) throws IOException {
+        JarBuilder builder = new JarBuilder().manifest(Map.entry("Main-Class", mainClass));
+        JarInfo info = analyze(builder);
+
+        assertThat(info.executable()).isTrue();
     }
 
     @Test
@@ -278,6 +284,90 @@ class JarAnalyzerTest {
         // the versioned copy is excluded from the bytecode version too
         assertThat(info.bytecodeVersion()).isEqualTo("52.0");
         assertThat(info.contents().get(ContentType.JAVA).count()).isEqualTo(2);
+    }
+
+    @Test
+    void shouldDetectRootModuleInfo() throws IOException {
+        JarBuilder builder = new JarBuilder()
+                .classEntry("", "module-info", null, ClassFile.ACC_MODULE, 61, module("com.example.mod"));
+        JarInfo info = analyze(builder);
+
+        assertThat(info.moduleType()).isEqualTo(ModuleType.NAMED);
+        assertThat(info.moduleName()).isEqualTo("com.example.mod");
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {9, 11, 17, 21})
+    void shouldDetectVersionedModuleInfo(int version) throws IOException {
+        JarBuilder builder = new JarBuilder()
+                .manifest(Map.entry("Multi-Release", "true"))
+                .classEntry("META-INF/versions/" + version, "module-info", null, ClassFile.ACC_MODULE, 61,
+                        module("com.example.mod"));
+        JarInfo info = analyze(builder);
+
+        assertThat(info.moduleType()).isEqualTo(ModuleType.NAMED);
+        assertThat(info.moduleName()).isEqualTo("com.example.mod");
+    }
+
+    @Test
+    void shouldIgnoreVersionedModuleInfoWhenNotMultiRelease() throws IOException {
+        JarBuilder builder = new JarBuilder()
+                .manifest()
+                .classEntry("META-INF/versions/9", "module-info", null, ClassFile.ACC_MODULE, 61,
+                        module("com.example.mod"));
+        JarInfo info = analyze(builder);
+
+        assertThat(info.moduleType()).isEqualTo(ModuleType.UNNAMED);
+        assertThat(info.moduleName()).isNull();
+    }
+
+    @Test
+    void shouldIgnoreModuleInfoAtNestedPath() throws IOException {
+        JarBuilder builder = new JarBuilder()
+                .classEntry("com/foo", "module-info", null, ClassFile.ACC_MODULE, 61, module("com.example.mod"));
+        JarInfo info = analyze(builder);
+
+        assertThat(info.moduleType()).isEqualTo(ModuleType.UNNAMED);
+        assertThat(info.moduleName()).isNull();
+    }
+
+    @Test
+    void shouldNotDetectModuleForClassNamedModuleInfo() throws IOException {
+        JarBuilder builder = new JarBuilder()
+                .classEntry("", "module-info", "module-info.java", PUBLIC_CLASS, 61);
+        JarInfo info = analyze(builder);
+
+        assertThat(info.moduleType()).isEqualTo(ModuleType.UNNAMED);
+        assertThat(info.moduleName()).isNull();
+    }
+
+    @Test
+    void shouldPreferModuleInfoOverAutomaticModuleName() throws IOException {
+        JarBuilder builder = new JarBuilder()
+                .manifest(Map.entry("Automatic-Module-Name", "com.example.automatic"))
+                .classEntry("", "module-info", null, ClassFile.ACC_MODULE, 61, module("com.example.mod"));
+        JarInfo info = analyze(builder);
+
+        assertThat(info.moduleType()).isEqualTo(ModuleType.NAMED);
+        assertThat(info.moduleName()).isEqualTo("com.example.mod");
+    }
+
+    @Test
+    void shouldUseLastModuleInfoWhenRootAndVersionedPresent() throws IOException {
+        // entries keep insertion order, so the versioned descriptor is read last and wins
+        JarBuilder builder = new JarBuilder()
+                .manifest(Map.entry("Multi-Release", "true"))
+                .classEntry("", "module-info", null, ClassFile.ACC_MODULE, 61, module("com.example.root"))
+                .classEntry("META-INF/versions/9", "module-info", null, ClassFile.ACC_MODULE, 61,
+                        module("com.example.versioned"));
+        JarInfo info = analyze(builder);
+
+        assertThat(info.moduleType()).isEqualTo(ModuleType.NAMED);
+        assertThat(info.moduleName()).isEqualTo("com.example.versioned");
+    }
+
+    private static ModuleAttribute module(String name) {
+        return ModuleAttribute.of(ModuleDesc.of(name), moduleBuilder -> {});
     }
 
     private static InnerClassesAttribute innerClass(String name, String innerName, int flags) {
