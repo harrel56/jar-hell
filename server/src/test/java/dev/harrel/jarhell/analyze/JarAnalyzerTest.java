@@ -366,6 +366,38 @@ class JarAnalyzerTest {
         assertThat(info.moduleName()).isEqualTo("com.example.versioned");
     }
 
+    @Test
+    void shouldIgnoreDirectoryEntries() throws IOException {
+        JarBuilder builder = new JarBuilder()
+                .dirEntry("com")
+                .dirEntry("com/example")
+                .dirEntry("META-INF/services");
+        JarInfo info = analyze(builder);
+
+        assertThat(info.contents()).isEmpty();
+        assertThat(info.services()).isEmpty();
+        assertThat(info.publicClasses()).isEmpty();
+        assertThat(info.nonPublicClasses()).isZero();
+        assertThat(info.bytecodeVersion()).isNull();
+    }
+
+    @Test
+    void shouldIgnoreDirectoryEntriesAmongContent() throws IOException {
+        JarBuilder builder = new JarBuilder()
+                .dirEntry("com")
+                .dirEntry("com/example")
+                .classEntry("com/example", "Simple", "Simple.java", PUBLIC_CLASS, 52)
+                .dirEntry("META-INF")
+                .dirEntry("META-INF/services")
+                .entry("META-INF/services/com.example.Service", "com.example.Impl".getBytes(UTF_8));
+        JarInfo info = analyze(builder);
+
+        assertThat(info.contents().get(ContentType.JAVA).count()).isEqualTo(1);
+        assertThat(info.contents().get(ContentType.RESOURCE).count()).isEqualTo(1);
+        assertThat(info.services()).containsExactly("com.example.Service");
+        assertThat(info.publicClasses()).containsExactly(entry(ClassType.CLASS, 1));
+    }
+
     private static ModuleAttribute module(String name) {
         return ModuleAttribute.of(ModuleDesc.of(name), moduleBuilder -> {});
     }
