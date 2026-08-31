@@ -4,9 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import dev.harrel.jarhell.analyze.JarAnalyzer;
 import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.extension.Host;
-import dev.harrel.jarhell.model.BytecodeVersion;
-import dev.harrel.jarhell.model.Gav;
-import dev.harrel.jarhell.model.LicenseType;
+import dev.harrel.jarhell.model.*;
+import dev.harrel.jarhell.model.descriptor.License;
 import dev.harrel.jarhell.util.TestUtil;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -17,6 +16,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.EagerResult;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,14 +55,11 @@ class AnalyzeControllerTest {
 
         ContentResponse packageRes = httpClient.GET(host + "/api/v1/packages/com.sanctionco.jmail:jmail:1.6.2");
         assertThat(packageRes.getStatus()).isEqualTo(200);
-        Map<String, Object> properties = TestUtil.readJson(packageRes.getContentAsString(), new TypeReference<>() {});
-        assertThat(properties).isNotNull();
-        assertThat(properties).containsEntry("licenses", List.of(Map.of(
-                "name", "MIT License",
-                "url", "https://opensource.org/licenses/mit-license.php"
-        )));
-        assertThat(properties).containsEntry("dependencies", List.of());
-        assertJmailArtifactInfo(properties);
+        ArtifactTree at = TestUtil.readJson(packageRes.getContentAsString(), ArtifactTree.class);
+
+        assertThat(at).usingRecursiveComparison()
+                .ignoringFieldsOfTypes(LocalDateTime.class)
+                .isEqualTo(jmailArtifact());
     }
 
     @Test
@@ -86,14 +83,11 @@ class AnalyzeControllerTest {
 
         ContentResponse packageRes = httpClient.GET(host + "/api/v1/packages/com.sanctionco.jmail:jmail:1.6.2");
         assertThat(packageRes.getStatus()).isEqualTo(200);
-        Map<String, Object> properties = TestUtil.readJson(packageRes.getContentAsString(), new TypeReference<>() {});
-        assertThat(properties).isNotNull();
-        assertThat(properties).containsEntry("licenses", List.of(Map.of(
-                "name", "MIT License",
-                "url", "https://opensource.org/licenses/mit-license.php"
-        )));
-        assertThat(properties).containsEntry("dependencies", List.of());
-        assertJmailArtifactInfo(properties);
+        ArtifactTree at = TestUtil.readJson(packageRes.getContentAsString(), ArtifactTree.class);
+
+        assertThat(at).usingRecursiveComparison()
+                .ignoringFieldsOfTypes(LocalDateTime.class)
+                .isEqualTo(jmailArtifact());
     }
 
     @Test
@@ -168,70 +162,109 @@ class AnalyzeControllerTest {
         return driver.executableQuery("MATCH (n) WHERE n.artifactId = '%s' AND n.unresolved IS NULL RETURN n".formatted(id)).execute();
     }
 
-    private void assertJmailArtifactInfo(Map<String, Object> properties) {
-        assertThat(properties).contains(
-                Map.entry("groupId", "com.sanctionco.jmail"),
-                Map.entry("artifactId", "jmail"),
-                Map.entry("name", "jmail"),
-                Map.entry("description", "A modern, fast, zero-dependency library for working with emails in Java"),
-                Map.entry("packaging", "jar"),
-                Map.entry("packageSize", 30629L),
-                Map.entry("version", "1.6.2"),
-                Map.entry("url", "https://github.com/RohanNagar/jmail"),
-                Map.entry("licenseTypes", List.of(LicenseType.MIT.name())),
-                Map.entry("classifiers", List.of("javadoc", "sources")),
-                Map.entry("extensions", List.of("jar", "pom")),
-                Map.entry("jarInfo", Map.of(
-                        "contents", Map.of(
-                                JarAnalyzer.ContentType.JAVA, new JarAnalyzer.Content(16, 49197, 23678),
-                                JarAnalyzer.ContentType.RESOURCE, new JarAnalyzer.Content(3, 10988, 2422)
-                        ),
-                        "publicClasses", Map.of(
-                                JarAnalyzer.ClassType.CLASS, 11,
-                                JarAnalyzer.ClassType.ENUM, 1
-                        ),
-                        "nonPublicClasses", 2,
-                        "bytecodeVersion", new BytecodeVersion(52, 0),
-                        "buildJdk", "21",
-                        "multiReleaseJar", false,
-                        "executable", false,
-                        "services", Set.of(),
-                        "moduleType", JarAnalyzer.ModuleType.NAMED.name(),
-                        "moduleName", "com.sanctionco.jmail"
-                )),
-                Map.entry("effectiveValues", Map.of(
-                        "requiredDependencies", 0L,
-                        "unresolvedDependencies", 0L,
-                        "optionalDependencies", 0L,
-                        "size", 30629L,
-                        "bytecodeVersion", new BytecodeVersion(52, 0),
-                        "licenseType", LicenseType.MIT.name(),
-                        "licenseTypes", List.of(Map.of(LicenseType.MIT.name(), 1L))
-                ))
-        );
+    private ArtifactTree jmailArtifact() {
+        JarAnalyzer.JarInfo jarInfo = new JarAnalyzer.JarInfo(
+                Map.of(
+                        JarAnalyzer.ContentType.JAVA, new JarAnalyzer.Content(16, 49197L, 23678L),
+                        JarAnalyzer.ContentType.RESOURCE, new JarAnalyzer.Content(3, 10988L, 2422L)
+                ),
+                Map.of(
+                        JarAnalyzer.ClassType.CLASS, 11,
+                        JarAnalyzer.ClassType.ENUM, 1
+                ),
+                2,
+                new BytecodeVersion(52, 0),
+                "21",
+                false,
+                false,
+                Set.of(),
+                JarAnalyzer.ModuleType.NAMED,
+                "com.sanctionco.jmail");
+
+        ArtifactInfo.EffectiveValues effectiveValues = new ArtifactInfo.EffectiveValues(
+                0,
+                0,
+                0,
+                30629L,
+                new BytecodeVersion(52, 0),
+                LicenseType.MIT,
+                List.of(Map.entry(LicenseType.MIT, 1L)));
+
+        ArtifactInfo ai = new ArtifactInfo(
+                "com.sanctionco.jmail",
+                "jmail",
+                "1.6.2",
+                "",
+                null, null, null, LocalDateTime.now(),
+                30629L,
+                "jar",
+                "jmail",
+                "A modern, fast, zero-dependency library for working with emails in Java",
+                "https://github.com/RohanNagar/jmail",
+                "https://github.com/RohanNagar/jmail",
+                null,
+                null,
+                List.of(new License("MIT License", "https://opensource.org/licenses/mit-license.php")),
+                List.of(LicenseType.MIT),
+                List.of("javadoc", "sources"),
+                List.of("jar", "pom"),
+                jarInfo,
+                effectiveValues,
+                LocalDateTime.now());
+
+        return new ArtifactTree(ai, List.of());
     }
 
-    private void assertTestArtifactInfo(Map<String, Object> properties) {
-        assertThat(properties).contains(
-                Map.entry("groupId", "org.test"),
-                Map.entry("artifactId", "artifact"),
-                Map.entry("version", "3.0.1"),
-                Map.entry("name", "artifact"),
-                Map.entry("description", "Artifact for tests"),
-                Map.entry("packaging", "jar"),
-                Map.entry("packageSize", 2105L),
-                Map.entry("bytecodeVersion", "65.0"),
-                Map.entry("licenseTypes", List.of()),
-                Map.entry("classifiers", List.of("javadoc", "sources")),
-                Map.entry("effectiveValues", Map.of(
-                        "requiredDependencies", 1L,
-                        "unresolvedDependencies", 0L,
-                        "optionalDependencies", 0L,
-                        "size", 32734L,
-                        "bytecodeVersion", "65.0",
-                        "licenseType", LicenseType.NO_LICENSE.name(),
-                        "licenseTypes", List.of(Map.of(LicenseType.NO_LICENSE.name(), 1L), Map.of(LicenseType.MIT.name(), 1L))
-                ))
-        );
+    private ArtifactTree testArtifact() {
+        JarAnalyzer.JarInfo jarInfo = new JarAnalyzer.JarInfo(
+                Map.of(
+                        JarAnalyzer.ContentType.JAVA, new JarAnalyzer.Content(16, 49197L, 23678L),
+                        JarAnalyzer.ContentType.RESOURCE, new JarAnalyzer.Content(3, 10988L, 2422L)
+                ),
+                Map.of(
+                        JarAnalyzer.ClassType.CLASS, 11,
+                        JarAnalyzer.ClassType.ENUM, 1
+                ),
+                2,
+                new BytecodeVersion(52, 0),
+                "21",
+                false,
+                false,
+                Set.of(),
+                JarAnalyzer.ModuleType.NAMED,
+                "com.sanctionco.jmail");
+
+        ArtifactInfo.EffectiveValues effectiveValues = new ArtifactInfo.EffectiveValues(
+                0,
+                0,
+                0,
+                30629L,
+                new BytecodeVersion(52, 0),
+                LicenseType.MIT,
+                List.of(Map.entry(LicenseType.MIT, 1L)));
+
+        ArtifactInfo ai = new ArtifactInfo(
+                "com.sanctionco.jmail",
+                "jmail",
+                "1.6.2",
+                "",
+                null, null, null, LocalDateTime.now(),
+                30629L,
+                "jar",
+                "jmail",
+                "A modern, fast, zero-dependency library for working with emails in Java",
+                "https://github.com/RohanNagar/jmail",
+                "https://github.com/RohanNagar/jmail",
+                null,
+                null,
+                List.of(new License("MIT License", "https://opensource.org/licenses/mit-license.php")),
+                List.of(LicenseType.MIT),
+                List.of("javadoc", "sources"),
+                List.of("jar", "pom"),
+                jarInfo,
+                effectiveValues,
+                LocalDateTime.now());
+
+        return new ArtifactTree(ai, List.of());
     }
 }
