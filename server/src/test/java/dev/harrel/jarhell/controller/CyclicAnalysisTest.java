@@ -1,8 +1,11 @@
 package dev.harrel.jarhell.controller;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.extension.Host;
+import dev.harrel.jarhell.model.ArtifactInfo;
+import dev.harrel.jarhell.model.ArtifactTree;
+import dev.harrel.jarhell.model.BytecodeVersion;
+import dev.harrel.jarhell.model.DependencyInfo;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.model.LicenseType;
 import dev.harrel.jarhell.util.TestUtil;
@@ -20,7 +23,6 @@ import java.util.concurrent.TimeoutException;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @EnvironmentTest
-@SuppressWarnings("unchecked")
 class CyclicAnalysisTest {
     private final HttpClient httpClient;
 
@@ -33,138 +35,94 @@ class CyclicAnalysisTest {
 
     @Test
     void hardCycleWithSelfIsIgnored() throws InterruptedException, ExecutionException, TimeoutException {
-        ContentResponse res = httpClient.newRequest(host + "/api/v1/analyze-and-wait")
-                .body(new StringRequestContent(TestUtil.writeJson(
-                        new Gav("org.test", "cycle-self", "1.0.0")
-                )))
-                .method(HttpMethod.POST)
-                .send();
+        ArtifactTree at = analyzeAndWait(new Gav("org.test", "cycle-self", "1.0.0"));
 
-        assertThat(res.getStatus()).isEqualTo(200);
-        Map<String, Object> properties = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
-        assertThat(properties)
-                .containsEntry("artifactId", "cycle-self")
-                .containsEntry("packageSize", 2105L)
-                .containsEntry("effectiveValues", Map.of(
-                        "requiredDependencies", 0L,
-                        "unresolvedDependencies", 0L,
-                        "optionalDependencies", 0L,
-                        "size", 2105L,
-                        "bytecodeVersion", "65.0",
-                        "licenseType", LicenseType.NO_LICENSE.name(),
-                        "licenseTypes", List.of(Map.of(LicenseType.NO_LICENSE.name(), 1L))
-                ));
-        List<Map<String, Object>> deps = (List<Map<String, Object>>) properties.get("dependencies");
-        assertThat(deps).isEmpty();
+        ArtifactInfo ai = at.artifactInfo();
+        assertThat(ai.artifactId()).isEqualTo("cycle-self");
+        assertThat(ai.packageSize()).isEqualTo(2105L);
+        assertThat(ai.effectiveValues()).usingRecursiveComparison()
+                .isEqualTo(effectiveValues(0, 0, 0, 2105L, 1L));
+        assertThat(at.dependencies()).isEmpty();
     }
 
     @Test
     void softCycleWithSelfIsIgnored() throws InterruptedException, ExecutionException, TimeoutException {
-        ContentResponse res = httpClient.newRequest(host + "/api/v1/analyze-and-wait")
-                .body(new StringRequestContent(TestUtil.writeJson(
-                        new Gav("org.test", "cycle-self-soft", "1.0.0")
-                )))
-                .method(HttpMethod.POST)
-                .send();
+        ArtifactTree at = analyzeAndWait(new Gav("org.test", "cycle-self-soft", "1.0.0"));
 
-        assertThat(res.getStatus()).isEqualTo(200);
-        Map<String, Object> properties = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
-        assertThat(properties).containsEntry("artifactId", "cycle-self-soft")
-                .containsEntry("packageSize", 2105L)
-                .containsEntry("effectiveValues", Map.of(
-                        "requiredDependencies", 0L,
-                        "unresolvedDependencies", 0L,
-                        "optionalDependencies", 0L,
-                        "size", 2105L,
-                        "bytecodeVersion", "65.0",
-                        "licenseType", LicenseType.NO_LICENSE.name(),
-                        "licenseTypes", List.of(Map.of(LicenseType.NO_LICENSE.name(), 1L))
-                ));
-        List<Map<String, Object>> deps = (List<Map<String, Object>>) properties.get("dependencies");
-        assertThat(deps).isEmpty();
+        ArtifactInfo ai = at.artifactInfo();
+        assertThat(ai.artifactId()).isEqualTo("cycle-self-soft");
+        assertThat(ai.packageSize()).isEqualTo(2105L);
+        assertThat(ai.effectiveValues()).usingRecursiveComparison()
+                .isEqualTo(effectiveValues(0, 0, 0, 2105L, 1L));
+        assertThat(at.dependencies()).isEmpty();
     }
 
     @Test
     void hardCycleWithThreeArtifactsIsComputedCorrectly() throws InterruptedException, ExecutionException, TimeoutException {
-        ContentResponse res = httpClient.newRequest(host + "/api/v1/analyze-and-wait")
-                .body(new StringRequestContent(TestUtil.writeJson(
-                        new Gav("org.test", "cycle1", "1.0.0")
-                )))
-                .method(HttpMethod.POST)
-                .send();
+        ArtifactTree at = analyzeAndWait(new Gav("org.test", "cycle1", "1.0.0"));
 
-        assertThat(res.getStatus()).isEqualTo(200);
-        Map<String, Object> properties = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
-        assertThat(properties)
-                .containsEntry("artifactId", "cycle1")
-                .containsEntry("packageSize", 2105L)
-                .containsEntry("effectiveValues", Map.of(
-                        "requiredDependencies", 2L,
-                        "unresolvedDependencies", 0L,
-                        "optionalDependencies", 0L,
-                        "size", 6315L,
-                        "bytecodeVersion", "65.0",
-                        "licenseType", LicenseType.NO_LICENSE.name(),
-                        "licenseTypes", List.of(Map.of(LicenseType.NO_LICENSE.name(), 3L))
-                ));
-        List<Map<String, Object>> deps = (List<Map<String, Object>>) properties.get("dependencies");
-        assertThat(deps).hasSize(1);
-        assertThat(deps.getFirst())
-                .containsEntry("optional", false)
-                .containsEntry("scope", "compile");
-        assertThat((Map<String, Object>) deps.getFirst().get("artifact"))
-                .containsEntry("artifactId", "cycle2")
-                .containsEntry("packageSize", 2105L)
-                .containsEntry("effectiveValues", Map.of(
-                        "requiredDependencies", 2L,
-                        "unresolvedDependencies", 0L,
-                        "optionalDependencies", 0L,
-                        "size", 6315L,
-                        "bytecodeVersion", "65.0",
-                        "licenseType", LicenseType.NO_LICENSE.name(),
-                        "licenseTypes", List.of(Map.of(LicenseType.NO_LICENSE.name(), 3L))
-                ));
+        ArtifactInfo ai = at.artifactInfo();
+        assertThat(ai.artifactId()).isEqualTo("cycle1");
+        assertThat(ai.packageSize()).isEqualTo(2105L);
+        assertThat(ai.effectiveValues()).usingRecursiveComparison()
+                .isEqualTo(effectiveValues(2, 0, 0, 6315L, 3L));
+
+        assertThat(at.dependencies()).hasSize(1);
+        DependencyInfo dep = at.dependencies().getFirst();
+        assertThat(dep.optional()).isFalse();
+        assertThat(dep.scope()).isEqualTo("compile");
+
+        ArtifactInfo depAi = dep.artifact().artifactInfo();
+        assertThat(depAi.artifactId()).isEqualTo("cycle2");
+        assertThat(depAi.packageSize()).isEqualTo(2105L);
+        assertThat(depAi.effectiveValues()).usingRecursiveComparison()
+                .isEqualTo(effectiveValues(2, 0, 0, 6315L, 3L));
     }
 
     @Test
     void hardCycleWithFourArtifactsIsComputedCorrectly() throws InterruptedException, ExecutionException, TimeoutException {
+        ArtifactTree at = analyzeAndWait(new Gav("org.test", "pre-cycle", "1.0.0"));
+
+        ArtifactInfo ai = at.artifactInfo();
+        assertThat(ai.artifactId()).isEqualTo("pre-cycle");
+        assertThat(ai.packageSize()).isEqualTo(2105L);
+        assertThat(ai.effectiveValues()).usingRecursiveComparison()
+                .isEqualTo(effectiveValues(0, 0, 3, 2105L, 1L));
+
+        assertThat(at.dependencies()).hasSize(1);
+        DependencyInfo dep = at.dependencies().getFirst();
+        assertThat(dep.optional()).isTrue();
+        assertThat(dep.scope()).isEqualTo("compile");
+
+        ArtifactInfo depAi = dep.artifact().artifactInfo();
+        assertThat(depAi.artifactId()).isEqualTo("cycle3");
+        assertThat(depAi.packageSize()).isEqualTo(2105L);
+        assertThat(depAi.effectiveValues()).usingRecursiveComparison()
+                .isEqualTo(effectiveValues(2, 0, 0, 6315L, 3L));
+    }
+
+    private ArtifactTree analyzeAndWait(Gav gav) throws InterruptedException, ExecutionException, TimeoutException {
         ContentResponse res = httpClient.newRequest(host + "/api/v1/analyze-and-wait")
-                .body(new StringRequestContent(TestUtil.writeJson(
-                        new Gav("org.test", "pre-cycle", "1.0.0")
-                )))
+                .body(new StringRequestContent(TestUtil.writeJson(gav)))
                 .method(HttpMethod.POST)
                 .send();
 
         assertThat(res.getStatus()).isEqualTo(200);
-        Map<String, Object> properties = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
-        assertThat(properties)
-                .containsEntry("artifactId", "pre-cycle")
-                .containsEntry("packageSize", 2105L)
-                .containsEntry("effectiveValues", Map.of(
-                        "requiredDependencies", 0L,
-                        "unresolvedDependencies", 0L,
-                        "optionalDependencies", 3L,
-                        "size", 2105L,
-                        "bytecodeVersion", "65.0",
-                        "licenseType", LicenseType.NO_LICENSE.name(),
-                        "licenseTypes", List.of(Map.of(LicenseType.NO_LICENSE.name(), 1L))
-                ));
-        List<Map<String, Object>> deps = (List<Map<String, Object>>) properties.get("dependencies");
-        assertThat(deps).hasSize(1);
-        assertThat(deps.getFirst())
-                .containsEntry("optional", true)
-                .containsEntry("scope", "compile");
-        assertThat((Map<String, Object>) deps.getFirst().get("artifact"))
-                .containsEntry("artifactId", "cycle3")
-                .containsEntry("packageSize", 2105L)
-                .containsEntry("effectiveValues", Map.of(
-                        "requiredDependencies", 2L,
-                        "unresolvedDependencies", 0L,
-                        "optionalDependencies", 0L,
-                        "size", 6315L,
-                        "bytecodeVersion", "65.0",
-                        "licenseType", LicenseType.NO_LICENSE.name(),
-                        "licenseTypes", List.of(Map.of(LicenseType.NO_LICENSE.name(), 3L))
-                ));
+        return TestUtil.readJson(res.getContentAsString(), ArtifactTree.class);
+    }
+
+    private ArtifactInfo.EffectiveValues effectiveValues(int requiredDependencies,
+                                                         int unresolvedDependencies,
+                                                         int optionalDependencies,
+                                                         long size,
+                                                         long licenseCount) {
+        return new ArtifactInfo.EffectiveValues(
+                requiredDependencies,
+                unresolvedDependencies,
+                optionalDependencies,
+                size,
+                new BytecodeVersion(65, 0),
+                LicenseType.NO_LICENSE,
+                List.of(Map.entry(LicenseType.NO_LICENSE, licenseCount)));
     }
 }
