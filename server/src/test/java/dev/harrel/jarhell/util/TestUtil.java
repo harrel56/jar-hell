@@ -7,9 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.harrel.jarhell.Configuration;
 
 import java.io.UncheckedIOException;
-import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Stream;
 
 public class TestUtil {
     private static final ObjectMapper objectMapper = new Configuration().objectMapper()
