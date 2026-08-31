@@ -1,6 +1,5 @@
 package dev.harrel.jarhell.controller;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import dev.harrel.jarhell.analyze.JarAnalyzer;
 import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.extension.Host;
@@ -106,14 +105,11 @@ class AnalyzeControllerTest {
 
         ContentResponse packageRes = httpClient.GET(host + "/api/v1/packages/com.sanctionco.jmail:jmail:1.6.2");
         assertThat(packageRes.getStatus()).isEqualTo(200);
-        Map<String, Object> properties = TestUtil.readJson(packageRes.getContentAsString(), new TypeReference<>() {});
-        assertThat(properties).isNotNull();
-        assertThat(properties).containsEntry("licenses", List.of(Map.of(
-                "name", "MIT License",
-                "url", "https://opensource.org/licenses/mit-license.php"
-        )));
-        assertThat(properties).containsEntry("dependencies", List.of());
-        assertJmailArtifactInfo(properties);
+        ArtifactTree at = TestUtil.readJson(packageRes.getContentAsString(), ArtifactTree.class);
+
+        assertThat(at).usingRecursiveComparison()
+                .ignoringFieldsOfTypes(LocalDateTime.class)
+                .isEqualTo(jmailArtifact());
     }
 
     @Test
@@ -126,18 +122,14 @@ class AnalyzeControllerTest {
                 .send();
 
         assertThat(res.getStatus()).isEqualTo(200);
-        Map<String, Object> properties = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
-        assertThat(properties).isNotNull();
-        assertThat(properties).containsEntry("licenses", List.of(Map.of(
-                "name", "MIT License",
-                "url", "https://opensource.org/licenses/mit-license.php"
-        )));
-        assertThat(properties).containsEntry("dependencies", List.of());
-        assertJmailArtifactInfo(properties);
+        ArtifactTree at = TestUtil.readJson(res.getContentAsString(), ArtifactTree.class);
+
+        assertThat(at).usingRecursiveComparison()
+                .ignoringFieldsOfTypes(LocalDateTime.class)
+                .isEqualTo(jmailArtifact());
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     void shouldAnalyzeAndWaitForLibWithDependency() throws InterruptedException, ExecutionException, TimeoutException {
         ContentResponse res = httpClient.newRequest(host + "/api/v1/analyze-and-wait")
                 .body(new StringRequestContent(TestUtil.writeJson(
@@ -147,15 +139,11 @@ class AnalyzeControllerTest {
                 .send();
 
         assertThat(res.getStatus()).isEqualTo(200);
-        Map<String, Object> properties = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
-        assertThat(properties).isNotNull();
-        assertTestArtifactInfo(properties);
-        var dependencies = (List<Map<String, Object>>) properties.get("dependencies");
-        assertThat(dependencies).hasSize(1);
-        assertThat(dependencies.getFirst()).containsEntry("optional", false);
-        assertThat(dependencies.getFirst()).containsEntry("scope", "compile");
+        ArtifactTree at = TestUtil.readJson(res.getContentAsString(), ArtifactTree.class);
 
-        assertJmailArtifactInfo(((Map<String, Object>) dependencies.getFirst().get("artifact")));
+        assertThat(at).usingRecursiveComparison()
+                .ignoringFieldsOfTypes(LocalDateTime.class)
+                .isEqualTo(testArtifact());
     }
 
     private EagerResult fetchByArtifactId(String id) {
@@ -218,53 +206,52 @@ class AnalyzeControllerTest {
     private ArtifactTree testArtifact() {
         JarAnalyzer.JarInfo jarInfo = new JarAnalyzer.JarInfo(
                 Map.of(
-                        JarAnalyzer.ContentType.JAVA, new JarAnalyzer.Content(16, 49197L, 23678L),
-                        JarAnalyzer.ContentType.RESOURCE, new JarAnalyzer.Content(3, 10988L, 2422L)
+                        JarAnalyzer.ContentType.JAVA, new JarAnalyzer.Content(1, 540L, 338L),
+                        JarAnalyzer.ContentType.RESOURCE, new JarAnalyzer.Content(3, 920L, 415L)
                 ),
-                Map.of(
-                        JarAnalyzer.ClassType.CLASS, 11,
-                        JarAnalyzer.ClassType.ENUM, 1
-                ),
-                2,
-                new BytecodeVersion(52, 0),
+                Map.of(JarAnalyzer.ClassType.CLASS, 1),
+                0,
+                new BytecodeVersion(65, 0),
                 "21",
                 false,
                 false,
                 Set.of(),
-                JarAnalyzer.ModuleType.NAMED,
-                "com.sanctionco.jmail");
+                JarAnalyzer.ModuleType.UNNAMED,
+                null);
 
         ArtifactInfo.EffectiveValues effectiveValues = new ArtifactInfo.EffectiveValues(
+                1,
                 0,
                 0,
-                0,
-                30629L,
-                new BytecodeVersion(52, 0),
-                LicenseType.MIT,
-                List.of(Map.entry(LicenseType.MIT, 1L)));
+                32734L,
+                new BytecodeVersion(65, 0),
+                LicenseType.NO_LICENSE,
+                List.of(Map.entry(LicenseType.NO_LICENSE, 1L), Map.entry(LicenseType.MIT, 1L)));
 
         ArtifactInfo ai = new ArtifactInfo(
-                "com.sanctionco.jmail",
-                "jmail",
-                "1.6.2",
+                "org.test",
+                "artifact",
+                "3.0.1",
                 "",
                 null, null, null, LocalDateTime.now(),
-                30629L,
+                2105L,
                 "jar",
-                "jmail",
-                "A modern, fast, zero-dependency library for working with emails in Java",
-                "https://github.com/RohanNagar/jmail",
-                "https://github.com/RohanNagar/jmail",
+                "artifact",
+                "Artifact for tests",
                 null,
                 null,
-                List.of(new License("MIT License", "https://opensource.org/licenses/mit-license.php")),
-                List.of(LicenseType.MIT),
+                null,
+                null,
+                List.of(),
+                List.of(),
                 List.of("javadoc", "sources"),
                 List.of("jar", "pom"),
                 jarInfo,
                 effectiveValues,
                 LocalDateTime.now());
 
-        return new ArtifactTree(ai, List.of());
+        // leaf dependencies are not expanded any further, hence null instead of an empty list
+        ArtifactTree jmail = new ArtifactTree(jmailArtifact().artifactInfo(), null);
+        return new ArtifactTree(ai, List.of(new DependencyInfo(jmail, false, "compile")));
     }
 }
