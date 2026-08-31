@@ -1,11 +1,12 @@
 package dev.harrel.jarhell.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.extension.Host;
+import dev.harrel.jarhell.model.ArtifactInfo;
+import dev.harrel.jarhell.model.ArtifactTree;
+import dev.harrel.jarhell.model.DependencyInfo;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.util.TestUtil;
 import io.javalin.http.HandlerType;
@@ -87,9 +88,9 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(host + "/api/v1/packages/org.test:lib:1.0.0");
 
         assertThat(res.getStatus()).isEqualTo(200);
-        JsonNode body = TestUtil.readJson(res.getContentAsString(), JsonNode.class);
+        ArtifactTree body = TestUtil.readJson(res.getContentAsString(), ArtifactTree.class);
         assertArtifact(body, "org.test", "lib", "1.0.0", null);
-        assertThat(body.get("dependencies").elements()).toIterable().isEmpty();
+        assertThat(body.dependencies()).isEmpty();
     }
 
     @Test
@@ -103,9 +104,9 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(host + "/api/v1/packages/org.test:lib:1.0.0:doc");
 
         assertThat(res.getStatus()).isEqualTo(200);
-        JsonNode body = TestUtil.readJson(res.getContentAsString(), JsonNode.class);
+        ArtifactTree body = TestUtil.readJson(res.getContentAsString(), ArtifactTree.class);
         assertArtifact(body, "org.test", "lib", "1.0.0", "doc");
-        assertThat(body.get("dependencies").elements()).toIterable().isEmpty();
+        assertThat(body.dependencies()).isEmpty();
     }
 
     @Test
@@ -144,17 +145,16 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(uri);
 
         assertThat(res.getStatus()).isEqualTo(200);
-        JsonNode body = TestUtil.readJson(res.getContentAsString(), JsonNode.class);
+        ArtifactTree body = TestUtil.readJson(res.getContentAsString(), ArtifactTree.class);
         assertArtifact(body, "org.test", "lib", "1.0.0", null);
 
-        List<JsonNode> dependencies = TestUtil.iteratorToList(body.get("dependencies").elements());
-        assertThat(dependencies).hasSize(1);
-        assertThat(dependencies.getFirst().get("optional").asBoolean()).isFalse();
-        assertThat(dependencies.getFirst().get("scope").asText()).isEqualTo("runtime");
+        assertThat(body.dependencies()).hasSize(1);
+        DependencyInfo dep = body.dependencies().getFirst();
+        assertThat(dep.optional()).isFalse();
+        assertThat(dep.scope()).isEqualTo("runtime");
 
-        JsonNode dep1 = dependencies.getFirst().get("artifact");
-        assertArtifact(dep1, "org.test", "dep1", "1.0.0", null);
-        assertThat(dep1.get("dependencies").elements()).toIterable().isEmpty();
+        assertArtifact(dep.artifact(), "org.test", "dep1", "1.0.0", null);
+        assertThat(dep.artifact().dependencies()).isEmpty();
     }
 
     @Test
@@ -176,23 +176,21 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(uri);
 
         assertThat(res.getStatus()).isEqualTo(200);
-        JsonNode body = TestUtil.readJson(res.getContentAsString(), JsonNode.class);
+        ArtifactTree body = TestUtil.readJson(res.getContentAsString(), ArtifactTree.class);
         assertArtifact(body, "org.test", "lib", "1.0.0", null);
 
-        List<JsonNode> dependencies = TestUtil.iteratorToList(body.get("dependencies").elements());
+        List<DependencyInfo> dependencies = body.dependencies();
         assertThat(dependencies).hasSize(2);
 
-        assertThat(dependencies.get(0).get("optional").asBoolean()).isTrue();
-        assertThat(dependencies.get(0).get("scope").asText()).isEqualTo("runtime");
-        JsonNode dep1 = dependencies.get(0).get("artifact");
-        assertArtifact(dep1, "org.test", "dep1", "1.0.0", null);
-        assertThat(dep1.get("dependencies").elements()).toIterable().isEmpty();
+        assertThat(dependencies.get(0).optional()).isTrue();
+        assertThat(dependencies.get(0).scope()).isEqualTo("runtime");
+        assertArtifact(dependencies.get(0).artifact(), "org.test", "dep1", "1.0.0", null);
+        assertThat(dependencies.get(0).artifact().dependencies()).isEmpty();
 
-        assertThat(dependencies.get(1).get("optional").asBoolean()).isFalse();
-        assertThat(dependencies.get(1).get("scope").asText()).isEqualTo("compile");
-        JsonNode dep2 = dependencies.get(1).get("artifact");
-        assertArtifact(dep2, "org.test", "dep2", "1.0.0", null);
-        assertThat(dep2.get("dependencies").elements()).toIterable().isEmpty();
+        assertThat(dependencies.get(1).optional()).isFalse();
+        assertThat(dependencies.get(1).scope()).isEqualTo("compile");
+        assertArtifact(dependencies.get(1).artifact(), "org.test", "dep2", "1.0.0", null);
+        assertThat(dependencies.get(1).artifact().dependencies()).isEmpty();
     }
 
     @Test
@@ -213,24 +211,21 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(uri);
 
         assertThat(res.getStatus()).isEqualTo(200);
-        JsonNode body = TestUtil.readJson(res.getContentAsString(), JsonNode.class);
+        ArtifactTree body = TestUtil.readJson(res.getContentAsString(), ArtifactTree.class);
         assertArtifact(body, "org.test", "lib", "1.0.0", null);
 
-        List<JsonNode> dependencies = TestUtil.iteratorToList(body.get("dependencies").elements());
-        assertThat(dependencies).hasSize(1);
-        assertThat(dependencies.getFirst().get("optional").asBoolean()).isFalse();
-        assertThat(dependencies.getFirst().get("scope").asText()).isEqualTo("runtime");
+        assertThat(body.dependencies()).hasSize(1);
+        DependencyInfo dep1 = body.dependencies().getFirst();
+        assertThat(dep1.optional()).isFalse();
+        assertThat(dep1.scope()).isEqualTo("runtime");
+        assertArtifact(dep1.artifact(), "org.test", "dep1", "1.0.0", null);
 
-        JsonNode dep1 = dependencies.getFirst().get("artifact");
-        assertArtifact(dep1, "org.test", "dep1", "1.0.0", null);
-        List<JsonNode> transitiveDeps = TestUtil.iteratorToList(dep1.get("dependencies").elements());
-        assertThat(transitiveDeps).hasSize(1);
-        assertThat(transitiveDeps.getFirst().get("optional").asBoolean()).isFalse();
-        assertThat(transitiveDeps.getFirst().get("scope").asText()).isEqualTo("runtime");
-
-        JsonNode dep2 = transitiveDeps.getFirst().get("artifact");
-        assertArtifact(dep2, "org.test", "dep2", "1.0.0", null);
-        assertThat(dep2.get("dependencies").elements()).toIterable().isEmpty();
+        assertThat(dep1.artifact().dependencies()).hasSize(1);
+        DependencyInfo dep2 = dep1.artifact().dependencies().getFirst();
+        assertThat(dep2.optional()).isFalse();
+        assertThat(dep2.scope()).isEqualTo("runtime");
+        assertArtifact(dep2.artifact(), "org.test", "dep2", "1.0.0", null);
+        assertThat(dep2.artifact().dependencies()).isEmpty();
     }
 
     @Test
@@ -251,9 +246,9 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(uri);
 
         assertThat(res.getStatus()).isEqualTo(200);
-        JsonNode body = TestUtil.readJson(res.getContentAsString(), JsonNode.class);
+        ArtifactTree body = TestUtil.readJson(res.getContentAsString(), ArtifactTree.class);
         assertArtifact(body, "org.test", "lib", "1.0.0", null);
-        assertThat(body.get("dependencies")).isNull();
+        assertThat(body.dependencies()).isNull();
     }
 
     @Test
@@ -274,16 +269,14 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(uri);
 
         assertThat(res.getStatus()).isEqualTo(200);
-        JsonNode body = TestUtil.readJson(res.getContentAsString(), JsonNode.class);
+        ArtifactTree body = TestUtil.readJson(res.getContentAsString(), ArtifactTree.class);
         assertArtifact(body, "org.test", "lib", "1.0.0", null);
 
-        List<JsonNode> dependencies = TestUtil.iteratorToList(body.get("dependencies").elements());
-        assertThat(dependencies).hasSize(1);
-        assertThat(dependencies.getFirst().get("optional").asBoolean()).isFalse();
-        assertThat(dependencies.getFirst().get("scope").asText()).isEqualTo("runtime");
-
-        JsonNode dep1 = dependencies.getFirst().get("artifact");
-        assertArtifact(dep1, "org.test", "dep1", "1.0.0", null);
+        assertThat(body.dependencies()).hasSize(1);
+        DependencyInfo dep1 = body.dependencies().getFirst();
+        assertThat(dep1.optional()).isFalse();
+        assertThat(dep1.scope()).isEqualTo("runtime");
+        assertArtifact(dep1.artifact(), "org.test", "dep1", "1.0.0", null);
     }
 
     @Test
@@ -315,12 +308,12 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(host + "/api/v1/packages?groupId=org.test&artifactId=lib");
 
         assertThat(res.getStatus()).isEqualTo(200);
-        ArrayNode body = TestUtil.readJson(res.getContentAsString(), ArrayNode.class);
-        assertThat(body.size()).isEqualTo(2);
+        List<ArtifactTree> body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        assertThat(body).hasSize(2);
         assertArtifact(body.get(0), "org.test", "lib", "1.0.0", null);
-        assertThat(body.get(0).get("dependencies")).isNull();
+        assertThat(body.get(0).dependencies()).isNull();
         assertArtifact(body.get(1), "org.test", "lib", "1.2.0", null);
-        assertThat(body.get(1).get("dependencies")).isNull();
+        assertThat(body.get(1).dependencies()).isNull();
     }
 
     @Test
@@ -338,18 +331,18 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(host + "/api/v1/packages?groupId=org.test&artifactId=lib");
 
         assertThat(res.getStatus()).isEqualTo(200);
-        ArrayNode body = TestUtil.readJson(res.getContentAsString(), ArrayNode.class);
-        assertThat(body.size()).isZero();
+        List<ArtifactTree> body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        assertThat(body).isEmpty();
 
         res = httpClient.GET(host + "/api/v1/packages?groupId=org.test&artifactId=lib&classifier=doc");
 
         assertThat(res.getStatus()).isEqualTo(200);
-        body = TestUtil.readJson(res.getContentAsString(), ArrayNode.class);
-        assertThat(body.size()).isEqualTo(2);
+        body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        assertThat(body).hasSize(2);
         assertArtifact(body.get(0), "org.test", "lib", "1.0.0", "doc");
-        assertThat(body.get(0).get("dependencies")).isNull();
+        assertThat(body.get(0).dependencies()).isNull();
         assertArtifact(body.get(1), "org.test", "lib", "1.2.0", "doc");
-        assertThat(body.get(1).get("dependencies")).isNull();
+        assertThat(body.get(1).dependencies()).isNull();
     }
 
     @Test
@@ -537,17 +530,18 @@ class PackagesControllerTest {
         }
     }
 
-    static void assertArtifact(JsonNode node,
+    static void assertArtifact(ArtifactTree artifactTree,
                                String groupId,
                                String artifactId,
                                String version,
                                String classifier) {
-        assertThat(node.get("groupId").asText()).isEqualTo(groupId);
-        assertThat(node.get("artifactId").asText()).isEqualTo(artifactId);
-        assertThat(node.get("version").asText()).isEqualTo(version);
+        ArtifactInfo ai = artifactTree.artifactInfo();
+        assertThat(ai.groupId()).isEqualTo(groupId);
+        assertThat(ai.artifactId()).isEqualTo(artifactId);
+        assertThat(ai.version()).isEqualTo(version);
         if (classifier != null) {
-            assertThat(node.get("classifier").asText()).isEqualTo(classifier);
+            assertThat(ai.classifier()).isEqualTo(classifier);
         }
-        assertThat(node.get("licenses").elements()).toIterable().isEmpty();
+        assertThat(ai.licenses()).isEmpty();
     }
 }

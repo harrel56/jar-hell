@@ -38,10 +38,4 @@ public class TestUtil {
             throw new UncheckedIOException(e);
         }
     }
-
-    public static <T> List<T> iteratorToList(Iterator<T> it) {
-        Stream.Builder<T> builder = Stream.builder();
-        it.forEachRemaining(builder);
-        return builder.build().toList();
-    }
 }
