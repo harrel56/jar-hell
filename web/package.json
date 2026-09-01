@@ -11,6 +11,12 @@
     "update-deps": "npx npm-check-updates -u"
   },
   "license": "MIT",
+  "overrides": {
+    "@solidjs/testing-library": {
+      "@solidjs/web": "$@solidjs/web",
+      "solid-js": "$solid-js"
+    }
+  },
   "dependencies": {
     "@solidjs/meta": "1.0.0-next.2",
     "@solidjs/router": "2.0.0-next.20",
@@ -22,7 +28,7 @@
     "@solidjs/testing-library": "1.0.0-beta.2",
     "@solidjs/vite-plugin": "3.0.0-next.36",
     "@tailwindcss/vite": "4.3.3",
-    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/jest-dom": "6.9.1",
     "eslint-plugin-solid": "0.17.0",
     "jsdom": "30.0.1",
     "oxlint": "1.80.0",
