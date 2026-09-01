@@ -21,7 +21,6 @@ import io.javalin.Javalin;
 import io.javalin.http.HttpStatus;
 import io.javalin.http.UnauthorizedResponse;
 import io.javalin.json.JavalinJackson;
-import io.javalin.plugin.bundled.CorsPluginConfig;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
@@ -90,11 +89,6 @@ public class Configuration {
                         staticFiles.precompress = true;
                         staticFiles.headers = Map.of("Cache-Control", "max-age=86400");
                     });
-                    if (Config.enabled("jar-hell.dev-mode", false)) {
-                        config.bundledPlugins.enableCors(cors ->
-                                cors.addRule(CorsPluginConfig.CorsRule::anyHost)
-                        );
-                    }
                     avajePlugins.forEach(config::registerPlugin);
                 })
                 .beforeMatched("/technical/*", ctx -> {
