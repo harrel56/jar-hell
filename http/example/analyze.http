@@ -63,9 +63,9 @@ Content-Type: application/json
 %}
 
 ### crawl
-POST https://jarhell.harrel.dev/technical/v1/crawl
+POST https://jarhell.harrel.dev/technical/v1/processor/stop
 Content-Type: application/json
-Authorization: Bearer
+Authorization: Bearer {{token}}
 
 ### crawl local
 POST http://localhost:8060/technical/v1/crawl
@@ -73,6 +73,6 @@ Content-Type: application/json
 Authorization: Bearer test
 
 ### refresh index local
-POST http://localhost:8060/technical/v1/refresh-index
+POST https://jarhell.harrel.dev/technical/v1/refresh-index
 Content-Type: application/json
-Authorization: Bearer test
+Authorization: Bearer {{token}}

@@ -1,33 +1,21 @@
 {
   "compilerOptions": {
-    "target": "ES2023",
-    "useDefineForClassFields": true,
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
-    "types": ["vite/client"],
-    "module": "ESNext",
-    "skipLibCheck": true,
+    // General
+    "jsx": "preserve",
+    "jsxImportSource": "@solidjs/web",
+    "target": "ESNext",
 
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
+    // Modules
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "isolatedModules": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "noEmit": true,
-    "jsx": "react-jsx",
 
-    /* Linting */
+    // Type Checking & Safety
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"],
-      "@static/*": ["./static/*"]
-    }
-  },
-  "include": [
-    "src",
-    "vite.config.ts"
-  ]
+    "skipLibCheck": true,
+    "types": ["vite/client"]
+  }
 }

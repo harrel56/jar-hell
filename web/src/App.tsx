@@ -1,27 +1,29 @@
-import {useLocation, useOutlet} from 'react-router-dom'
-import {ThemeProvider} from '@/shadcn/components/ThemeProvider'
-import {NavBar} from '@/components/NavBar.tsx'
-import {Autocomplete} from '@/components/Autocomplete.tsx'
-import {useEffect} from 'react'
-import {Footer} from '@/components/Footer.tsx'
-import {RecentlyViewedProvider} from '@/context/RecentlyViewedProvider.tsx'
+import { Title } from '@solidjs/meta';
+import { Loading } from 'solid-js';
+import './App.css';
+import {createRouter} from '@solidjs/router'
 
-export const App = () => {
-  const outlet = useOutlet()
-  const { pathname } = useLocation()
+const Router = createRouter({
+  routes: [
+    {
+      path: '/index', component: () => <p>index</p>
+    },
+    {
+      path: '*404', component:() =>  <p>not found</p>
+    }
+  ]
+})
 
-  useEffect(() => window.scrollTo(0, 0), [pathname])
-
+export default function App() {
   return (
-    <ThemeProvider>
-      <RecentlyViewedProvider>
-        <div className='px-4 flex flex-col'>
-          <NavBar/>
-          <Autocomplete/>
-          {outlet}
-        </div>
-        <Footer/>
-      </RecentlyViewedProvider>
-    </ThemeProvider>
-  )
+    <Router>
+      {(props) => (
+        <>
+          <Loading fallback={<main class="px-4 py-12">Loading…</main>}>
+            {props.children}
+          </Loading>
+        </>
+      )}
+    </Router>
+  );
 }
