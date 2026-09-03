@@ -73,6 +73,6 @@ Content-Type: application/json
 Authorization: Bearer {{token}}
 
 ### refresh index local
-POST https://jarhell.harrel.dev/technical/v1/refresh-index
+POST http://localhost:8060/technical/v1/refresh-index
 Content-Type: application/json
 Authorization: Bearer {{token}}
