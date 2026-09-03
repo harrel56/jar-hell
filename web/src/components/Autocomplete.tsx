@@ -1,37 +1,73 @@
-import { createSignal, For, Show } from 'solid-js'
+import { createSignal, For, onCleanup, Show } from 'solid-js'
 
-interface Suggestion {
-  group: string
-  name: string
+/* Shape of PackagesController.SearchResult — deliberately terse over the wire. */
+interface SearchResult {
+  g: string
+  a: string
 }
 
-/* Placeholder results until this is wired to /api/v1/packages/search. */
-const DUMMY_PACKAGES: Suggestion[] = [
-  { group: 'com.sanctionco.jmail', name: 'jmail' },
-  { group: 'org.apache.commons', name: 'commons-lang3' },
-  { group: 'com.fasterxml.jackson.core', name: 'jackson-databind' },
-  { group: 'io.javalin', name: 'javalin' },
-  { group: 'org.neo4j.driver', name: 'neo4j-java-driver' },
-  { group: 'dev.harrel', name: 'json-schema' },
-]
-
-const matches = (query: string) => {
-  const q = query.trim().toLowerCase()
-  if (!q) return []
-  return DUMMY_PACKAGES.filter(p => `${p.group}:${p.name}`.toLowerCase().includes(q))
-}
+const DEBOUNCE_MS = 200
 
 export default function Autocomplete() {
   const [query, setQuery] = createSignal('')
+  const [results, setResults] = createSignal<SearchResult[]>([])
+  const [loading, setLoading] = createSignal(false)
+  const [failed, setFailed] = createSignal(false)
   const [focused, setFocused] = createSignal(false)
 
-  const suggestions = () => matches(query())
-  const open = () => focused() && query().trim().length > 0
+  let debounceId: ReturnType<typeof setTimeout> | undefined
+  let inFlight: AbortController | undefined
 
-  const select = (s: Suggestion) => {
-    setQuery(`${s.group}:${s.name}`)
+  onCleanup(() => {
+    clearTimeout(debounceId)
+    inFlight?.abort()
+  })
+
+  const search = async (q: string) => {
+    inFlight?.abort()
+    if (!q) {
+      setResults([])
+      setLoading(false)
+      return
+    }
+    const controller = new AbortController()
+    inFlight = controller
+    setLoading(true)
+    setFailed(false)
+    try {
+      const res = await fetch(`/api/v1/packages/search?query=${encodeURIComponent(q)}`, {
+        signal: controller.signal,
+      })
+      if (!res.ok) {
+        throw new Error(`search failed with ${res.status}`)
+      }
+      setResults(await res.json())
+    } catch {
+      /* An abort means a newer query took over — leave its state alone. */
+      if (controller.signal.aborted) {
+        return
+      }
+      setResults([])
+      setFailed(true)
+    } finally {
+      if (!controller.signal.aborted) {
+        setLoading(false)
+      }
+    }
+  }
+
+  const onInput = (value: string) => {
+    setQuery(value)
+    clearTimeout(debounceId)
+    debounceId = setTimeout(() => void search(value.trim()), DEBOUNCE_MS)
+  }
+
+  const select = (r: SearchResult) => {
+    setQuery(`${r.g}:${r.a}`)
     setFocused(false)
   }
+
+  const open = () => focused() && query().trim().length > 0
 
   return (
     <div class="relative max-w-[520px] flex-1">
@@ -43,7 +79,7 @@ export default function Autocomplete() {
       >
         <input
           value={query()}
-          onInput={e => setQuery(e.currentTarget.value)}
+          onInput={e => onInput(e.currentTarget.value)}
           onFocus={() => setFocused(true)}
           /* Deferred so a click on a suggestion lands before the menu unmounts. */
           onBlur={() => setTimeout(() => setFocused(false), 120)}
@@ -57,21 +93,25 @@ export default function Autocomplete() {
 
       <Show when={open()}>
         <div class="absolute inset-x-0 top-11 z-40 overflow-hidden rounded-(--radius-panel) border border-(--hairline) bg-(--ground) shadow-(--shadow-menu)">
-          <For each={suggestions()}>
-            {s => (
+          <For each={results()}>
+            {r => (
               <button
                 type="button"
-                onClick={() => select(s)}
+                onClick={() => select(r)}
                 class="flex w-full items-baseline gap-[9px] border-b border-(--track) px-3.5 py-[9px] text-left font-(family-name:--font-data) hover:bg-(--surface)"
               >
-                <span class="shrink-0 text-(length:--text-label) text-(--ink-5)">{s.group}</span>
-                <span class="truncate text-(length:--text-sm) text-(--ink)">{s.name}</span>
+                <span class="shrink-0 text-(length:--text-label) text-(--ink-5)">{r.g}</span>
+                <span class="truncate text-(length:--text-sm) text-(--ink)">{r.a}</span>
               </button>
             )}
           </For>
-          <Show when={suggestions().length === 0}>
+          <Show when={results().length === 0}>
             <div class="px-3.5 py-3 text-(length:--text-sm) text-(--ink-4)">
-              Nothing analysed under that name yet — press Enter to queue it.
+              <Show when={!loading()} fallback="Searching…">
+                <Show when={!failed()} fallback="Search is unavailable right now.">
+                  Nothing analysed under that name yet — press Enter to queue it.
+                </Show>
+              </Show>
             </div>
           </Show>
         </div>
