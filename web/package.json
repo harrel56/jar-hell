@@ -18,6 +18,8 @@
     }
   },
   "dependencies": {
+    "@fontsource-variable/inter-tight": "5.3.0",
+    "@fontsource-variable/jetbrains-mono": "5.3.0",
     "@solidjs/meta": "1.0.0-next.2",
     "@solidjs/router": "2.0.0-next.20",
     "@solidjs/web": "2.0.0-rc.4",
