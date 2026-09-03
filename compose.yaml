@@ -1,0 +1,28 @@
+# Local development dependencies. Tests don't use this — they spin their own
+# containers through Testcontainers (see EnvironmentExtension).
+#
+#   docker compose up -d
+#
+# Then run App.main with AVAJE_PROFILES=dev. Browser UI: http://localhost:7474
+services:
+  neo4j:
+    image: neo4j:5.25
+    container_name: jarhell-neo4j
+    environment:
+      NEO4J_AUTH: neo4j/jarhell-dev
+      # ArtifactRepository calls apoc.path.subgraphAll
+      NEO4J_PLUGINS: '["apoc"]'
+    ports:
+      - '7687:7687'
+      - '7474:7474'
+    volumes:
+      - neo4j-data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'cypher-shell -u neo4j -p jarhell-dev "RETURN 1" || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  neo4j-data:
