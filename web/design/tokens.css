@@ -1,0 +1,214 @@
+/* ==========================================================================
+   Jarhell design tokens
+   Extracted from the canvas artboards (Home, Package Page v2, Style
+   Explorations) on 31/08/2026. Direction 1c "Instrument", rebased from the
+   exploration's cool greys onto the warm neutral ramp the shipped pages use.
+   ========================================================================== */
+
+:root {
+  /* --- Type ------------------------------------------------------------- */
+  --font-ui:   'Inter Tight', system-ui, -apple-system, sans-serif;
+  --font-data: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  --text-micro:   10.5px;  /* mono eyebrows, axis ticks */
+  --text-label:   11.5px;  /* verdict pills, kbd hints */
+  --text-meta:    12.5px;  /* captions, secondary meta */
+  --text-sm:      13px;    /* nav, table rows, chips */
+  --text-body:    15px;    /* base */
+  --text-lead:    16px;    /* package summary */
+  --text-title:   17px;    /* section titles */
+  --text-brand:   19px;    /* wordmark */
+  --text-h1:      34px;    /* home hero */
+  --text-metric:  32px;    /* tertiary metric */
+  --text-metric-lg: 48px;  /* secondary metric */
+  --text-metric-xl: 68px;  /* headline metric */
+
+  --tracking-tight:   -0.02em;  /* UI headings */
+  --tracking-tighter: -0.03em;  /* hero, package name */
+  --tracking-metric:  -0.045em; /* large numerals */
+  --tracking-caps:     0.08em;  /* uppercase section labels */
+  --tracking-eyebrow:  0.14em;  /* mono eyebrows */
+
+  --leading-metric: 0.9;
+  --leading-body:   1.5;
+  --leading-code:   1.65;
+
+  /* --- Space (4px base, 2px allowed for hairline insets) ----------------- */
+  --space-1: 4px;   --space-2: 6px;   --space-3: 8px;   --space-4: 10px;
+  --space-5: 12px;  --space-6: 14px;  --space-7: 18px;  --space-8: 22px;
+  --space-9: 26px;  --space-10: 34px; --space-11: 38px; --space-12: 60px;
+  --space-13: 92px;
+
+  /* --- Radius ----------------------------------------------------------- */
+  --radius-bar:    3px;   /* meters, size rails */
+  --radius-chip:   5px;   /* license chips, kbd */
+  --radius-nav:    7px;   /* header nav, rail rows */
+  --radius-button: 8px;   /* link buttons */
+  --radius-field:  9px;   /* header search */
+  --radius-panel: 11px;   /* code panel, dropdown */
+  --radius-card:  12px;   /* package cards */
+  --radius-section: 14px; /* bordered sections */
+  --radius-pill:  20px;   /* verdict pills */
+
+  /* --- Elevation & motion ----------------------------------------------- */
+  --shadow-field: 0 6px 22px rgba(20, 18, 15, 0.07);
+  --shadow-menu:  0 18px 44px rgba(20, 18, 15, 0.13);
+  --ease-rail: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --duration-rail: 320ms;
+
+  /* --- Frame ------------------------------------------------------------ */
+  --header-height:   60px;
+  --sidebar-width:  268px;
+  --measure-app:   1340px;  /* package page */
+  --measure-index: 1060px;  /* home */
+
+  /* --- Color: light ----------------------------------------------------- */
+  --ground:         #ffffff;
+  --surface:        #faf9f7;  /* section headers, hover */
+  --surface-sunken: #f7f6f4;  /* header search, selected rail row */
+  --surface-row:    #fdfcfb;  /* depth-0 tree row */
+  --track:          #f4f2ef;  /* meter track */
+
+  --hairline:        #eceae6;
+  --hairline-soft:   #f1efeb;
+  --hairline-strong: #e6e3de;
+  --hairline-tick:   #e0dcd6;
+
+  --ink:      #14120f;
+  --ink-2:    #4a453e;
+  --ink-3:    #6f6a62;
+  --ink-4:    #8d877e;
+  --ink-5:    #a8a29a;
+  --ink-mute: #cfcac2;
+
+  --accent:        #d94a22;
+  --accent-hover:  #b13a17;
+  --accent-mark:   #ff5c2b;  /* logo glyph only */
+  --accent-wash:   #fdf2ee;
+  --accent-wash-border: #f6ddd3;
+
+  --inverse-ground: #14120f;  /* install snippet panel */
+  --inverse-ink:    #ded8ce;
+  --inverse-string: #9fc98a;
+
+  --good:     #3f7a46;
+  --warn:     #c08a1e;
+  --bad:      #c4402a;
+  --critical: #a82914;
+
+  --good-wash:        #eef7ef;
+  --good-wash-border: #d5e8d7;
+  --good-wash-ink:    #2f7a3d;
+  --note-wash:        #fdfaf4;
+  --note-wash-border: #f0e6d4;
+  --note-ink:         #6b5f47;
+  --note-icon:        #c19022;
+
+  --self-size: #4a453e;  /* the package's own bytes in the size rail — a neutral charcoal, deliberately outside the verdict ramp; barely shifts between themes */
+  --chip-bg:   #bdb7ad;
+
+  /* --- Color: language hues (stable across themes) ----------------------- */
+  --lang-java:      #c1741f;
+  --lang-kotlin:    #7a55b8;
+  --lang-scala:     #b8402c;
+  --lang-groovy:    #3f7f9e;
+  --lang-clojure:   #4f8a4a;
+  --lang-resources: #c9c4bb;
+}
+
+/* --- Color: dark --------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground:         #1a1714;
+    --surface:        #191613;
+    --surface-sunken: #1c1916;
+    --surface-row:    #1e1b17;
+    --track:          #221e1a;
+
+    --hairline:        #2b2621;
+    --hairline-soft:   #221e1a;
+    --hairline-strong: #302b25;
+    --hairline-tick:   #3a342c;
+
+    --ink:      #f0ece4;
+    --ink-2:    #c9c3b9;
+    --ink-3:    #a49d93;
+    --ink-4:    #8b847b;
+    --ink-5:    #79726a;
+    --ink-mute: #4a443c;
+
+    --accent:       #d94a22;
+    --accent-hover: #f07a4e;
+    --accent-wash:  #2a1c15;
+    --accent-wash-border: #46281c;
+
+    --inverse-ground: #100e0c;
+    --inverse-ink:    #ded8ce;
+
+    --good:     #4e9a58;
+    --warn:     #d8a12f;
+    --bad:      #c4402a;
+    --critical: #a82914;
+
+    --good-wash:        #151815;
+    --good-wash-border: #2c3b2e;
+    --good-wash-ink:    #5fae6c;
+    --note-wash:        #221d14;
+    --note-wash-border: #3a3020;
+    --note-ink:         #c2b38f;
+    --note-icon:        #c19022;
+
+    --self-size: #4a443c;
+    --chip-bg:   #4a443c;
+
+    --shadow-field: 0 6px 22px rgba(0, 0, 0, 0.35);
+    --shadow-menu:  0 18px 44px rgba(0, 0, 0, 0.55);
+  }
+}
+
+:root[data-theme="dark"] {
+  --ground:         #1a1714;
+  --surface:        #191613;
+  --surface-sunken: #1c1916;
+  --surface-row:    #1e1b17;
+  --track:          #221e1a;
+
+  --hairline:        #2b2621;
+  --hairline-soft:   #221e1a;
+  --hairline-strong: #302b25;
+  --hairline-tick:   #3a342c;
+
+  --ink:      #f0ece4;
+  --ink-2:    #c9c3b9;
+  --ink-3:    #a49d93;
+  --ink-4:    #8b847b;
+  --ink-5:    #79726a;
+  --ink-mute: #4a443c;
+
+  --accent:       #d94a22;
+  --accent-hover: #f07a4e;
+  --accent-wash:  #2a1c15;
+  --accent-wash-border: #46281c;
+
+  --inverse-ground: #100e0c;
+  --inverse-ink:    #ded8ce;
+
+  --good:     #4e9a58;
+  --warn:     #d8a12f;
+  --bad:      #c4402a;
+  --critical: #a82914;
+
+  --good-wash:        #151815;
+  --good-wash-border: #2c3b2e;
+  --good-wash-ink:    #5fae6c;
+  --note-wash:        #221d14;
+  --note-wash-border: #3a3020;
+  --note-ink:         #c2b38f;
+  --note-icon:        #c19022;
+
+  --self-size: #4a443c;
+  --chip-bg:   #4a443c;
+
+  --shadow-field: 0 6px 22px rgba(0, 0, 0, 0.35);
+  --shadow-menu:  0 18px 44px rgba(0, 0, 0, 0.55);
+}

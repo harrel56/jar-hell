@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #ffffff; }
+  * { box-sizing: border-box; }
+  a { color: #d94a22; text-decoration: none; }
+  a:hover { color: #b13a17; }
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #ffffff; color: #14120f; font-family: 'Inter Tight', system-ui, sans-serif; font-size: 15px; line-height: 1.5; text-wrap: pretty;">
+
+  <header style="position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 24px; height: 60px; padding: 0 28px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); border-bottom: 1px solid #eceae6;">
+    <a href="#" style="display: flex; align-items: center; gap: 9px; color: #14120f; font-size: 19px; font-weight: 700; letter-spacing: -0.025em;">
+      <span style="width: 24px; height: 24px; border-radius: 7px; background: #14120f; display: flex; align-items: center; justify-content: center;"><span style="width: 9px; height: 11px; background: #ff5c2b; clip-path: polygon(50% 0%, 100% 62%, 78% 100%, 22% 100%, 0% 62%);"></span></span>
+      <span>Jar<span style="color: #d94a22;">hell</span></span>
+    </a>
+    <div style="position: relative; flex: 1; max-width: 520px;">
+      <div style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 13px; background: #f7f6f4; border: 1px solid {{ searchBorder }}; border-radius: 9px;">
+        <input value="{{ searchQuery }}" onChange="{{ onSearch }}" onFocus="{{ onSearchFocus }}" onBlur="{{ onSearchBlur }}" placeholder="group:artifact" style="flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #14120f;" />
+        <span style="flex-shrink: 0; color: #8d877e; font-size: 12px;">⌕</span>
+      </div>
+      <sc-if value="{{ showSearchSuggest }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; left: 0; right: 0; top: 44px; z-index: 40; background: #ffffff; border: 1px solid #eceae6; border-radius: 11px; box-shadow: 0 18px 44px rgba(20,18,15,0.13); overflow: hidden;">
+          <sc-for list="{{ searchSuggestions }}" as="s" hint-placeholder-count="4">
+            <div style="display: flex; align-items: baseline; gap: 9px; padding: 9px 14px; border-bottom: 1px solid #f4f2ef; cursor: pointer; font-family: 'JetBrains Mono', monospace;" style-hover="background: #faf9f7;">
+              <span style="flex-shrink: 0; font-size: 11.5px; color: #a8a29a;">{{ s.group }}</span>
+              <span style="font-size: 13px; color: #14120f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ s.name }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noSearchResults }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 12px 14px; font-size: 13px; color: #8d877e;">Nothing analysed under that name yet — press Enter to queue it.</div>
+          </sc-if>
+        </div>
+      </sc-if>
+    </div>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6f6a62;">
+      <span style="padding: 6px 10px; border-radius: 7px; cursor: pointer;" style-hover="background: #f4f2ef;">API</span>
+      <span style="padding: 6px 10px; border-radius: 7px; cursor: pointer;" style-hover="background: #f4f2ef;">GitHub</span>
+      <span style="padding: 6px 10px; border-radius: 7px; cursor: pointer;" style-hover="background: #f4f2ef;">☀</span>
+    </div>
+  </header>
+
+  <div style="display: flex; align-items: flex-start; max-width: 1340px; margin: 0 auto;">
+
+    <aside style="width: 268px; flex-shrink: 0; position: sticky; top: 60px; align-self: flex-start; max-height: calc(100vh - 60px); overflow-y: auto; padding: 26px 20px 40px; border-right: 1px solid #eceae6;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; padding: 0 6px 12px;">
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8d877e;">Versions</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #a8a29a;">{{ versionTotal }}</span>
+      </div>
+
+      <sc-for list="{{ versionGroups }}" as="g" hint-placeholder-count="6">
+        <div style="border-top: 1px solid #f1efeb;">
+          <div onClick="{{ g.toggle }}" style="display: flex; align-items: center; gap: 9px; padding: 10px 6px; cursor: pointer; border-radius: 7px;" style-hover="background: #f7f6f4;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: {{ g.labelColor }};">{{ g.label }}</span>
+            <span style="font-size: 11.5px; color: #a8a29a;">{{ g.count }}</span>
+            <span style="margin-left: auto; font-size: 10px; color: #a8a29a;">{{ g.chevron }}</span>
+          </div>
+          <sc-if value="{{ g.open }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-direction: column; gap: 1px; padding: 0 0 8px 6px;">
+              <sc-for list="{{ g.versions }}" as="v" hint-placeholder-count="2">
+                <div onClick="{{ v.select }}" style="display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-left: 2px solid {{ v.rail }}; border-radius: 0 7px 7px 0; cursor: pointer; background: {{ v.bg }};" style-hover="background: #f4f2ef;">
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: {{ v.color }};">{{ v.name }}</span>
+                  <sc-if value="{{ v.analyzed }}" hint-placeholder-val="{{ false }}">
+                    <span style="margin-left: auto; font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #2f7a3d; background: #eef7ef; border: 1px solid #d5e8d7; padding: 2px 6px; border-radius: 20px;">Analyzed</span>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </aside>
+
+    <main style="flex: 1; min-width: 0; padding: 34px 40px 96px;">
+
+      <div style="display: flex; align-items: flex-start; gap: 36px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 340px;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #8d877e;">dev.harrel</div>
+          <div style="display: flex; align-items: center; gap: 12px; margin-top: 5px;">
+            <h1 style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 36px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1;">json-schema</h1>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #d94a22; background: #fdf2ee; border: 1px solid #f6ddd3; padding: 3px 9px; border-radius: 6px;">{{ selectedVersion }}</span>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: 10px; font-size: 12.5px; color: #8d877e;">
+            <span>Published <span style="font-family: 'JetBrains Mono', monospace; color: #4a453e;">27/02/2026</span></span>
+            <span style="width: 3px; height: 3px; border-radius: 50%; background: #cfcac2;"></span>
+            <span>Analysed <span style="font-family: 'JetBrains Mono', monospace; color: #4a453e;">23/08/2026</span></span>
+          </div>
+          <p style="margin: 14px 0 0; max-width: 520px; font-size: 16px; color: #4a453e;">Library for JSON schema validation</p>
+          <div style="display: flex; gap: 8px; margin-top: 18px; font-size: 13px;">
+            <a href="#" style="display: flex; align-items: center; gap: 7px; padding: 6px 12px; border: 1px solid #e6e3de; border-radius: 8px; color: #14120f;" style-hover="border-color: #14120f;">Homepage</a>
+            <a href="#" style="display: flex; align-items: center; gap: 7px; padding: 6px 12px; border: 1px solid #e6e3de; border-radius: 8px; color: #14120f;" style-hover="border-color: #14120f;">Source</a>
+            <a href="#" style="display: flex; align-items: center; gap: 7px; padding: 6px 12px; border: 1px solid #e6e3de; border-radius: 8px; color: #14120f;" style-hover="border-color: #14120f;">Issues</a>
+            <a href="#" style="display: flex; align-items: center; gap: 7px; padding: 6px 12px; border: 1px solid #e6e3de; border-radius: 8px; color: #14120f;" style-hover="border-color: #14120f;">Badges</a>
+          </div>
+        </div>
+
+        <div style="width: 340px; background: #14120f; border-radius: 11px; padding: 14px 16px;">
+          <div style="display: flex; gap: 16px; font-size: 12px; color: #8d877e; margin-bottom: 10px;">
+            <span style="color: #ffffff; font-weight: 600;">Gradle</span><span>Maven</span><span>SBT</span>
+            <span style="margin-left: auto; cursor: pointer;" style-hover="color: #ffffff;">copy</span>
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.65; color: #ded8ce; word-break: break-all;">implementation <span style="color: #9fc98a;">'dev.harrel:json-schema:1.9.1'</span></div>
+        </div>
+      </div>
+
+      <section style="margin-top: 38px; border: 1px solid #eceae6; border-radius: 14px; overflow: hidden;">
+        <div style="display: flex; align-items: center; gap: 10px 12px; flex-wrap: wrap; padding: 12px 22px; background: #faf9f7; border-bottom: 1px solid #eceae6;">
+          <span style="width: 3px; height: 13px; border-radius: 2px; background: #d94a22; flex-shrink: 0;"></span><span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8d877e; white-space: nowrap;">Effective cost</span>
+          <span style="font-size: 12.5px; color: #a8a29a; white-space: nowrap;">{{ scenarioLabel }}</span>
+        </div>
+        <sc-if value="{{ previewing }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; gap: 10px; padding: 10px 22px; background: #fdfaf4; border-bottom: 1px solid #f0e6d4; font-size: 12.5px; color: #6b5f47;">
+            <span style="flex-shrink: 0; color: #c19022;">ⓘ</span>
+            <span>{{ previewNote }}</span>
+          </div>
+        </sc-if>
+        <div style="display: grid; gap: 1px; background: #eceae6;">
+
+          <div style="background: #ffffff; padding: 26px 24px 24px;">
+            <div style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: baseline; gap: 9px; white-space: nowrap;">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 68px; font-weight: 500; letter-spacing: -0.045em; line-height: 0.9;">{{ sizeValue }}</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 24px; color: #6f6a62;">{{ sizeUnit }}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; padding-bottom: 5px;">
+                <span style="font-size: 15px; font-weight: 600;">Effective size</span>
+                <span style="font-size: 11.5px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 8px; border-radius: 20px; color: #ffffff; background: {{ bandColor }};">{{ bandLabel }}</span>
+              </div>
+            </div>
+            <div style="margin-top: 22px; position: relative; height: 14px; border-radius: 3px; background: #f4f2ef;">
+              <div style="position: absolute; left: 11.5%; top: -4px; bottom: -4px; width: 1px; background: #e0dcd6;"></div>
+              <div style="position: absolute; left: 50.3%; top: -4px; bottom: -4px; width: 1px; background: #e0dcd6;"></div>
+              <div style="position: absolute; left: 88.8%; top: -4px; bottom: -4px; width: 1px; background: #e0dcd6;"></div>
+              <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ fillWidth }}; display: flex; gap: 2px; border-radius: 3px; overflow: hidden;">
+                <div style="flex: {{ selfFlex }}; background: #4a453e;"></div>
+                <div style="flex: {{ depsFlex }}; background: {{ bandColor }};"></div>
+              </div>
+            </div>
+            <div style="margin-top: 6px; position: relative; height: 14px; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #a8a29a;">
+              <span style="position: absolute; left: 11.5%; transform: translateX(-50%);">100KB</span>
+              <span style="position: absolute; left: 50.3%; transform: translateX(-50%);">1MB</span>
+              <span style="position: absolute; left: 88.8%; transform: translateX(-50%);">10MB</span>
+            </div>
+            <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: #6f6a62;">
+              <span style="display: flex; align-items: center; gap: 7px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #4a453e; flex-shrink: 0;"></span>{{ selfCaption }}</span>
+              <span style="display: flex; align-items: center; gap: 7px; color: {{ depsCaptionColor }};"><span style="width: 9px; height: 9px; border-radius: 2px; background: {{ depsSwatch }}; flex-shrink: 0;"></span>{{ depsCaption }}</span>
+            </div>
+          </div>
+
+          <div style="background: #ffffff; padding: 22px 24px 20px;">
+            <div style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: baseline; gap: 9px; white-space: nowrap;">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 48px; font-weight: 500; letter-spacing: -0.04em; line-height: 0.9;">{{ requiredCount }}</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 18px; color: #6f6a62;">{{ requiredUnit }}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; padding-bottom: 4px;">
+                <span style="font-size: 15px; font-weight: 600;">Required dependencies</span>
+                <span style="font-size: 11.5px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 8px; border-radius: 20px; color: #ffffff; background: {{ requiredColor }};">{{ requiredVerdict }}</span>
+              </div>
+            </div>
+            <div style="margin-top: 16px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; font-size: 12.5px; color: #6f6a62;">
+              <span>{{ optionalCount }} optional, none pulled in unless you ask</span>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1px; background: #eceae6;">
+
+          <div style="background: #ffffff; padding: 22px 24px 20px;">
+            <div style="display: flex; align-items: baseline; gap: 8px; white-space: nowrap;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 500; letter-spacing: -0.035em; line-height: 1;">{{ javaValue }}</span>
+            </div>
+            <div style="margin-top: 12px; font-size: 14px; font-weight: 600;">Effective bytecode version</div>
+            <div style="margin-top: 16px; font-size: 12.5px; color: #6f6a62;">{{ javaRunsOn }}</div>
+          </div>
+
+          <div style="background: #ffffff; padding: 22px 24px 20px;">
+            <div style="display: flex; align-items: baseline; gap: 8px; white-space: nowrap;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 500; letter-spacing: -0.035em; line-height: 1;">{{ licenseValue }}</span>
+            </div>
+            <div style="margin-top: 12px; display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 14px; font-weight: 600;">Effective license</span>
+              <span style="font-size: 11.5px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 8px; border-radius: 20px; color: #ffffff; background: {{ licenseColor }};">{{ licenseVerdict }}</span>
+            </div>
+            <div style="margin-top: 16px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-height: 26px;">
+              <sc-for list="{{ licenseChips }}" as="l" hint-placeholder-count="1">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 4px 9px; border-radius: 5px; background: #bdb7ad; color: #14120f;">{{ l.label }}</span>
+              </sc-for>
+            </div>
+            <div style="margin-top: 10px; font-size: 12.5px; color: #8d877e;">{{ licenseCountLabel }}</div>
+          </div>
+          </div>
+        </div>
+
+
+      </section>
+
+      <section style="margin-top: 38px; border: 1px solid #eceae6; border-radius: 14px; overflow: hidden;">
+        <div style="display: flex; align-items: center; gap: 10px 12px; flex-wrap: wrap; padding: 12px 22px; background: #faf9f7; border-bottom: 1px solid #eceae6;">
+          <span style="width: 3px; height: 13px; border-radius: 2px; background: #d94a22; flex-shrink: 0;"></span><span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8d877e; white-space: nowrap;">Inside this jar</span>
+          <span style="font-size: 12.5px; color: #a8a29a;">{{ jarFileName }} only — dependencies excluded</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1px; background: #eceae6;">
+
+          <div style="background: #ffffff; padding: 24px 24px 20px;">
+            <div style="display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: baseline; gap: 9px; white-space: nowrap;">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 48px; font-weight: 500; letter-spacing: -0.04em; line-height: 0.9; color: {{ topLangColor }};">{{ topLangName }}</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 20px; color: #6f6a62;">{{ topLangPct }}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; padding-bottom: 4px;">
+                <span style="font-size: 15px; font-weight: 600;">Contents</span>
+                <span style="font-size: 12.5px; color: #8d877e;">{{ entryTotal }} entries</span>
+              </div>
+            </div>
+
+            <div style="margin-top: 20px; display: flex; height: 12px; gap: 2px; border-radius: 3px; overflow: hidden; background: #f4f2ef;">
+              <sc-for list="{{ langs }}" as="l" hint-placeholder-count="2">
+                <div title="{{ l.name }}" style="width: {{ l.sizePct }}; background: {{ l.swatch }};"></div>
+              </sc-for>
+            </div>
+
+            <div style="margin-top: 16px; display: grid; grid-template-columns: minmax(0,1fr) 72px 82px; column-gap: 12px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #a8a29a;">
+              <div>Kind</div>
+              <div style="text-align: right;">Entries</div>
+              <div style="text-align: right;">% of size</div>
+            </div>
+            <sc-for list="{{ langs }}" as="l" hint-placeholder-count="2">
+              <div style="display: grid; grid-template-columns: minmax(0,1fr) 72px 82px; column-gap: 12px; align-items: center; padding: 8px 0; border-top: 1px solid #f4f2ef; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #4a453e;">
+                <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                  <span style="width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; background: {{ l.swatch }};"></span>
+                  <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #14120f;">{{ l.name }}</span>
+                </div>
+                <div style="text-align: right; color: #8d877e;">{{ l.entries }}</div>
+                <div style="text-align: right; color: #14120f;">{{ l.sizePct }}</div>
+              </div>
+            </sc-for>
+            <div style="margin-top: 10px; font-size: 12.5px; color: #8d877e;">{{ compressionNote }}</div>
+          </div>
+
+          <div style="background: #ffffff; padding: 24px 24px 20px;">
+            <div style="display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: baseline; gap: 9px; white-space: nowrap;">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 48px; font-weight: 500; letter-spacing: -0.04em; line-height: 0.9; color: #4a453e;">{{ publicPctRounded }}</span>
+                <span style="font-size: 15px; font-weight: 600; color: #4a453e;">of classes are public</span>
+              </div>
+            </div>
+
+            <div style="margin-top: 20px; display: flex; height: 12px; gap: 2px; border-radius: 3px; overflow: hidden; background: #f4f2ef;">
+              <div style="width: {{ publicPct }}; background: #4a453e;"></div>
+              <div style="flex: 1; background: #d8cfc2;"></div>
+            </div>
+            <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: #6f6a62;">
+              <span style="display: flex; align-items: center; gap: 7px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #4a453e; flex-shrink: 0;"></span>{{ publicCaption }}</span>
+              <span style="display: flex; align-items: center; gap: 7px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #d8cfc2; flex-shrink: 0;"></span>{{ internalCaption }}</span>
+            </div>
+            <div style="margin-top: 10px; font-size: 12.5px; color: #8d877e;">{{ apiNote }}</div>
+
+            <div style="margin-top: 18px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #a8a29a;">Public types by kind</div>
+            <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px;">
+              <sc-for list="{{ kinds }}" as="k" hint-placeholder-count="6">
+                <div style="padding: 10px 12px; border: 1px solid #eceae6; border-radius: 9px; background: #fbfaf8;">
+                  <div style="font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 500; letter-spacing: -0.03em; color: #4a453e;">{{ k.count }}</div>
+                  <div style="margin-top: 2px; font-size: 12px; color: #6f6a62;">{{ k.label }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1px; background: #eceae6; border-top: 1px solid #eceae6;">
+          <sc-for list="{{ jarFacts }}" as="f" hint-placeholder-count="4">
+            <div style="background: #ffffff; padding: 15px 20px 16px; min-width: 0;">
+              <div style="font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #a8a29a;">{{ f.label }}</div>
+              <div style="margin-top: 7px; display: flex; align-items: center; gap: 8px; min-width: 0;">
+                <sc-if value="{{ f.flag }}" hint-placeholder-val="{{ false }}">
+                  <span style="width: 15px; height: 15px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 9.5px; font-weight: 700; color: #ffffff; background: {{ f.dot }};">{{ f.glyph }}</span>
+                </sc-if>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; color: {{ f.valueColor }}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ f.value }}</span>
+              </div>
+              <div style="margin-top: 5px; font-size: 12px; color: #8d877e;">{{ f.note }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="padding: 14px 24px 16px; background: #ffffff; border-top: 1px solid #eceae6;">
+          <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8d877e;">Published alongside</div>
+          <div style="margin-top: 11px; display: flex; flex-wrap: wrap; gap: 8px 10px;">
+            <sc-for list="{{ artifactFlags }}" as="f" hint-placeholder-count="5">
+              <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px 7px 10px; border: 1px solid {{ f.border }}; border-radius: 9px; background: {{ f.bg }};">
+                <span style="width: 15px; height: 15px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 9.5px; font-weight: 700; color: #ffffff; background: {{ f.dot }};">{{ f.glyph }}</span>
+                <span style="font-size: 13px; color: {{ f.labelColor }};">{{ f.label }}</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #a8a29a;">{{ f.detail }}</span>
+                <sc-if value="{{ f.link }}" hint-placeholder-val="{{ false }}">
+                  <a href="#" style="font-size: 12.5px; font-weight: 500;">{{ f.linkLabel }}</a>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid #eceae6; background: #faf9f7;">
+          <div onClick="{{ toggleServices }}" style="display: flex; align-items: center; gap: 12px; padding: 13px 22px; cursor: pointer;" style-hover="background: #f4f2ef;">
+            <span style="font-size: 13px; font-weight: 600;">Services provided</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #4a453e;">{{ serviceCount }}</span>
+            <span style="font-size: 12.5px; color: #8d877e;">{{ serviceNote }}</span>
+            <span style="margin-left: auto; font-size: 10px; color: #a8a29a;">{{ servicesChevron }}</span>
+          </div>
+          <sc-if value="{{ servicesOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 0 22px 14px;">
+              <sc-for list="{{ services }}" as="s" hint-placeholder-count="2">
+                <div style="display: flex; align-items: baseline; gap: 12px; padding: 9px 0; border-top: 1px solid #eceae6; min-width: 0;">
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #14120f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ s.interface }}</span>
+                  <span style="margin-left: auto; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #8d877e;">{{ s.impls }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </section>
+
+      <section style="margin-top: 38px;">
+        <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+          <span style="width: 3px; height: 18px; border-radius: 2px; background: #d94a22; flex-shrink: 0;"></span><h2 style="margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.02em;">Dependency explorer</h2>
+          <div style="margin-left: auto; display: flex; align-items: center; gap: 6px;">
+            <span onClick="{{ toggleOptional }}" style="padding: 6px 11px; font-size: 12.5px; border: 1px solid #e6e3de; border-radius: 7px; cursor: pointer; color: {{ optionalFilterColor }}; background: {{ optionalFilterBg }};" style-hover="border-color: #cfcac2;">{{ optionalFilterLabel }}</span>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; display: flex; gap: 11px; padding: 12px 16px; background: #fdfaf4; border: 1px solid #f0e6d4; border-radius: 10px; font-size: 13px; color: #6b5f47;">
+          <span style="flex-shrink: 0; color: #c19022;">ⓘ</span>
+          <span>The tree does not account for excluded packages or version conflicts, so resolved builds may differ.</span>
+        </div>
+
+        <div style="margin-top: 14px; border: 1px solid #eceae6; border-radius: 12px; overflow: hidden;">
+          <div style="display: grid; grid-template-columns: minmax(0,1fr) 90px 104px; column-gap: 20px; padding: 11px 18px; background: #faf9f7; border-bottom: 1px solid #eceae6; font-size: 11.5px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: #8d877e;">
+            <div>Package</div>
+            <div style="text-align: right;">Size</div>
+            <div style="text-align: right;">License</div>
+          </div>
+
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="8">
+            <div style="display: grid; grid-template-columns: minmax(0,1fr) 90px 104px; column-gap: 20px; align-items: center; padding: 0 18px; border-bottom: 1px solid #f4f2ef; background: {{ r.rowBg }};" style-hover="background: #faf9f7;">
+              <div style="display: flex; align-items: stretch; min-width: 0;">
+                <div style="width: {{ r.indent }}; flex-shrink: 0;"></div>
+                <div onClick="{{ r.toggle }}" style="display: flex; align-items: center; gap: 9px; min-width: 0; padding: 10px 0; cursor: {{ r.cursor }};">
+                  <span style="width: 17px; height: 17px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border: 1px solid {{ r.knobBorder }}; border-radius: 50%; font-size: 11px; line-height: 1; color: {{ r.knobColor }}; background: #ffffff;">{{ r.knob }}</span>
+                  <span title="{{ r.name }}" style="font-family: 'JetBrains Mono', monospace; font-size: 13.5px; color: {{ r.nameColor }}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 1; min-width: 0;">{{ r.name }}</span>
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #a8a29a; flex-shrink: 0; white-space: nowrap;">{{ r.version }}</span>
+                  <sc-if value="{{ r.optional }}" hint-placeholder-val="{{ false }}">
+                    <span style="flex-shrink: 0; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #8d877e; border: 1px solid #e6e3de; padding: 2px 6px; border-radius: 20px;">Optional</span>
+                  </sc-if>
+                  <sc-if value="{{ r.hiddenChildren }}" hint-placeholder-val="{{ false }}">
+                    <span style="flex-shrink: 0; white-space: nowrap; font-size: 11px; color: #a8a29a;">{{ r.hiddenChildrenLabel }}</span>
+                  </sc-if>
+                </div>
+              </div>
+              <div style="text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: {{ r.metaColor }};">{{ r.size }}</div>
+              <div style="text-align: right; font-size: 12px; color: {{ r.metaColor }};">{{ r.license }}</div>
+            </div>
+          </sc-for>
+
+          <div style="display: flex; align-items: center; gap: 10px; padding: 12px 18px; background: #faf9f7; font-size: 12.5px; color: #8d877e;">
+            <span style="margin-left: auto;">Click a node to expand · optional branches are dimmed until included</span>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;dataSample&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Real data&quot;,&quot;With Jakarta provider&quot;,&quot;Kotlin + full stack&quot;],&quot;default&quot;:&quot;Real data&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Sample data&quot;}}">
+const TREE = {
+  name: 'json-schema', version: '1.9.1', size: '211.01 KB', bytecode: 'Java 8', license: 'MIT',
+  children: [
+    { name: 'jackson-databind', version: '2.21.1', optional: true, size: '1.68 MB', bytecode: 'Java 8', license: 'Apache-2.0', children: [
+      { name: 'jackson-annotations', version: '2.21', size: '78.5 KB', bytecode: 'Java 8', license: 'Apache-2.0' },
+      { name: 'jackson-core', version: '2.21.1', size: '592 KB', bytecode: 'Java 8', license: 'Apache-2.0' }
+    ]},
+    { name: 'gson', version: '2.13.2', optional: true, size: '293 KB', bytecode: 'Java 8', license: 'Apache-2.0', children: [
+      { name: 'error_prone_annotations', version: '2.38.0', size: '18.2 KB', bytecode: 'Java 8', license: 'Apache-2.0' }
+    ]},
+    { name: 'jmail', version: '2.1.0', optional: true, size: '46.1 KB', bytecode: 'Java 8', license: 'MIT' },
+    { name: 'jakarta.json-api', version: '2.1.3', optional: true, size: '32.4 KB', bytecode: 'Java 8', license: 'EPL-2.0' },
+    { name: 'json-smart', version: '2.6.0', optional: true, size: '124 KB', bytecode: 'Java 8', license: 'Apache-2.0', children: [
+      { name: 'accessors-smart', version: '2.6.0', size: '30.1 KB', bytecode: 'Java 8', license: 'Apache-2.0', children: [
+        { name: 'asm', version: '9.9', size: '124 KB', bytecode: 'Java 8', license: 'BSD-3' }
+      ]}
+    ]},
+    { name: 'jettison', version: '1.5.4', optional: true, size: '90.3 KB', bytecode: 'Java 8', license: 'Apache-2.0', children: [
+      { name: 'stax-api', version: '1.0-2', size: '26.5 KB', bytecode: 'Java 5', license: 'Apache-2.0' }
+    ]},
+    { name: 'kotlinx-serialization-json', version: '1.10.0', optional: true, size: '1.02 MB', bytecode: 'Java 8', license: 'Apache-2.0', children: [
+      { name: 'kotlinx-serialization-core', version: '1.10.0', size: '712 KB', bytecode: 'Java 8', license: 'Apache-2.0', children: [
+        { name: 'kotlin-stdlib', version: '2.2.20', size: '1.72 MB', bytecode: 'Java 8', license: 'Apache-2.0', children: [
+          { name: 'annotations', version: '13.0', size: '17.5 KB', bytecode: 'Java 5', license: 'Apache-2.0' }
+        ]}
+      ]}
+    ]},
+    { name: 'json', version: '20251224', optional: true, size: '78.9 KB', bytecode: 'Java 8', license: 'Public Domain' },
+    { name: 'snakeyaml', version: '2.6', optional: true, size: '334 KB', bytecode: 'Java 8', license: 'Apache-2.0' }
+  ]
+};
+
+const SEARCH_POOL = [
+  { group: 'dev.harrel', name: 'json-schema' },
+  { group: 'com.fasterxml.jackson.core', name: 'jackson-databind' },
+  { group: 'com.fasterxml.jackson.core', name: 'jackson-core' },
+  { group: 'com.google.code.gson', name: 'gson' },
+  { group: 'org.apache.logging.log4j', name: 'log4j-core' },
+  { group: 'org.apache.logging.log4j', name: 'log4j-api' },
+  { group: 'org.yaml', name: 'snakeyaml' },
+  { group: 'net.minidev', name: 'json-smart' },
+  { group: 'io.avaje', name: 'avaje-jsonb' },
+  { group: 'org.jetbrains.kotlinx', name: 'kotlinx-serialization-json' }
+];
+
+const ALL_VERSIONS = [
+  '1.9.1', '1.9.0',
+  '1.8.2', '1.8.1', '1.8.0',
+  '1.7.3', '1.7.2', '1.7.1', '1.7.0',
+  '1.6.1', '1.6.0',
+  '1.5.2', '1.5.1', '1.5.0',
+  '1.4.3', '1.4.2', '1.4.1', '1.4.0',
+  '1.3.4', '1.3.3', '1.3.2', '1.3.1', '1.3.0',
+  '1.2.2', '1.2.1', '1.2.0',
+  '1.1.0',
+  '1.0.4', '1.0.3', '1.0.2', '1.0.1', '1.0.0'
+];
+
+const GROUPS = ALL_VERSIONS.reduce((acc, v) => {
+  const label = v.split('.').slice(0, 2).join('.') + '.x';
+  let g = acc.find(x => x.label === label);
+  if (!g) { g = { label, versions: [] }; acc.push(g); }
+  g.versions.push(v);
+  return acc;
+}, []);
+
+const JAR = {
+  file: 'json-schema-1.9.1.jar',
+  languages: [
+    { name: 'Java', entries: 168, bytes: 402_100, packed: 176_400 },
+    { name: 'Resources', entries: 11, bytes: 21_300, packed: 8_900 }
+  ],
+  publicTypes: 61,
+  internalTypes: 107,
+  kinds: [
+    { label: 'Class', count: 22 },
+    { label: 'Interface', count: 19 },
+    { label: 'Abstract class', count: 6 },
+    { label: 'Record', count: 9 },
+    { label: 'Enum', count: 4 },
+    { label: 'Annotation', count: 1 }
+  ],
+  services: [
+    { interface: 'dev.harrel.jsonschema.providers.JsonNodeFactoryProvider', impls: 3 },
+    { interface: 'java.util.spi.ResourceBundleProvider', impls: 1 }
+  ],
+  module: { type: 'named', name: 'dev.harrel.jsonschema' },
+  builtWith: 'JDK 21.0.4',
+  multiRelease: false,
+  entryPoint: null
+};
+
+const JAR_MIXED = {
+  file: 'json-schema-1.9.1.jar',
+  languages: [
+    { name: 'Java', entries: 96, bytes: 214_800, packed: 94_100 },
+    { name: 'Kotlin', entries: 74, bytes: 188_200, packed: 79_600 },
+    { name: 'Scala', entries: 18, bytes: 61_400, packed: 24_300 },
+    { name: 'Groovy', entries: 9, bytes: 22_600, packed: 9_400 },
+    { name: 'Resources', entries: 24, bytes: 44_900, packed: 17_800 }
+  ],
+  publicTypes: 148,
+  internalTypes: 40,
+  kinds: [
+    { label: 'Class', count: 71 },
+    { label: 'Interface', count: 32 },
+    { label: 'Abstract class', count: 14 },
+    { label: 'Record', count: 21 },
+    { label: 'Enum', count: 7 },
+    { label: 'Annotation', count: 3 }
+  ],
+  services: [
+    { interface: 'dev.harrel.jsonschema.providers.JsonNodeFactoryProvider', impls: 3 },
+    { interface: 'java.nio.file.spi.FileSystemProvider', impls: 1 },
+    { interface: 'javax.annotation.processing.Processor', impls: 2 }
+  ],
+  module: { type: 'automatic', name: 'dev.harrel.jsonschema' },
+  builtWith: 'JDK 17.0.11',
+  multiRelease: true,
+  entryPoint: 'dev.harrel.jsonschema.cli.Main'
+};
+
+// muted-vivid takes on each language's own brand hue, kept in the page's warm register
+const LANG_COLOR = {
+  Java: '#c1741f',
+  Kotlin: '#7a55b8',
+  Scala: '#b8402c',
+  Groovy: '#3f7f9e',
+  Clojure: '#4f8a4a',
+  Resources: '#c9c4bb'
+};
+
+function countNodes(node) {
+  return 1 + (node.children || []).reduce((a, c) => a + countNodes(c), 0);
+}
+function maxDepth(node) {
+  return 1 + (node.children || []).reduce((a, c) => Math.max(a, maxDepth(c)), 0);
+}
+
+function pathsOf(node, prefix, out) {
+  const id = prefix + '/' + node.name;
+  if (node.children && node.children.length) out.push(id);
+  (node.children || []).forEach(c => pathsOf(c, id, out));
+  return out;
+}
+
+class Component extends DCLogic {
+  state = {
+    expanded: { '/json-schema': true, '/json-schema/jackson-databind': true },
+    openGroup: '1.9.x',
+    selected: '1.9.1',
+    hideOptional: false,
+    query: 'dev.harrel:json-schema',
+    searchFocused: false,
+    kindsOpen: true,
+    servicesOpen: false
+  };
+
+  flatten(node, prefix, depth, guides, isLast, out) {
+    const id = prefix + '/' + node.name;
+    const kids = (node.children || []).filter(c => !(this.state.hideOptional && c.optional));
+    const hasKids = kids.length > 0;
+    const open = !!this.state.expanded[id];
+    out.push({ node, id, depth, guides: guides.slice(), hasKids, open, childCount: kids.length, isLast });
+    if (open && hasKids) {
+      kids.forEach((c, i) => {
+        const last = i === kids.length - 1;
+        this.flatten(c, id, depth + 1, guides.concat([!last]), last, out);
+      });
+    }
+    return out;
+  }
+
+  renderVals() {
+    const flat = this.flatten(TREE, '', 0, [], true, []);
+    const dim = '#a8a29a';
+
+    const rows = flat.map(r => {
+      const n = r.node;
+      const optionalBranch = n.optional;
+      return {
+        name: n.name,
+        version: n.version,
+        size: n.size,
+        bytecode: n.bytecode,
+        license: n.license,
+        optional: !!n.optional,
+        nameColor: optionalBranch ? '#4a453e' : '#14120f',
+        metaColor: optionalBranch ? dim : '#6f6a62',
+        rowBg: r.depth === 0 ? '#fdfcfb' : '#ffffff',
+        knob: r.hasKids ? (r.open ? '−' : '+') : '',
+        knobBorder: r.hasKids ? '#b5afa6' : '#e0dcd6',
+        knobColor: '#4a453e',
+        cursor: r.hasKids ? 'pointer' : 'default',
+        hiddenChildren: r.hasKids && !r.open,
+        hiddenChildrenLabel: r.childCount + (r.childCount === 1 ? ' child' : ' children'),
+        indent: (r.depth * 22) + 'px',
+        showTick: r.depth > 0,
+        toggle: r.hasKids ? () => this.setState(s => ({
+          expanded: Object.assign({}, s.expanded, { [r.id]: !s.expanded[r.id] })
+        })) : undefined
+      };
+    });
+
+    const versionGroups = GROUPS.map(g => {
+      const open = this.state.openGroup === g.label;
+      return {
+        label: g.label,
+        labelColor: open ? '#d94a22' : '#14120f',
+        count: g.versions.length + (g.versions.length === 1 ? ' item' : ' items'),
+        chevron: open ? '▲' : '▼',
+        open,
+        toggle: () => this.setState(s => ({ openGroup: s.openGroup === g.label ? null : g.label })),
+        versions: g.versions.map(v => ({
+          name: v,
+          analyzed: v === this.state.selected,
+          bg: v === this.state.selected ? '#f7f6f4' : 'transparent',
+          rail: v === this.state.selected ? '#d94a22' : 'transparent',
+          color: v === this.state.selected ? '#d94a22' : '#4a453e',
+          select: () => this.setState({ selected: v })
+        }))
+      };
+    });
+
+    const allPaths = pathsOf(TREE, '', []);
+    const totalNodes = countNodes(TREE);
+    const depth = maxDepth(TREE);
+
+    const SCENARIOS = [
+      { tab: 'Real data', depsKB: 0, required: 0, javaFloor: 8,
+        licenses: ['MIT'], licenseVerdict: 'Permissive', licenseColor: '#3f7a46',
+        licenseNote: 'No copyleft or attribution-heavy terms inherited.',
+        floorNote: "No dependency raises the floor above the package's own Java 8." },
+      { tab: 'With Jakarta provider', depsKB: 1331.2, required: 6, javaFloor: 17,
+        licenses: ['MIT', 'Apache-2.0', 'EPL-2.0'], licenseVerdict: 'Mixed', licenseColor: '#c08a1e',
+        licenseNote: 'EPL-2.0 is weak copyleft — file-level obligations if you modify those sources.',
+        floorNote: 'jakarta.json-api 2.1.3 raises the floor from Java 8 to Java 17.' },
+      { tab: 'Kotlin + full stack', depsKB: 11980, required: 34, javaFloor: 21,
+        licenses: ['MIT', 'Apache-2.0', 'EPL-2.0', 'BSD-3', 'LGPL-2.1'], licenseVerdict: 'Copyleft', licenseColor: '#a82914',
+        licenseNote: 'LGPL-2.1 arrives transitively — review before shipping a closed distribution.',
+        floorNote: 'kotlin-stdlib 2.2.20 raises the floor to Java 21, dropping 8, 11 and 17.' }
+    ];
+    const scIdx = Math.max(0, SCENARIOS.findIndex(s => s.tab === (this.props.dataSample || 'Real data')));
+    const sc = SCENARIOS[scIdx];
+
+    const selfKB = 211.01;
+    const depsKB = sc.depsKB;
+    const totalKB = selfKB + depsKB;
+    const fmt = kb => kb === 0 ? 'none' : kb >= 1024 ? (kb / 1024).toFixed(2) + ' MB' : kb.toFixed(2) + ' KB';
+    // log scale, 50 KB → 20 MB
+    const pos = kb => Math.max(2, Math.min(100, (Math.log10(Math.max(kb, 50) / 50) / Math.log10(20480 / 50)) * 100));
+    const fillPct = pos(totalKB);
+    const band = totalKB < 512
+      ? { color: '#3f7a46', label: 'Light', note: 'Well under the 512 KB mark. Nothing to think about.' }
+      : totalKB < 2048
+        ? { color: '#c08a1e', label: 'Moderate', note: 'Noticeable, but normal for a library with a provider attached.' }
+        : totalKB < 8192
+          ? { color: '#bf5a12', label: 'Heavy', note: 'Heavy enough to feel in build times and container images.' }
+          : { color: '#a82914', label: 'Very heavy', note: 'This dominates whatever it is added to.' };
+
+    const LICENSE_RANK = { 'Public Domain': 0, 'MIT': 1, 'BSD-3': 1, 'Apache-2.0': 2, 'EPL-2.0': 3, 'MPL-2.0': 3, 'LGPL-2.1': 4, 'GPL-3.0': 5, 'AGPL-3.0': 6 };
+    const effectiveLicense = sc.licenses.slice().sort((a, b) => (LICENSE_RANK[b] ?? 3) - (LICENSE_RANK[a] ?? 3))[0];
+
+    const ARTIFACT = [
+      { label: 'Sources', present: true, detail: 'json-schema-1.9.1-sources.jar' },
+      { label: 'Javadoc', present: true, link: true, linkLabel: 'Browse ↗' },
+      { label: 'Gradle module metadata', present: true, detail: '.module' },
+      { label: 'Signed', present: true, detail: 'PGP .asc' },
+      { label: 'Checksums', present: true, detail: 'sha1 · sha256 · sha512' }
+    ];
+
+    const q = this.state.query.trim().toLowerCase();
+    const matches = q ? SEARCH_POOL.filter(p => (p.group + ':' + p.name).toLowerCase().includes(q)).slice(0, 5) : [];
+    const showSearch = this.state.searchFocused && q.length > 0;
+
+    const jar = scIdx === 2 ? JAR_MIXED : JAR;
+    const kb = b => b >= 1024 * 1024 ? (b / 1048576).toFixed(2) + ' MB' : Math.round(b / 1024) + ' KB';
+    const entryTotal = jar.languages.reduce((a, l) => a + l.entries, 0);
+    const bytesTotal = jar.languages.reduce((a, l) => a + l.bytes, 0);
+    const packedTotal = jar.languages.reduce((a, l) => a + l.packed, 0);
+    const typeTotal = jar.publicTypes + jar.internalTypes;
+    const publicShare = jar.publicTypes / typeTotal;
+    const kindMax = Math.max.apply(null, jar.kinds.map(k => k.count));
+    const topLang = jar.languages.slice().sort((a, b) => b.bytes - a.bytes)[0];
+    const moduleLabel = { named: 'Named module', automatic: 'Automatic module', unnamed: 'Unnamed' }[jar.module.type];
+
+    return {
+      rows,
+      versionGroups,
+      jarFileName: jar.file,
+      entryTotal: String(entryTotal),
+      langs: jar.languages.map(l => ({
+        name: l.name,
+        swatch: LANG_COLOR[l.name] || '#b5afa6',
+        entries: String(l.entries),
+        sizePct: (l.bytes / bytesTotal * 100).toFixed(1) + '%'
+      })),
+      topLangName: topLang.name,
+      topLangPct: Math.round(topLang.bytes / bytesTotal * 100) + '%',
+      topLangColor: LANG_COLOR[topLang.name] || '#4a453e',
+      compressionNote: kb(bytesTotal) + ' uncompressed, ' + kb(packedTotal) + ' packed — '
+        + Math.round((1 - packedTotal / bytesTotal) * 100) + '% saved',
+      publicCount: String(jar.publicTypes),
+      publicPct: (publicShare * 100).toFixed(1) + '%',
+      publicPctRounded: Math.round(publicShare * 100) + '%',
+      publicCaption: jar.publicTypes + ' public types',
+      internalCaption: jar.internalTypes + ' package-private or internal',
+      apiVerdict: publicShare < 0.25 ? 'Tight' : publicShare < 0.6 ? 'Open' : 'Wide open',
+      apiColor: publicShare < 0.25 ? '#3f7a46' : publicShare < 0.6 ? '#c08a1e' : '#bf5a12',
+      apiNote: Math.round(publicShare * 100) + '% of ' + typeTotal
+        + ' types are reachable from outside the jar.',
+      kinds: jar.kinds.map(k => ({
+        label: k.label,
+        count: String(k.count),
+        pct: (k.count / kindMax * 100).toFixed(1) + '%'
+      })),
+      kindsOpen: this.state.kindsOpen,
+      kindsChevron: this.state.kindsOpen ? '▲' : '▼',
+      toggleKinds: () => this.setState(s => ({ kindsOpen: !s.kindsOpen })),
+      services: jar.services.map(s => ({
+        interface: s.interface,
+        impls: s.impls + (s.impls === 1 ? ' impl' : ' impls')
+      })),
+      serviceCount: String(jar.services.length),
+      serviceNote: jar.services.length === 0
+        ? 'No META-INF/services entries'
+        : 'declared in META-INF/services',
+      servicesOpen: this.state.servicesOpen,
+      servicesChevron: this.state.servicesOpen ? '▲' : '▼',
+      toggleServices: () => this.setState(s => ({ servicesOpen: !s.servicesOpen })),
+      jarFacts: [
+        { label: 'JPMS module', value: moduleLabel,
+          note: jar.module.name || 'no module name declared',
+          flag: true, glyph: jar.module.type === 'unnamed' ? '–' : '✓',
+          dot: jar.module.type === 'unnamed' ? '#c2beb7' : '#3f7a46',
+          valueColor: jar.module.type === 'unnamed' ? '#6f6a62' : '#14120f' },
+        { label: 'Built with', value: jar.builtWith, note: 'from class file major version',
+          valueColor: '#14120f' },
+        { label: 'Multi-release', value: jar.multiRelease ? 'Yes' : 'No',
+          note: jar.multiRelease ? 'versioned classes under META-INF/versions' : 'single class set for all JDKs',
+          flag: true, glyph: jar.multiRelease ? '✓' : '–',
+          dot: jar.multiRelease ? '#3f7a46' : '#c2beb7',
+          valueColor: jar.multiRelease ? '#14120f' : '#6f6a62' },
+        { label: 'Entry point', value: jar.entryPoint || 'None',
+          note: jar.entryPoint ? 'runnable with java -jar' : 'library only, not executable',
+          flag: true, glyph: jar.entryPoint ? '✓' : '–',
+          dot: jar.entryPoint ? '#3f7a46' : '#c2beb7',
+          valueColor: jar.entryPoint ? '#14120f' : '#6f6a62' },
+      ],
+      searchQuery: this.state.query,
+      onSearch: e => this.setState({ query: e.target.value }),
+      onSearchFocus: () => this.setState({ searchFocused: true }),
+      onSearchBlur: () => setTimeout(() => this.setState({ searchFocused: false }), 120),
+      searchBorder: this.state.searchFocused ? '#d94a22' : '#e6e3de',
+      showSearchSuggest: showSearch,
+      noSearchResults: showSearch && matches.length === 0,
+      searchSuggestions: matches.map(p => ({ group: p.group, name: p.name })),
+      artifactFlags: ARTIFACT.map(f => ({
+        label: f.label,
+        detail: f.detail || '',
+        link: !!f.link,
+        linkLabel: f.linkLabel || '',
+        glyph: f.present ? '✓' : '✕',
+        dot: f.present ? '#3f7a46' : '#c2beb7',
+        border: f.present ? '#dfe8e0' : '#eceae6',
+        bg: f.present ? '#fbfdfb' : '#faf9f7',
+        labelColor: f.present ? '#14120f' : '#8d877e'
+      })),
+      versionTotal: ALL_VERSIONS.length,
+      javaValue: 'Java ' + sc.javaFloor,
+      javaRunsOn: sc.javaFloor === 8
+        ? 'Runs on every current LTS. Class file 52.'
+        : 'Requires Java ' + sc.javaFloor + ' or newer. Older LTS lines are out.',
+      floorNote: sc.floorNote,
+      licenseChips: sc.licenses.filter(l => l !== effectiveLicense).map(l => ({ label: l })),
+      licenseValue: effectiveLicense,
+      licenseVerdict: sc.licenseVerdict,
+      licenseColor: sc.licenseColor,
+      licenseNote: sc.licenseNote,
+      licenseCountLabel: sc.licenses.length === 1
+        ? '1 distinct license across the graph'
+        : sc.licenses.length + ' distinct licenses across the graph',
+      scenarioLabel: sc.tab === 'Real data' ? 'real resolved graph' : 'what-if preview',
+      sizeValue: fmt(totalKB).split(' ')[0],
+      sizeUnit: fmt(totalKB).split(' ')[1],
+      fillWidth: fillPct + '%',
+      selfFlex: selfKB,
+      depsFlex: depsKB,
+      bandColor: band.color,
+      bandLabel: band.label,
+      bandNote: band.note,
+      selfCaption: 'package ' + fmt(selfKB),
+      depsCaption: 'transitive ' + fmt(depsKB),
+      depsCaptionColor: depsKB > 0 ? '#4a453e' : '#a8a29a',
+      depsSwatch: depsKB > 0 ? band.color : '#e6e3de',
+      requiredCount: String(sc.required),
+      requiredUnit: sc.required === 1 ? 'artifact' : 'artifacts',
+      requiredVerdict: sc.required === 0 ? 'Zero-dep' : sc.required <= 8 ? 'Contained' : 'Wide',
+      requiredColor: sc.required === 0 ? '#3f7a46' : sc.required <= 8 ? '#c08a1e' : '#a82914',
+      requiredNote: sc.required === 0
+        ? 'Nothing enters your classpath but this jar.'
+        : sc.required + ' artifacts resolve transitively under this configuration.',
+      previewing: scIdx !== 0,
+      previewNote: 'Hypothetical: ' + sc.tab.toLowerCase() + ' — ' + sc.required
+        + ' required artifacts. The real graph below is unchanged.',
+      selectedVersion: this.state.selected,
+      nodeCountLabel: flat.length + ' of ' + totalNodes + ' nodes shown',
+      optionalCount: totalNodes - 1,
+      selectionSummary: this.state.hideOptional
+        ? 'Showing required graph only — 1 node, 211.01 KB'
+        : 'Full graph — ' + totalNodes + ' nodes across ' + depth + ' levels',
+      optionalFilterLabel: this.state.hideOptional ? 'Optional hidden' : 'Optional shown',
+      optionalFilterColor: this.state.hideOptional ? '#ffffff' : '#14120f',
+      optionalFilterBg: this.state.hideOptional ? '#14120f' : 'transparent',
+      toggleOptional: () => this.setState(s => ({ hideOptional: !s.hideOptional })),
+      expandAll: () => {
+        const e = {};
+        allPaths.forEach(p => { e[p] = true; });
+        this.setState({ expanded: e });
+      },
+      collapseAll: () => this.setState({ expanded: { '/json-schema': true } })
+    };
+  }
+}
+</script>
+</body>
+</html>
