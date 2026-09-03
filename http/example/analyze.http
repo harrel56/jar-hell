@@ -70,7 +70,7 @@ Authorization: Bearer {{token}}
 ### crawl local
 POST http://localhost:8060/technical/v1/crawl
 Content-Type: application/json
-Authorization: Bearer test
+Authorization: Bearer {{token}}
 
 ### refresh index local
 POST https://jarhell.harrel.dev/technical/v1/refresh-index
