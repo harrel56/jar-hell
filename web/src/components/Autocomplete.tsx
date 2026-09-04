@@ -1,6 +1,6 @@
 import { createSignal, For, onCleanup, Show } from 'solid-js'
+import { useFetch } from '../hooks/useFetch'
 
-/* Shape of PackagesController.SearchResult — deliberately terse over the wire. */
 interface SearchResult {
   g: string
   a: string
@@ -10,56 +10,26 @@ const DEBOUNCE_MS = 200
 
 export default function Autocomplete() {
   const [query, setQuery] = createSignal('')
-  const [results, setResults] = createSignal<SearchResult[]>([])
-  const [loading, setLoading] = createSignal(false)
-  const [failed, setFailed] = createSignal(false)
   const [focused, setFocused] = createSignal(false)
+  const search = useFetch<SearchResult[]>()
+
+  const results = () => search.data() ?? []
 
   let debounceId: ReturnType<typeof setTimeout> | undefined
-  let inFlight: AbortController | undefined
-
-  onCleanup(() => {
-    clearTimeout(debounceId)
-    inFlight?.abort()
-  })
-
-  const search = async (q: string) => {
-    inFlight?.abort()
-    if (!q) {
-      setResults([])
-      setLoading(false)
-      return
-    }
-    const controller = new AbortController()
-    inFlight = controller
-    setLoading(true)
-    setFailed(false)
-    try {
-      const res = await fetch(`/api/v1/packages/search?query=${encodeURIComponent(q)}`, {
-        signal: controller.signal,
-      })
-      if (!res.ok) {
-        throw new Error(`search failed with ${res.status}`)
-      }
-      setResults(await res.json())
-    } catch {
-      /* An abort means a newer query took over — leave its state alone. */
-      if (controller.signal.aborted) {
-        return
-      }
-      setResults([])
-      setFailed(true)
-    } finally {
-      if (!controller.signal.aborted) {
-        setLoading(false)
-      }
-    }
-  }
+  onCleanup(() => clearTimeout(debounceId))
 
   const onInput = (value: string) => {
     setQuery(value)
     clearTimeout(debounceId)
-    debounceId = setTimeout(() => void search(value.trim()), DEBOUNCE_MS)
+    const q = value.trim()
+    if (!q) {
+      search.reset()
+      return
+    }
+    debounceId = setTimeout(
+      () => void search.get(`/api/v1/packages/search?query=${encodeURIComponent(q)}`),
+      DEBOUNCE_MS,
+    )
   }
 
   const select = (r: SearchResult) => {
@@ -107,8 +77,8 @@ export default function Autocomplete() {
           </For>
           <Show when={results().length === 0}>
             <div class="px-3.5 py-3 text-(length:--text-sm) text-(--ink-4)">
-              <Show when={!loading()} fallback="Searching…">
-                <Show when={!failed()} fallback="Search is unavailable right now.">
+              <Show when={!search.loading()} fallback="Searching…">
+                <Show when={!search.error()} fallback="Search is unavailable right now.">
                   Nothing analysed under that name yet — press Enter to queue it.
                 </Show>
               </Show>
