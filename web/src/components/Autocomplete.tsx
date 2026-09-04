@@ -7,7 +7,10 @@ interface SearchResult {
 }
 
 const DEBOUNCE_MS = 200
-const messageClass = 'px-3.5 py-3 text-(length:--text-sm) text-(--ink-4)'
+
+const message = (text: string) => (
+  <div class="px-3.5 py-3 text-(length:--text-sm) text-(--ink-4)">{text}</div>
+)
 
 export default function Autocomplete() {
   const [query, debouncedQuery, setQuery] = createDebouncedSignal('', DEBOUNCE_MS)
@@ -31,6 +34,7 @@ export default function Autocomplete() {
   }
 
   const open = () => focused() && query().trim().length > 0
+  const isDebouncing = () => query().trim() !== debouncedQuery().trim()
 
   return (
     <div class="relative max-w-[520px] flex-1">
@@ -56,8 +60,9 @@ export default function Autocomplete() {
 
       <Show when={open()}>
         <div class="absolute inset-x-0 top-11 z-40 overflow-hidden rounded-(--radius-panel) border border-(--hairline) bg-(--ground) shadow-(--shadow-menu)">
-          <Errored fallback={() => <div class={messageClass}>Search is unavailable right now.</div>}>
-            <Loading on={results()} fallback={<div class={messageClass}>Searching…</div>}>
+          <Errored fallback={() => message('Search is unavailable right now.')}>
+            <Show when={!isDebouncing()} fallback={message('Searching…')}>
+              <Loading fallback={message('Searching…')}>
                 <For each={results()}>
                   {r => (
                     <button
@@ -70,12 +75,11 @@ export default function Autocomplete() {
                     </button>
                   )}
                 </For>
-                <Show when={results().length === 0 && debouncedQuery().trim()}>
-                  <div class={messageClass}>
-                    Nothing analysed under that name yet — press Enter to queue it.
-                  </div>
+                <Show when={results().length === 0}>
+                  {message('Nothing analysed under that name yet — press Enter to queue it.')}
                 </Show>
-            </Loading>
+              </Loading>
+            </Show>
           </Errored>
         </div>
       </Show>
