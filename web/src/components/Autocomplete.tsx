@@ -1,5 +1,5 @@
-import { createSignal, For, onCleanup, Show } from 'solid-js'
-import { useFetch } from '../hooks/useFetch'
+import {createMemo, createSignal, Errored, For, Loading, Show} from 'solid-js'
+import { createDebouncedSignal } from '../utils/createDebouncedSignal'
 
 interface SearchResult {
   g: string
@@ -7,30 +7,23 @@ interface SearchResult {
 }
 
 const DEBOUNCE_MS = 200
+const messageClass = 'px-3.5 py-3 text-(length:--text-sm) text-(--ink-4)'
 
 export default function Autocomplete() {
-  const [query, setQuery] = createSignal('')
+  const [query, debouncedQuery, setQuery] = createDebouncedSignal('', DEBOUNCE_MS)
   const [focused, setFocused] = createSignal(false)
-  const search = useFetch<SearchResult[]>()
 
-  const results = () => search.data() ?? []
-
-  let debounceId: ReturnType<typeof setTimeout> | undefined
-  onCleanup(() => clearTimeout(debounceId))
-
-  const onInput = (value: string) => {
-    setQuery(value)
-    clearTimeout(debounceId)
-    const q = value.trim()
+  const results = createMemo(async (): Promise<SearchResult[]> => {
+    const q = debouncedQuery().trim()
     if (!q) {
-      search.reset()
-      return
+      return []
     }
-    debounceId = setTimeout(
-      () => void search.get(`/api/v1/packages/search?query=${encodeURIComponent(q)}`),
-      DEBOUNCE_MS,
-    )
-  }
+    const res = await fetch(`/api/v1/packages/search?query=${encodeURIComponent(q)}`)
+    if (!res.ok) {
+      throw new Error("Searching for packages failed")
+    }
+    return res.json()
+  })
 
   const select = (r: SearchResult) => {
     setQuery(`${r.g}:${r.a}`)
@@ -49,7 +42,7 @@ export default function Autocomplete() {
       >
         <input
           value={query()}
-          onInput={e => onInput(e.currentTarget.value)}
+          onInput={e => setQuery(e.currentTarget.value)}
           onFocus={() => setFocused(true)}
           /* Deferred so a click on a suggestion lands before the menu unmounts. */
           onBlur={() => setTimeout(() => setFocused(false), 120)}
@@ -63,27 +56,27 @@ export default function Autocomplete() {
 
       <Show when={open()}>
         <div class="absolute inset-x-0 top-11 z-40 overflow-hidden rounded-(--radius-panel) border border-(--hairline) bg-(--ground) shadow-(--shadow-menu)">
-          <For each={results()}>
-            {r => (
-              <button
-                type="button"
-                onClick={() => select(r)}
-                class="flex w-full items-baseline gap-[9px] border-b border-(--track) px-3.5 py-[9px] text-left font-(family-name:--font-data) hover:bg-(--surface)"
-              >
-                <span class="shrink-0 text-(length:--text-label) text-(--ink-5)">{r.g}</span>
-                <span class="truncate text-(length:--text-sm) text-(--ink)">{r.a}</span>
-              </button>
-            )}
-          </For>
-          <Show when={results().length === 0}>
-            <div class="px-3.5 py-3 text-(length:--text-sm) text-(--ink-4)">
-              <Show when={!search.loading()} fallback="Searching…">
-                <Show when={!search.error()} fallback="Search is unavailable right now.">
-                  Nothing analysed under that name yet — press Enter to queue it.
+          <Errored fallback={() => <div class={messageClass}>Search is unavailable right now.</div>}>
+            <Loading on={results()} fallback={<div class={messageClass}>Searching…</div>}>
+                <For each={results()}>
+                  {r => (
+                    <button
+                      type="button"
+                      onClick={() => select(r)}
+                      class="flex w-full items-baseline gap-[9px] border-b border-(--track) px-3.5 py-[9px] text-left font-(family-name:--font-data) hover:bg-(--surface)"
+                    >
+                      <span class="shrink-0 text-(length:--text-label) text-(--ink-5)">{r.g}</span>
+                      <span class="truncate text-(length:--text-sm) text-(--ink)">{r.a}</span>
+                    </button>
+                  )}
+                </For>
+                <Show when={results().length === 0 && debouncedQuery().trim()}>
+                  <div class={messageClass}>
+                    Nothing analysed under that name yet — press Enter to queue it.
+                  </div>
                 </Show>
-              </Show>
-            </div>
-          </Show>
+            </Loading>
+          </Errored>
         </div>
       </Show>
     </div>
