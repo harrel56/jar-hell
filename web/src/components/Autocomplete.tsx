@@ -1,5 +1,6 @@
 import {createMemo, createSignal, createUniqueId, Errored, For, latest, Show, untrack} from 'solid-js'
 import { createDebouncedSignal } from '../utils/createDebouncedSignal'
+import { Icon } from '../icons'
 
 interface SearchResult {
   g: string
@@ -89,9 +90,11 @@ export default function Autocomplete() {
 
   return (
     <div class="relative max-w-[520px] flex-1">
-      <div
+      {/* A label so clicking anywhere in the field — the icon or the padding,
+          not just the text — focuses the input. */}
+      <label
         class={[
-          'flex h-9 items-center gap-2.5 rounded-(--radius-field) border bg-(--surface-sunken) px-[13px]',
+          'flex h-9 cursor-text items-center gap-2.5 rounded-(--radius-field) border bg-(--surface-sunken) px-[13px]',
           focused() ? 'border-(--accent)' : 'border-(--hairline-strong)',
         ]}
       >
@@ -107,6 +110,10 @@ export default function Autocomplete() {
             setDismissed(false)
           }}
           onBlur={() => setFocused(false)}
+          onClick={() => {
+            setFocused(true)
+            setDismissed(false)
+          }}
           onKeyDown={onKeyDown}
           placeholder="group:artifact"
           aria-label="Search packages"
@@ -117,8 +124,8 @@ export default function Autocomplete() {
           aria-activedescendant={optionId(activeIndex())}
           class="min-w-0 flex-1 border-none bg-transparent font-(family-name:--font-data) text-(length:--text-sm) text-(--ink) outline-none placeholder:text-(--ink-4)"
         />
-        <span class="shrink-0 text-(length:--text-meta) text-(--ink-4)">⌕</span>
-      </div>
+        <Icon.Search class="size-4 shrink-0 text-(--ink-4)"/>
+      </label>
 
       <Show when={open()}>
         <div

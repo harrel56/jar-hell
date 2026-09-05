@@ -1,5 +1,6 @@
 import Autocomplete from './Autocomplete'
 import Logo from './Logo'
+import { Icon } from '../icons'
 
 const navItemClass = 'cursor-pointer rounded-(--radius-nav) px-2.5 py-1.5 hover:bg-(--track)'
 
@@ -12,7 +13,9 @@ export default function TopBar() {
         <a href="/api" class={navItemClass}>API</a>
         <a href="https://github.com/harrel56/jar-hell" class={navItemClass}>GitHub</a>
         {/* Dummy for now — tokens.css already supports data-theme on <html>. */}
-        <button type="button" class={navItemClass} aria-label="Toggle theme">☀</button>
+        <button type="button" class={`${navItemClass} flex items-center`} aria-label="Toggle theme">
+          <Icon.SunMoon class="size-4"/>
+        </button>
       </nav>
     </header>
   )
