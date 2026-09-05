@@ -1,4 +1,4 @@
-import {createMemo, createSignal, createUniqueId, Errored, For, latest, Loading, Show} from 'solid-js'
+import {createMemo, createSignal, createUniqueId, Errored, For, latest, Show, untrack} from 'solid-js'
 import { createDebouncedSignal } from '../utils/createDebouncedSignal'
 
 interface SearchResult {
@@ -6,7 +6,7 @@ interface SearchResult {
   a: string
 }
 
-const DEBOUNCE_MS = 200
+const DEBOUNCE_MS = 300
 
 const message = (text: string) => (
   <div class="px-3.5 py-3 text-(length:--text-sm) text-(--ink-4)">{text}</div>
@@ -21,20 +21,17 @@ export default function Autocomplete() {
   const listId = createUniqueId()
   const optionId = (i: number | null) => i === null ? undefined : `${listId}-opt-${i}`
 
-  const results = createMemo(async (): Promise<SearchResult[]> => {
+  const results = createMemo(async (prev): Promise<SearchResult[]> => {
     const q = debouncedQuery().trim()
-    if (!q) {
-      return []
+    if (untrack(dismissed) || !q) {
+      return prev
     }
     const res = await fetch(`/api/v1/packages/search?query=${encodeURIComponent(q)}`)
     if (!res.ok) {
-      throw new Error("Searching for packages failed")
+      throw new Error('Searching for packages failed')
     }
     return res.json()
-  })
-
-  const open = () => focused() && !dismissed() && query().trim().length > 0
-  const isDebouncing = () => query().trim() !== debouncedQuery().trim()
+  }, {loadingValue: []})
 
   const select = (r: SearchResult) => {
     setQuery(`${r.g}:${r.a}`)
@@ -42,6 +39,7 @@ export default function Autocomplete() {
     setActiveIndex(null)
   }
 
+  const open = () => focused() && !dismissed() && query().trim().length > 0 && debouncedQuery().trim().length > 0
   const settledResults = () => (open() ? latest(results) : [])
 
   const moveActiveIndex = (delta: number) => {
@@ -56,7 +54,7 @@ export default function Autocomplete() {
       const idx = (prev + delta) % count
       return idx >= 0 ? idx : count + idx
     })
-    document.getElementById(optionId(idx)!)?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth'})
+    document.getElementById(optionId(idx)!)?.scrollIntoView?.({ block: 'nearest', behavior: 'auto'})
   }
 
   const onKeyDown = (e: KeyboardEvent) => {
@@ -130,30 +128,26 @@ export default function Autocomplete() {
           class="absolute inset-x-0 top-11 z-40 max-h-96 overflow-y-auto rounded-(--radius-panel) border border-(--hairline) bg-(--ground) shadow-(--shadow-menu)"
         >
           <Errored fallback={() => message('Search is unavailable right now.')}>
-            <Show when={!isDebouncing()} fallback={message('Searching…')}>
-              <Loading fallback={message('Searching…')}>
-                <For each={results()}>
-                  {(r, i) => (
-                    <div
-                      id={optionId(i())}
-                      role="option"
-                      aria-selected={activeIndex() === i() ? 'true' : 'false'}
-                      onClick={() => select(r)}
-                      onMouseMove={() => setActiveIndex(i())}
-                      class={[
-                        'flex cursor-pointer items-baseline gap-[9px] border-b border-(--track) px-3.5 py-[9px] font-(family-name:--font-data)',
-                        activeIndex() === i() ? 'bg-(--surface)' : '',
-                      ]}
-                    >
-                      <span class="shrink-0 text-(length:--text-label) text-(--ink-5)">{r.g}</span>
-                      <span class="truncate text-(length:--text-sm) text-(--ink)">{r.a}</span>
-                    </div>
-                  )}
-                </For>
-                <Show when={results().length === 0}>
-                  {message('Nothing analysed under that name yet — press Enter to queue it.')}
-                </Show>
-              </Loading>
+            <For each={results()}>
+              {(r, i) => (
+                <div
+                  id={optionId(i())}
+                  role="option"
+                  aria-selected={activeIndex() === i() ? 'true' : 'false'}
+                  onClick={() => select(r)}
+                  onMouseMove={() => setActiveIndex(i())}
+                  class={[
+                    'flex cursor-pointer items-baseline gap-[9px] border-b border-(--track) px-3.5 py-[9px] font-(family-name:--font-data)',
+                    activeIndex() === i() ? 'bg-(--surface)' : '',
+                  ]}
+                >
+                  <span class="shrink-0 text-(length:--text-label) text-(--ink-5)">{r.g}</span>
+                  <span class="truncate text-(length:--text-sm) text-(--ink)">{r.a}</span>
+                </div>
+              )}
+            </For>
+            <Show when={results().length === 0}>
+              {message('Nothing analysed under that name yet — press Enter to queue it.')}
             </Show>
           </Errored>
         </div>
