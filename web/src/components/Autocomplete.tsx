@@ -49,13 +49,14 @@ export default function Autocomplete() {
     if (count === 0 || delta === 0) {
       return
     }
-    setActiveIndex(prev => {
+    const idx = setActiveIndex(prev => {
       if (prev === null) {
         return delta > 0 ? 0 : count - 1
       }
       const idx = (prev + delta) % count
       return idx >= 0 ? idx : count + idx
     })
+    document.getElementById(optionId(idx)!)?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth'})
   }
 
   const onKeyDown = (e: KeyboardEvent) => {
@@ -126,7 +127,7 @@ export default function Autocomplete() {
           id={listId}
           role="listbox"
           onMouseDown={e => e.preventDefault()}
-          class="absolute inset-x-0 top-11 z-40 overflow-hidden rounded-(--radius-panel) border border-(--hairline) bg-(--ground) shadow-(--shadow-menu)"
+          class="absolute inset-x-0 top-11 z-40 max-h-96 overflow-y-auto rounded-(--radius-panel) border border-(--hairline) bg-(--ground) shadow-(--shadow-menu)"
         >
           <Errored fallback={() => message('Search is unavailable right now.')}>
             <Show when={!isDebouncing()} fallback={message('Searching…')}>
@@ -138,7 +139,7 @@ export default function Autocomplete() {
                       role="option"
                       aria-selected={activeIndex() === i() ? 'true' : 'false'}
                       onClick={() => select(r)}
-                      onMouseEnter={() => setActiveIndex(i())}
+                      onMouseMove={() => setActiveIndex(i())}
                       class={[
                         'flex cursor-pointer items-baseline gap-[9px] border-b border-(--track) px-3.5 py-[9px] font-(family-name:--font-data)',
                         activeIndex() === i() ? 'bg-(--surface)' : '',
