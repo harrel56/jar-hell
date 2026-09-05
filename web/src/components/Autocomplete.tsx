@@ -1,4 +1,4 @@
-import {createMemo, createSignal, Errored, For, Loading, Show} from 'solid-js'
+import {createMemo, createSignal, createUniqueId, Errored, For, latest, Loading, Show} from 'solid-js'
 import { createDebouncedSignal } from '../utils/createDebouncedSignal'
 
 interface SearchResult {
@@ -15,6 +15,11 @@ const message = (text: string) => (
 export default function Autocomplete() {
   const [query, debouncedQuery, setQuery] = createDebouncedSignal('', DEBOUNCE_MS)
   const [focused, setFocused] = createSignal(false)
+  const [dismissed, setDismissed] = createSignal(false)
+  const [activeIndex, setActiveIndex] = createSignal<number | null>(null)
+
+  const listId = createUniqueId()
+  const optionId = (i: number | null) => i === null ? undefined : `${listId}-opt-${i}`
 
   const results = createMemo(async (): Promise<SearchResult[]> => {
     const q = debouncedQuery().trim()
@@ -28,13 +33,60 @@ export default function Autocomplete() {
     return res.json()
   })
 
+  const open = () => focused() && !dismissed() && query().trim().length > 0
+  const isDebouncing = () => query().trim() !== debouncedQuery().trim()
+
   const select = (r: SearchResult) => {
     setQuery(`${r.g}:${r.a}`)
-    setFocused(false)
+    setDismissed(true)
+    setActiveIndex(null)
   }
 
-  const open = () => focused() && query().trim().length > 0
-  const isDebouncing = () => query().trim() !== debouncedQuery().trim()
+  const settledResults = () => (open() ? latest(results) : [])
+
+  const moveActiveIndex = (delta: number) => {
+    const count = settledResults().length
+    if (count === 0 || delta === 0) {
+      return
+    }
+    setActiveIndex(prev => {
+      if (prev === null) {
+        return delta > 0 ? 0 : count - 1
+      }
+      const idx = (prev + delta) % count
+      return idx >= 0 ? idx : count + idx
+    })
+  }
+
+  const onKeyDown = (e: KeyboardEvent) => {
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        moveActiveIndex(1)
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        moveActiveIndex(-1)
+        break
+      case 'Enter': {
+        const idx = activeIndex()
+        if (idx !== null) {
+          const active = settledResults()[idx]
+          if (active) {
+            e.preventDefault()
+            select(active)
+          }
+        }
+        /* With nothing highlighted Enter falls through — that is the
+           "press Enter to queue it" path, still to be implemented. */
+        break
+      }
+      case 'Escape':
+        setDismissed(true)
+        setActiveIndex(null)
+        break
+    }
+  }
 
   return (
     <div class="relative max-w-[520px] flex-1">
@@ -46,33 +98,55 @@ export default function Autocomplete() {
       >
         <input
           value={query()}
-          onInput={e => setQuery(e.currentTarget.value)}
-          onFocus={() => setFocused(true)}
-          /* Deferred so a click on a suggestion lands before the menu unmounts. */
-          onBlur={() => setTimeout(() => setFocused(false), 120)}
-          onKeyDown={e => e.key === 'Escape' && setFocused(false)}
+          onInput={e => {
+            setQuery(e.currentTarget.value)
+            setDismissed(false)
+            setActiveIndex(null)
+          }}
+          onFocus={() => {
+            setFocused(true)
+            setDismissed(false)
+          }}
+          onBlur={() => setFocused(false)}
+          onKeyDown={onKeyDown}
           placeholder="group:artifact"
           aria-label="Search packages"
+          role="combobox"
+          aria-expanded={open() ? 'true' : 'false'}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={optionId(activeIndex())}
           class="min-w-0 flex-1 border-none bg-transparent font-(family-name:--font-data) text-(length:--text-sm) text-(--ink) outline-none placeholder:text-(--ink-4)"
         />
         <span class="shrink-0 text-(length:--text-meta) text-(--ink-4)">⌕</span>
       </div>
 
       <Show when={open()}>
-        <div class="absolute inset-x-0 top-11 z-40 overflow-hidden rounded-(--radius-panel) border border-(--hairline) bg-(--ground) shadow-(--shadow-menu)">
+        <div
+          id={listId}
+          role="listbox"
+          onMouseDown={e => e.preventDefault()}
+          class="absolute inset-x-0 top-11 z-40 overflow-hidden rounded-(--radius-panel) border border-(--hairline) bg-(--ground) shadow-(--shadow-menu)"
+        >
           <Errored fallback={() => message('Search is unavailable right now.')}>
             <Show when={!isDebouncing()} fallback={message('Searching…')}>
               <Loading fallback={message('Searching…')}>
                 <For each={results()}>
-                  {r => (
-                    <button
-                      type="button"
+                  {(r, i) => (
+                    <div
+                      id={optionId(i())}
+                      role="option"
+                      aria-selected={activeIndex() === i() ? 'true' : 'false'}
                       onClick={() => select(r)}
-                      class="flex w-full items-baseline gap-[9px] border-b border-(--track) px-3.5 py-[9px] text-left font-(family-name:--font-data) hover:bg-(--surface)"
+                      onMouseEnter={() => setActiveIndex(i())}
+                      class={[
+                        'flex cursor-pointer items-baseline gap-[9px] border-b border-(--track) px-3.5 py-[9px] font-(family-name:--font-data)',
+                        activeIndex() === i() ? 'bg-(--surface)' : '',
+                      ]}
                     >
                       <span class="shrink-0 text-(length:--text-label) text-(--ink-5)">{r.g}</span>
                       <span class="truncate text-(length:--text-sm) text-(--ink)">{r.a}</span>
-                    </button>
+                    </div>
                   )}
                 </For>
                 <Show when={results().length === 0}>
