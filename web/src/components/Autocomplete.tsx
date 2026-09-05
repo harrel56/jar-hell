@@ -9,12 +9,16 @@ interface SearchResult {
 
 const DEBOUNCE_MS = 300
 
+interface AutocompleteProps {
+  debounceMs?: number
+}
+
 const message = (text: string) => (
   <div class="px-3.5 py-3 text-(length:--text-sm) text-(--ink-4)">{text}</div>
 )
 
-export default function Autocomplete() {
-  const [query, debouncedQuery, setQuery] = createDebouncedSignal('', DEBOUNCE_MS)
+export default function Autocomplete(props: AutocompleteProps) {
+  const [query, debouncedQuery, setQuery] = createDebouncedSignal('', props.debounceMs ?? DEBOUNCE_MS)
   const [focused, setFocused] = createSignal(false)
   const [dismissed, setDismissed] = createSignal(false)
   const [activeIndex, setActiveIndex] = createSignal<number | null>(null)
