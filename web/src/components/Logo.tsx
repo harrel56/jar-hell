@@ -1,5 +1,3 @@
-/* The wordmark: a dark rounded tile holding the accent glyph, then "Jarhell"
-   with the second half in accent. */
 export default function Logo() {
   return (
     <a

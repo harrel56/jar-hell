@@ -12,7 +12,6 @@ export default function TopBar() {
       <nav class="ml-auto flex items-center gap-2 text-(length:--text-sm) text-(--ink-3)">
         <a href="/api" class={navItemClass}>API</a>
         <a href="https://github.com/harrel56/jar-hell" class={navItemClass}>GitHub</a>
-        {/* Dummy for now — tokens.css already supports data-theme on <html>. */}
         <button type="button" class={`${navItemClass} flex items-center`} aria-label="Toggle theme">
           <Icon.SunMoon class="size-4"/>
         </button>
