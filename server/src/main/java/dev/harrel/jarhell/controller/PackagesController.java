@@ -21,17 +21,13 @@ class PackagesController {
         this.artifactRepository = artifactRepository;
     }
 
-    @Get
-    List<ArtifactTree> getAllVersions(@QueryParam String groupId,
-                                      @QueryParam String artifactId,
-                                      @QueryParam String classifier) {
-        if (groupId == null) {
-            throw new BadRequestException("groupId parameter is required");
+    @Get("/{coordinate}/versions")
+    List<String> getAllVersions(String coordinate, @QueryParam String classifier) {
+        String[] parts = coordinate.split(":");
+        if (parts.length != 2) {
+            throw new BadRequestException("Invalid g:a format " + coordinate);
         }
-        if (artifactId == null) {
-            throw new BadRequestException("artifactId parameter is required");
-        }
-        return artifactRepository.findAllVersions(groupId, artifactId, classifier);
+        return artifactRepository.findAllVersions(parts[0], parts[1], classifier);
     }
 
     @Get("/search")

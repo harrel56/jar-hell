@@ -1,8 +1,7 @@
 import {createRouter, type RoutePreloadFuncArgs, useNavigate} from '@solidjs/router'
-import PackagePage from './pages/PackagePage'
+import {PackagePage} from './pages/PackagePage'
 import {parseGav} from './utils/gav'
 import {getPackage, getVersions} from './api'
-import {newestVersion} from './utils/compareVersions'
 
 export const Router = createRouter({
   preloadLinks: false,
@@ -32,8 +31,7 @@ export const Router = createRouter({
         const coordinate = params['coordinate']!
         const gav = parseGav(coordinate)!
         const versions = await getVersions(gav)
-        const newest = newestVersion(versions.map(v => v.artifactInfo.version))
-        navigate(`/packages/${coordinate}:${newest}`, {replace: true})
+        navigate(`/packages/${coordinate}:${versions.at(-1)}`, {replace: true})
       }
     },
     { path: '*404', component: () => <p>not found</p> },

@@ -7,6 +7,7 @@ import dev.harrel.jarhell.analyze.JarAnalyzer;
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.model.descriptor.License;
 import io.avaje.inject.PostConstruct;
+import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.jspecify.annotations.Nullable;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.*;
@@ -48,7 +49,7 @@ public class ArtifactRepository {
         });
     }
 
-    public List<ArtifactTree> findAllVersions(String groupId, String artifactId, String classifier) {
+    public List<String> findAllVersions(String groupId, String artifactId, String classifier) {
         try (var session = session()) {
             SummarizedResult result = session.executeRead(tx -> {
                 Result res = tx.run(new Query("""
@@ -57,7 +58,7 @@ public class ArtifactRepository {
                                     root.groupId = $groupId
                                     AND root.artifactId = $artifactId
                                     AND root.classifier = $classifier
-                                RETURN root
+                                RETURN root.version
                                 """,
                                 parameters(
                                         "groupId", groupId,
@@ -78,10 +79,10 @@ public class ArtifactRepository {
             );
 
             return result.records().stream()
-                    .map(rec -> rec.get("root").asNode())
-                    .map(node -> new AggregateTree(toArtifactProps(node), 0))
-                    .map(AggregateTree::toArtifactTree)
-                    .sorted(Comparator.comparing(at -> at.artifactInfo().version()))
+                    .map(rec -> rec.get("root.version").asString())
+                    .map(ComparableVersion::new)
+                    .sorted()
+                    .map(ComparableVersion::toString)
                     .toList();
         }
     }
