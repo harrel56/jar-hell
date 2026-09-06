@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { flush } from 'solid-js'
+import { createRouter, memoryHistory, type MemoryHistoryAdapter } from '@solidjs/router'
 import { afterEach, beforeEach, describe, expect, type Mock, test, vi } from 'vitest'
 import Autocomplete from './Autocomplete'
 
@@ -24,6 +25,7 @@ const fails = (status = 500) => async () => ({ ok: false, status })
 
 let input: HTMLInputElement
 let fetchMock: Mock
+let history: MemoryHistoryAdapter
 
 /** Swaps the stub mid-test; safe until the first request goes out. */
 const useFetch = (mock: Mock) => {
@@ -69,9 +71,29 @@ const press = (key: string) => {
   flush()
 }
 
+/* Selecting navigates, so the component needs router context. Mirrors App:
+   the autocomplete lives outside the route outlet and survives navigation. */
 beforeEach(() => {
   stubFetch()
-  render(() => <Autocomplete debounceMs={DEBOUNCE_MS}/>)
+  history = memoryHistory('/')
+  const Router = createRouter({
+    routes: [
+      { path: '/', component: () => null },
+      { path: '/packages/:coordinate', component: () => <p>package route</p> },
+      { path: '*404', component: () => null },
+    ],
+    history,
+  })
+  render(() => (
+    <Router>
+      {props => (
+        <>
+          <Autocomplete debounceMs={DEBOUNCE_MS}/>
+          {props.children}
+        </>
+      )}
+    </Router>
+  ))
   input = screen.getByLabelText('Search packages') as HTMLInputElement
   focusInput()
 })
@@ -295,6 +317,7 @@ describe('keyboard navigation', () => {
 
     expect(input.value).toBe('org.a:one')
     expect(panel()).toBeNull()
+    expect(history.get()).toBe('/packages/org.a:one')
   })
 
   test('enter with nothing highlighted leaves the panel alone', async () => {
@@ -334,6 +357,7 @@ describe('mouse', () => {
 
     expect(input.value).toBe('org.b:two')
     expect(panel()).toBeNull()
+    expect(history.get()).toBe('/packages/org.b:two')
   })
 
   test('moving over an option highlights it', async () => {

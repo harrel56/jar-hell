@@ -1,14 +1,10 @@
 import { Loading } from 'solid-js'
-import { createRouter } from '@solidjs/router'
+import {createRouter, defineRoute, useParams} from '@solidjs/router'
 import TopBar from './components/TopBar'
+import PackagePage, { loadPackage } from './pages/PackagePage'
+import PackageRedirect, { loadNewestVersion } from './pages/PackageRedirect'
 import './App.css'
-
-const Router = createRouter({
-  routes: [
-    { path: '/', component: () => <p>index</p> },
-    { path: '*404', component: () => <p>not found</p> },
-  ],
-})
+import {Router} from './router'
 
 export default function App() {
   return (

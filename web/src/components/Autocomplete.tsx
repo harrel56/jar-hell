@@ -1,4 +1,5 @@
 import {createMemo, createSignal, createUniqueId, Errored, For, latest, Show, untrack} from 'solid-js'
+import {useParams} from '@solidjs/router'
 import { createDebouncedSignal } from '../utils/createDebouncedSignal'
 import { Icon } from '../icons'
 
@@ -17,8 +18,23 @@ const message = (text: string) => (
   <div class="px-3.5 py-3 text-(length:--text-sm) text-(--ink-4)">{text}</div>
 )
 
+const parseCoordinate = (coordinate: string | undefined) => {
+  if (!coordinate) {
+    return ''
+  }
+  const parts = coordinate.split(':')
+  if (parts.length === 2) {
+    return coordinate
+  } else if (parts.length === 3) {
+    return parts[0] + ':' + parts[1]
+  } else {
+    return ''
+  }
+}
+
 export default function Autocomplete(props: AutocompleteProps) {
-  const [query, debouncedQuery, setQuery] = createDebouncedSignal('', props.debounceMs ?? DEBOUNCE_MS)
+  const params = useParams()
+  const [query, debouncedQuery, setQuery] = createDebouncedSignal(() => parseCoordinate(params['coordinate']), props.debounceMs ?? DEBOUNCE_MS)
   const [focused, setFocused] = createSignal(false)
   const [dismissed, setDismissed] = createSignal(false)
   const [activeIndex, setActiveIndex] = createSignal<number | null>(null)
@@ -37,6 +53,8 @@ export default function Autocomplete(props: AutocompleteProps) {
     }
     return res.json()
   }, {loadingValue: []})
+
+  const packagePath = (r: SearchResult) => `/packages/${r.g}:${r.a}`
 
   const select = (r: SearchResult) => {
     setQuery(`${r.g}:${r.a}`)
@@ -75,10 +93,10 @@ export default function Autocomplete(props: AutocompleteProps) {
       case 'Enter': {
         const idx = activeIndex()
         if (idx !== null) {
-          const active = settledResults()[idx]
-          if (active) {
+          const option = document.getElementById(optionId(idx)!)
+          if (option) {
             e.preventDefault()
-            select(active)
+            option.click()
           }
         }
         /* With nothing highlighted Enter falls through — that is the
@@ -94,8 +112,6 @@ export default function Autocomplete(props: AutocompleteProps) {
 
   return (
     <div class="relative max-w-[520px] flex-1">
-      {/* A label so clicking anywhere in the field — the icon or the padding,
-          not just the text — focuses the input. */}
       <label
         class={[
           'flex h-9 cursor-text items-center gap-2.5 rounded-(--radius-field) border bg-(--surface-sunken) px-[13px]',
@@ -141,11 +157,17 @@ export default function Autocomplete(props: AutocompleteProps) {
           <Errored fallback={() => message('Search is unavailable right now.')}>
             <For each={results()}>
               {(r, i) => (
-                <div
+                <a
                   id={optionId(i())}
+                  href={packagePath(r)}
                   role="option"
+                  tabindex={-1}
                   aria-selected={activeIndex() === i() ? 'true' : 'false'}
-                  onClick={() => select(r)}
+                  onClick={e => {
+                    if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+                      select(r)
+                    }
+                  }}
                   onMouseMove={() => setActiveIndex(i())}
                   class={[
                     'flex cursor-pointer items-baseline gap-[9px] border-b border-(--track) px-3.5 py-[9px] font-(family-name:--font-data)',
@@ -154,7 +176,7 @@ export default function Autocomplete(props: AutocompleteProps) {
                 >
                   <span class="shrink-0 text-(length:--text-label) text-(--ink-5)">{r.g}</span>
                   <span class="truncate text-(length:--text-sm) text-(--ink)">{r.a}</span>
-                </div>
+                </a>
               )}
             </For>
             <Show when={results().length === 0}>
