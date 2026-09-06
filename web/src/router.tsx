@@ -1,4 +1,4 @@
-import {createRouter, type RoutePreloadFuncArgs, useNavigate} from '@solidjs/router'
+import {createRouter, useNavigate} from '@solidjs/router'
 import {PackagePage} from './pages/PackagePage'
 import {parseGav} from './utils/gav'
 import {ArtifactTree, getPackage, getVersions} from './api'
