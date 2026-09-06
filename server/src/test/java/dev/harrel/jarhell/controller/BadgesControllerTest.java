@@ -170,8 +170,4 @@ class BadgesControllerTest {
     private static String escapedName(BadgesController.Metric metric) {
         return metric.getName().replace(' ', '_');
     }
-
-    private static ArtifactTree at(String version) {
-        return new ArtifactTree(ArtifactInfo.unresolved(new Gav("g", "a", version), ""), List.of());
-    }
 }
