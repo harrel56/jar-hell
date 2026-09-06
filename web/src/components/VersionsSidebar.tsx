@@ -27,15 +27,18 @@ function RailHeader(props: { count?: number }) {
 }
 
 function VersionLink(props: { gav: Gav, version: ArtifactVersion}) {
-  const gav = props.gav
-  const classifierPart = gav.classifier ? `:${gav.classifier}` : ''
-  const href = `/packages/${gav.groupId}:${gav.artifactId}:${props.version.version}${classifierPart}`
-  const link = useLinkState(() => href)
+  const href = createMemo(() => {
+    const gav = props.gav
+    const classifierPart = gav.classifier ? `:${gav.classifier}` : ''
+    return `/packages/${gav.groupId}:${gav.artifactId}:${props.version.version}${classifierPart}`
+  })
+
+  const link = useLinkState(() => href())
   const selected = () => link.current() || link.pending()
 
   return (
     <a
-      href={href}
+      href={href()}
       data-pending={link.pending() || undefined}
       class={[
         rowClass,
@@ -59,7 +62,7 @@ interface VersionGroupProps {
   gav: Gav
   label: string
   versions: ArtifactVersion[]
-  open: boolean
+  active: boolean
 }
 
 function VersionGroup(props: VersionGroupProps) {
@@ -67,10 +70,10 @@ function VersionGroup(props: VersionGroupProps) {
     <details
       class={`${groupClass} group`}
       name="versions"
-      open={props.open}
+      open={props.active}
     >
       <summary class="flex cursor-pointer list-none items-center gap-2.5 rounded-(--radius-nav) px-1.5 py-2.5 hover:bg-(--surface-sunken) text-(--ink) [&::-webkit-details-marker]:hidden">
-        <span class={[{'text-(--accent)': props.open}, 'font-(family-name:--font-data) font-medium text-(length:--text-sm)']}>
+        <span class={[{'text-(--accent)': props.active}, 'font-(family-name:--font-data) font-medium text-(length:--text-sm)']}>
           {props.label}
         </span>
         <span class="text-(length:--text-label) text-(--ink-5)">
@@ -92,7 +95,7 @@ function VersionGroup(props: VersionGroupProps) {
 export function VersionsSidebar(props: VersionsSidebarProps) {
   const nodes = createMemo(() => Array.from(calculateVersionNodes(props.versions.toReversed()).entries()))
   const activeGroup = createMemo(() =>
-    nodes().find(e => e[1].map(av => av.version).includes(props.gav.version!))?.[0]
+    nodes().find(e => e[1].some(av => av.version === props.gav.version))?.[0]
   )
 
   return (
@@ -104,7 +107,7 @@ export function VersionsSidebar(props: VersionsSidebarProps) {
             gav={props.gav}
             label={`${label}.x`}
             versions={versions}
-            open={label === activeGroup()}
+            active={label === activeGroup()}
           />
         )}
       </For>
