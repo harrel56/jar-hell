@@ -37,7 +37,7 @@ const json = async <T>(path: string): Promise<T> => {
 export const getPackage = query(
   (coordinate: string) => json<ArtifactTree>(`/api/v1/packages/${coordinate}`), 'getPackage')
 
-export const getVersions = query((gav: Gav) => {
-    const classifierPart = gav.classifier ? `?classifier=${encodeURIComponent(gav.classifier)}` : ''
-    return json<string[]>(`/api/v1/packages/${gav.groupId}:${gav.artifactId}/versions${classifierPart}`)
-  }, 'getVersions')
+export const getVersions = query((groupId: string, artifactId: string, classifier: string | undefined) => {
+  const classifierPart = classifier ? `?classifier=${encodeURIComponent(classifier)}` : ''
+  return json<string[]>(`/api/v1/packages/${groupId}:${artifactId}/versions${classifierPart}`)
+}, 'getVersions')

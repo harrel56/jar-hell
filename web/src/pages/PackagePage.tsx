@@ -1,10 +1,10 @@
 import { createMemo } from 'solid-js'
 import type { RouteSectionProps } from '@solidjs/router'
-import { type ArtifactTree } from '../api'
+import {PackageLoaderData} from '../router'
 
-export function PackagePage(props: RouteSectionProps<Promise<ArtifactTree>>) {
-  const pkg = createMemo(() => props.data)
-  const info = () => pkg().artifactInfo
+export function PackagePage(props: RouteSectionProps<Promise<PackageLoaderData>>) {
+  const data = createMemo(() => props.data)
+  const info = () => data().pkg.artifactInfo
 
   return (
     <main class="mx-auto max-w-(--measure-app) px-7 py-10">
@@ -16,7 +16,7 @@ export function PackagePage(props: RouteSectionProps<Promise<ArtifactTree>>) {
       </p>
       <p class="mt-4 text-(--ink-2)">{info().description}</p>
       <pre class="mt-8 overflow-auto rounded-(--radius-panel) border border-(--hairline) bg-(--surface-sunken) p-4 font-(family-name:--font-data) text-(length:--text-meta) text-(--ink-2)">
-        {JSON.stringify(pkg(), null, 2)}
+        {JSON.stringify(data(), null, 2)}
       </pre>
     </main>
   )

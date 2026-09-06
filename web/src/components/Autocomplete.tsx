@@ -25,7 +25,7 @@ const parseCoordinate = (coordinate: string | undefined) => {
   const parts = coordinate.split(':')
   if (parts.length === 2) {
     return coordinate
-  } else if (parts.length === 3) {
+  } else if (parts.length === 3 || parts.length === 4) {
     return parts[0] + ':' + parts[1]
   } else {
     return ''
