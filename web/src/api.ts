@@ -1,5 +1,9 @@
 import { query } from '@solidjs/router'
-import {Gav} from './utils/gav'
+
+export interface ArtifactVersion {
+  version: string,
+  analyzed: boolean
+}
 
 export interface ArtifactInfo {
   groupId: string
@@ -39,5 +43,5 @@ export const getPackage = query(
 
 export const getVersions = query((groupId: string, artifactId: string, classifier: string | undefined) => {
   const classifierPart = classifier ? `?classifier=${encodeURIComponent(classifier)}` : ''
-  return json<string[]>(`/api/v1/packages/${groupId}:${artifactId}/versions${classifierPart}`)
+  return json<ArtifactVersion[]>(`/api/v1/packages/${groupId}:${artifactId}/versions${classifierPart}`)
 }, 'getVersions')

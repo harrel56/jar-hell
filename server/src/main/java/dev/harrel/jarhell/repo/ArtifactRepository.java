@@ -49,7 +49,7 @@ public class ArtifactRepository {
         });
     }
 
-    public List<String> findAllVersions(String groupId, String artifactId, String classifier) {
+    public List<ArtifactVersion> findAllVersions(String groupId, String artifactId, String classifier) {
         try (var session = session()) {
             SummarizedResult result = session.executeRead(tx -> {
                 Result res = tx.run(new Query("""
@@ -58,7 +58,7 @@ public class ArtifactRepository {
                                     root.groupId = $groupId
                                     AND root.artifactId = $artifactId
                                     AND root.classifier = $classifier
-                                RETURN root.version
+                                RETURN root.version, root.unresolved
                                 """,
                                 parameters(
                                         "groupId", groupId,
@@ -79,10 +79,9 @@ public class ArtifactRepository {
             );
 
             return result.records().stream()
-                    .map(rec -> rec.get("root.version").asString())
-                    .map(ComparableVersion::new)
-                    .sorted()
-                    .map(ComparableVersion::toString)
+                    .map(rec -> Map.entry(new ComparableVersion(rec.get("root.version").asString()), !rec.get("root.unresolved").asBoolean(true)))
+                    .sorted(Map.Entry.comparingByKey())
+                    .map(e -> new ArtifactVersion(e.getKey().toString(), e.getValue()))
                     .toList();
         }
     }

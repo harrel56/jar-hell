@@ -4,6 +4,7 @@ import dev.harrel.jarhell.error.BadRequestException;
 import dev.harrel.jarhell.error.ResourceNotFoundException;
 import dev.harrel.jarhell.model.ArtifactInfo;
 import dev.harrel.jarhell.model.ArtifactTree;
+import dev.harrel.jarhell.model.ArtifactVersion;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.repo.ArtifactRepository;
 import io.avaje.http.api.Controller;
@@ -22,7 +23,7 @@ class PackagesController {
     }
 
     @Get("/{coordinate}/versions")
-    List<String> getAllVersions(String coordinate, @QueryParam String classifier) {
+    List<ArtifactVersion> getAllVersions(String coordinate, @QueryParam String classifier) {
         String[] parts = coordinate.split(":");
         if (parts.length != 2) {
             throw new BadRequestException("Invalid g:a format " + coordinate);

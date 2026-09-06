@@ -49,7 +49,7 @@ class BadgesController {
         String[] split = coordinate.split(":");
         if (split.length == 2) {
             try {
-                version = repo.findAllVersions(split[0], split[1], null).getLast();
+                version = repo.findAllVersions(split[0], split[1], null).getLast().version();
             } catch (Exception e) {
                 toBadge(ctx, metric.getName(), "not found", Color.red, Duration.ofDays(7));
                 return;

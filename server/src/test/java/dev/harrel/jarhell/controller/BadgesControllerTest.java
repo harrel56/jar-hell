@@ -3,10 +3,7 @@ package dev.harrel.jarhell.controller;
 import dev.harrel.jarhell.MavenApiClient;
 import dev.harrel.jarhell.analyze.AnalyzeEngine;
 import dev.harrel.jarhell.error.BadRequestException;
-import dev.harrel.jarhell.model.ArtifactInfo;
-import dev.harrel.jarhell.model.ArtifactTree;
-import dev.harrel.jarhell.model.BytecodeVersion;
-import dev.harrel.jarhell.model.Gav;
+import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.repo.ArtifactRepository;
 import io.javalin.http.Context;
 import io.javalin.http.Header;
@@ -98,7 +95,7 @@ class BadgesControllerTest {
     @Test
     void findsLatestArtifactVersionForTotalSize() {
         ArtifactInfo.EffectiveValues effectiveValues = mock(ArtifactInfo.EffectiveValues.class);
-        when(repo.findAllVersions("org.test", "lib", null)).thenReturn(List.of("1.0.0", "2.0.0", "2.1.0"));
+        when(repo.findAllVersions("org.test", "lib", null)).thenReturn(List.of(av("1.0.0"), av("2.0.0"), av("2.1.0")));
         when(effectiveValues.size()).thenReturn(123_321L);
         when(artifactInfo.effectiveValues()).thenReturn(effectiveValues);
         when(repo.find(new Gav("org.test", "lib", "2.1.0"), 0)).thenReturn(Optional.of(artifactTree));
@@ -113,7 +110,7 @@ class BadgesControllerTest {
     @Test
     void findsLatestArtifactVersionForEffectiveBytecode() {
         ArtifactInfo.EffectiveValues effectiveValues = mock(ArtifactInfo.EffectiveValues.class);
-        when(repo.findAllVersions("org.test", "lib", null)).thenReturn(List.of("1.0.0", "2.0.0", "2.1.0"));
+        when(repo.findAllVersions("org.test", "lib", null)).thenReturn(List.of(av("1.0.0"), av("2.0.0"), av("2.1.0")));
         when(effectiveValues.bytecodeVersion()).thenReturn(new BytecodeVersion(52, 0));
         when(artifactInfo.effectiveValues()).thenReturn(effectiveValues);
         when(repo.find(new Gav("org.test", "lib", "2.1.0"), 0)).thenReturn(Optional.of(artifactTree));
@@ -169,5 +166,9 @@ class BadgesControllerTest {
 
     private static String escapedName(BadgesController.Metric metric) {
         return metric.getName().replace(' ', '_');
+    }
+
+    private static ArtifactVersion av(String ver) {
+        return new ArtifactVersion(ver, true);
     }
 }
