@@ -30,7 +30,10 @@ export const Router = createRouter({
         const coordinate = args.params['coordinate']!
         const gav = parseGav(coordinate)!
         const versions = await getVersions(gav.groupId, gav.artifactId, gav.classifier)
-        navigate(`/packages/${coordinate}:${versions.at(-1)}`, {replace: true})
+        if (versions.length === 0) {
+          throw new Error('No versions found for ' + coordinate)
+        }
+        navigate(`/packages/${coordinate}:${versions.at(-1)?.version}`, {replace: true})
       }
     },
     { path: '*404', component: () => <p>not found</p> },

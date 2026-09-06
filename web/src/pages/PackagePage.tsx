@@ -1,6 +1,6 @@
 import { createMemo, Loading } from 'solid-js'
 import { useParams } from '@solidjs/router'
-import { VersionsSidebar, VersionsSidebarFallback } from '../components/VersionsSidebar'
+import { VersionsSidebar, VersionsSidebarSkeleton } from '../components/VersionsSidebar'
 import { getPackage, getVersions } from '../api'
 import { parseGav } from '../utils/gav'
 
@@ -13,7 +13,7 @@ export function PackagePage() {
 
   return (
     <div class="mx-auto flex max-w-(--measure-app) items-start">
-      <Loading fallback={<VersionsSidebarFallback/>}>
+      <Loading fallback={<VersionsSidebarSkeleton/>}>
         <VersionsSidebar gav={gav()} versions={versions()}/>
       </Loading>
 
