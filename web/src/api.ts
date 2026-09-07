@@ -1,4 +1,5 @@
 import { query } from '@solidjs/router'
+import {Gav} from './utils/gav'
 
 export interface ArtifactVersion {
   version: string,
@@ -30,13 +31,16 @@ export interface DependencyInfo {
   scope: string
 }
 
-const json = async <T>(path: string): Promise<T> => {
-  const res = await fetch(path)
+const json = async <T>(path: string, method = 'get', body: BodyInit | null = null): Promise<T> => {
+  const res = await fetch(path, {method, body})
   if (!res.ok) {
     throw new Error(`${path} failed with ${res.status}`)
   }
   return res.json()
 }
+
+export const analyzePackage = query(
+  (gav: Gav) => json<ArtifactTree>(`/api/v1/analyze-and-wait`, 'post', JSON.stringify(gav)), 'analyzePackage')
 
 export const getPackage = query(
   (coordinate: string) => json<ArtifactTree>(`/api/v1/packages/${coordinate}`), 'getPackage')

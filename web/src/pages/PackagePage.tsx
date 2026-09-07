@@ -1,7 +1,7 @@
 import { createMemo, Loading } from 'solid-js'
 import { useParams } from '@solidjs/router'
 import { VersionsSidebar, VersionsSidebarSkeleton } from '../components/VersionsSidebar'
-import { getPackage, getVersions } from '../api'
+import {analyzePackage, getPackage, getVersions} from '../api'
 import { parseGav } from '../utils/gav'
 
 export function PackagePage() {
@@ -9,7 +9,13 @@ export function PackagePage() {
   const coordinate = () => params['coordinate']!
   const gav = createMemo(() => parseGav(coordinate())!)
   const versions = createMemo(() => getVersions(gav().groupId, gav().artifactId, gav().classifier))
-  const pkg = createMemo(() => getPackage(coordinate()))
+  const pkg = createMemo(() => {
+    if (versions().find(av => av.version === gav().version)?.analyzed) {
+      return getPackage(coordinate())
+    } else {
+      return analyzePackage(gav())
+    }
+  })
 
   return (
     <div class="mx-auto flex max-w-(--measure-app) items-start">

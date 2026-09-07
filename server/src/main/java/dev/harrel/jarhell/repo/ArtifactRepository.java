@@ -79,7 +79,7 @@ public class ArtifactRepository {
             );
 
             return result.records().stream()
-                    .map(rec -> Map.entry(new ComparableVersion(rec.get("root.version").asString()), !rec.get("root.unresolved").asBoolean(true)))
+                    .map(rec -> Map.entry(new ComparableVersion(rec.get("root.version").asString()), !rec.get("root.unresolved").asBoolean(false)))
                     .sorted(Map.Entry.comparingByKey())
                     .map(e -> new ArtifactVersion(e.getKey().toString(), e.getValue()))
                     .toList();
@@ -468,7 +468,7 @@ public class ArtifactRepository {
                 jarContents = objectMapper.writeValueAsString(jarInfo.contents());
                 jarPublicClasses = objectMapper.writeValueAsString(jarInfo.publicClasses());
                 jarNonPublicClasses = jarInfo.nonPublicClasses();
-                jarBytecodeVersion = jarInfo.bytecodeVersion().toString();
+                jarBytecodeVersion = jarInfo.bytecodeVersion() == null ? null : jarInfo.bytecodeVersion().toString();
                 jarBuildJdk = jarInfo.buildJdk();
                 jarMultiRelease = jarInfo.multiReleaseJar();
                 jarExecutable = jarInfo.executable();
