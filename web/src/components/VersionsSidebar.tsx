@@ -1,4 +1,4 @@
-import {createMemo, For, Repeat, Show} from 'solid-js'
+import {createMemo, createSignal, For, Repeat, Show} from 'solid-js'
 import {useLinkState} from '@solidjs/router'
 import {Gav} from '../utils/gav'
 import {ArtifactVersion} from '../api'
@@ -63,32 +63,40 @@ interface VersionGroupProps {
   label: string
   versions: ArtifactVersion[]
   active: boolean
+  opened: boolean
+  onToggle: (group: string) => void
 }
 
+/**
+ * Waiting for firefox to finally implement some basic css https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/interpolate-size
+ * Meanwhile we must simulate details-summary component to enable animations
+ */
 function VersionGroup(props: VersionGroupProps) {
   return (
-    <details
-      class={`${groupClass} group`}
-      name="versions"
-      open={props.active}
-    >
-      <summary class="flex cursor-pointer list-none items-center gap-2.5 rounded-(--radius-nav) px-1.5 py-2.5 hover:bg-(--surface-sunken) text-(--ink) [&::-webkit-details-marker]:hidden">
+    <section class={groupClass}>
+      <button type="button"
+              aria-expanded={props.opened ? 'true' : 'false'}
+              class="flex w-full cursor-pointer items-center gap-2.5 rounded-(--radius-nav) px-1.5 py-2.5 hover:bg-(--surface-sunken) text-(--ink)"
+              onClick={() => props.onToggle(props.label)}>
         <span class={[{'text-(--accent)': props.active}, 'font-(family-name:--font-data) font-medium text-(length:--text-sm)']}>
-          {props.label}
+          {`${props.label}.x`}
         </span>
         <span class="text-(length:--text-label) text-(--ink-5)">
           {props.versions.length} {props.versions.length === 1 ? 'item' : 'items'}
         </span>
-        <span class="ml-auto text-(--ink-5) transition-transform group-open:rotate-180">
+        <span class={['ml-auto text-(--ink-5) transition-transform', {'rotate-180': props.opened}]}>
           <Icon.ChevronDown class="size-2.5"/>
         </span>
-      </summary>
-      <div class="flex flex-col gap-px pb-2 pl-1.5">
-        <For each={props.versions}>
-          {version => <VersionLink gav={props.gav} version={version}/>}
-        </For>
+      </button>
+      <div class={['grid transition-[grid-template-rows] duration-(--duration-rail) ease-(--ease-rail)',
+        {'grid-rows-[0fr]': !props.opened, 'grid-rows-[1fr]': props.opened}]} inert={!props.opened}>
+        <div class="overflow-hidden flex flex-col gap-px mb-2 pl-1.5">
+          <For each={props.versions}>
+            {version => <VersionLink gav={props.gav} version={version}/>}
+          </For>
+        </div>
       </div>
-    </details>
+    </section>
   )
 }
 
@@ -97,6 +105,7 @@ export function VersionsSidebar(props: VersionsSidebarProps) {
   const activeGroup = createMemo(() =>
     nodes().find(e => e[1].some(av => av.version === props.gav.version))?.[0]
   )
+  const [openedGroup, setOpenedGroup] = createSignal(activeGroup)
 
   return (
     <aside class={asideClass}>
@@ -105,9 +114,11 @@ export function VersionsSidebar(props: VersionsSidebarProps) {
         {([label, versions]) => (
           <VersionGroup
             gav={props.gav}
-            label={`${label}.x`}
+            label={label}
             versions={versions}
             active={label === activeGroup()}
+            opened={label === openedGroup()}
+            onToggle={(group: string) => setOpenedGroup(prev => group === prev ? undefined : group)}
           />
         )}
       </For>
