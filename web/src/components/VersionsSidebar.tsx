@@ -90,7 +90,7 @@ function VersionGroup(props: VersionGroupProps) {
         <span class={[{'text-(--accent)': props.active}, 'font-(family-name:--font-data) font-medium text-(length:--text-sm)']}>
           {`${props.label}.x`}
         </span>
-        <span class="text-(length:--text-label) text-(--ink-5)">
+        <span class="text-(length:--text-label) text-(--ink-5) leading-0">
           {props.versions.length} {props.versions.length === 1 ? 'item' : 'items'}
         </span>
         <span class={['ml-auto text-(--ink-5) transition-transform', {'rotate-180': props.opened}]}>

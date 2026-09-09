@@ -28,12 +28,14 @@ export function PackagePage() {
           {gav().version}
         </p>
 
-        <Show when={analyzed() || !isPending(pkg)} fallback={<div class="mt-8 h-64 animate-pulse rounded-(--radius-panel) bg-(--track)"/>}>
-          <p class="mt-4 text-(--ink-2)">{pkg().artifactInfo.description}</p>
-          <pre class="mt-8 overflow-auto rounded-(--radius-panel) border border-(--hairline) bg-(--surface-sunken) p-4 font-(family-name:--font-data) text-(length:--text-meta) text-(--ink-2)">
-            {JSON.stringify(pkg(), null, 2)}
-          </pre>
-        </Show>
+        <Loading fallback={<div class="mt-8 h-64 animate-pulse rounded-(--radius-panel) bg-(--track)"/>}>
+          <Show when={analyzed() || !isPending(pkg)} fallback={<div class="mt-8 h-64 animate-pulse rounded-(--radius-panel) bg-(--track)"/>}>
+            <p class="mt-4 text-(--ink-2)">{pkg().artifactInfo.description}</p>
+            <pre class="mt-8 overflow-auto rounded-(--radius-panel) border border-(--hairline) bg-(--surface-sunken) p-4 font-(family-name:--font-data) text-(length:--text-meta) text-(--ink-2)">
+              {JSON.stringify(pkg(), null, 2)}
+            </pre>
+          </Show>
+        </Loading>
       </main>
     </div>
   )
