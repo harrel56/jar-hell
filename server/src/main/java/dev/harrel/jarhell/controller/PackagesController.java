@@ -66,7 +66,7 @@ class PackagesController {
     ArtifactTree get(String coordinate, @QueryParam Integer depth) {
         Gav gav = Gav.fromCoordinate(coordinate)
                 .orElseThrow(() -> new BadRequestException("Invalid artifact coordinate format [%s]".formatted(coordinate)));
-        Integer depthParam = Optional.ofNullable(depth).orElse(-1);
+        Integer depthParam = Optional.ofNullable(depth).orElse(1);
         return artifactRepository.find(gav, depthParam)
                 .orElseThrow(() -> new ResourceNotFoundException(gav));
 

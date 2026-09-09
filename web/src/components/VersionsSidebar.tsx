@@ -6,7 +6,7 @@ import { Icon } from '../icons'
 
 interface VersionsSidebarProps {
   gav: Gav
-  versions: ArtifactVersion[]
+  versions: readonly ArtifactVersion[]
 }
 
 const asideClass = 'sticky top-(--header-height) max-h-[calc(100vh-var(--header-height))] w-(--sidebar-width) shrink-0 self-start overflow-y-auto border-r border-(--hairline) px-5 pt-(--space-9) pb-10'
@@ -26,7 +26,14 @@ function RailHeader(props: { count?: number }) {
   )
 }
 
-function VersionLink(props: { gav: Gav, version: ArtifactVersion}) {
+interface VersionLinkProps {
+  gav: Gav
+  version: ArtifactVersion
+  selected: boolean
+  onSelect: (version: string) => void
+}
+
+function VersionLink(props: VersionLinkProps) {
   const href = createMemo(() => {
     const gav = props.gav
     const classifierPart = gav.classifier ? `:${gav.classifier}` : ''
@@ -34,17 +41,17 @@ function VersionLink(props: { gav: Gav, version: ArtifactVersion}) {
   })
 
   const link = useLinkState(() => href())
-  const selected = () => link.current() || link.pending()
 
   return (
     <a
       href={href()}
+      onClick={() => props.onSelect(props.version.version)}
       data-pending={link.pending() || undefined}
       class={[
         rowClass,
         {
-          'border-(--accent) bg-(--surface-sunken) text-(--accent)': selected(),
-          'border-transparent text-(--ink-2) hover:bg-(--track)': !selected(),
+          'border-(--accent) bg-(--surface-sunken) text-(--accent)': props.selected,
+          'border-transparent text-(--ink-2) hover:bg-(--track)': !props.selected,
         },
       ]}
     >
@@ -64,7 +71,9 @@ interface VersionGroupProps {
   versions: ArtifactVersion[]
   active: boolean
   opened: boolean
+  selectedVersion: string | undefined
   onToggle: (group: string) => void
+  onSelect: (version: string) => void
 }
 
 /**
@@ -92,7 +101,14 @@ function VersionGroup(props: VersionGroupProps) {
         {'grid-rows-[0fr]': !props.opened, 'grid-rows-[1fr]': props.opened}]} inert={!props.opened}>
         <div class="overflow-hidden flex flex-col gap-px mb-2 pl-1.5">
           <For each={props.versions}>
-            {version => <VersionLink gav={props.gav} version={version}/>}
+            {version => (
+              <VersionLink
+                gav={props.gav}
+                version={version}
+                selected={version.version === props.selectedVersion}
+                onSelect={props.onSelect}
+              />
+            )}
           </For>
         </div>
       </div>
@@ -101,9 +117,12 @@ function VersionGroup(props: VersionGroupProps) {
 }
 
 export function VersionsSidebar(props: VersionsSidebarProps) {
+  // as a workaround for "broken" useLinkState - it does not change to pending on click immediately
+  const [selectedVersion, setSelectedVersion] = createSignal(() => props.gav.version)
+
   const nodes = createMemo(() => Array.from(calculateVersionNodes(props.versions.toReversed()).entries()))
   const activeGroup = createMemo(() =>
-    nodes().find(e => e[1].some(av => av.version === props.gav.version))?.[0]
+    nodes().find(e => e[1].some(av => av.version === selectedVersion()))?.[0]
   )
   const [openedGroup, setOpenedGroup] = createSignal(activeGroup)
 
@@ -118,7 +137,9 @@ export function VersionsSidebar(props: VersionsSidebarProps) {
             versions={versions}
             active={label === activeGroup()}
             opened={label === openedGroup()}
+            selectedVersion={selectedVersion()}
             onToggle={(group: string) => setOpenedGroup(prev => group === prev ? undefined : group)}
+            onSelect={setSelectedVersion}
           />
         )}
       </For>

@@ -1,4 +1,4 @@
-import { query } from '@solidjs/router'
+import { query, revalidate } from '@solidjs/router'
 import {Gav} from './utils/gav'
 
 export interface ArtifactVersion {
@@ -39,9 +39,6 @@ const json = async <T>(path: string, method = 'get', body: BodyInit | null = nul
   return res.json()
 }
 
-export const analyzePackage = query(
-  (gav: Gav) => json<ArtifactTree>(`/api/v1/analyze-and-wait`, 'post', JSON.stringify(gav)), 'analyzePackage')
-
 export const getPackage = query(
   (coordinate: string) => json<ArtifactTree>(`/api/v1/packages/${coordinate}`), 'getPackage')
 
@@ -49,3 +46,9 @@ export const getVersions = query((groupId: string, artifactId: string, classifie
   const classifierPart = classifier ? `?classifier=${encodeURIComponent(classifier)}` : ''
   return json<ArtifactVersion[]>(`/api/v1/packages/${groupId}:${artifactId}/versions${classifierPart}`)
 }, 'getVersions')
+
+export const analyzePackage = query(async (gav: Gav) => {
+  const tree = await json<ArtifactTree>(`/api/v1/analyze-and-wait`, 'post', JSON.stringify(gav))
+  revalidate(getVersions.keyFor(gav.groupId, gav.artifactId, gav.classifier))
+  return tree
+}, 'analyzePackage')

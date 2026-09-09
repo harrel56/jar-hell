@@ -1,4 +1,4 @@
-import { createMemo, Loading } from 'solid-js'
+import {createMemo, isPending, Loading, Show} from 'solid-js'
 import { useParams } from '@solidjs/router'
 import { VersionsSidebar, VersionsSidebarSkeleton } from '../components/VersionsSidebar'
 import {analyzePackage, getPackage, getVersions} from '../api'
@@ -8,14 +8,11 @@ export function PackagePage() {
   const params = useParams()
   const coordinate = () => params['coordinate']!
   const gav = createMemo(() => parseGav(coordinate())!)
-  const versions = createMemo(() => getVersions(gav().groupId, gav().artifactId, gav().classifier))
-  const pkg = createMemo(() => {
-    if (versions().find(av => av.version === gav().version)?.analyzed) {
-      return getPackage(coordinate())
-    } else {
-      return analyzePackage(gav())
-    }
-  })
+  const versionsArgs = createMemo(() => [gav().groupId, gav().artifactId, gav().classifier] as const)
+
+  const versions = createMemo(() => getVersions(...versionsArgs()))
+  const analyzed = createMemo(() => versions().some(av => av.version === gav().version && av.analyzed))
+  const pkg = createMemo(() => analyzed() ? getPackage(coordinate()) : analyzePackage(gav()))
 
   return (
     <div class="mx-auto flex max-w-(--measure-app) items-start">
@@ -31,12 +28,12 @@ export function PackagePage() {
           {gav().version}
         </p>
 
-        <Loading fallback={<div class="mt-8 h-64 animate-pulse rounded-(--radius-panel) bg-(--track)"/>}>
+        <Show when={analyzed() || !isPending(pkg)} fallback={<div class="mt-8 h-64 animate-pulse rounded-(--radius-panel) bg-(--track)"/>}>
           <p class="mt-4 text-(--ink-2)">{pkg().artifactInfo.description}</p>
           <pre class="mt-8 overflow-auto rounded-(--radius-panel) border border-(--hairline) bg-(--surface-sunken) p-4 font-(family-name:--font-data) text-(length:--text-meta) text-(--ink-2)">
             {JSON.stringify(pkg(), null, 2)}
           </pre>
-        </Loading>
+        </Show>
       </main>
     </div>
   )
