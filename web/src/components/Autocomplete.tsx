@@ -1,7 +1,8 @@
 import {createMemo, createSignal, createUniqueId, Errored, For, latest, Show} from 'solid-js'
-import {useParams} from '@solidjs/router'
+import {useNavigate, useParams} from '@solidjs/router'
 import { createDebouncedSignal } from '../utils/createDebouncedSignal'
 import { Icon } from '../icons'
+import {parseGav} from '../utils/gav'
 
 interface SearchResult {
   g: string
@@ -18,23 +19,11 @@ const message = (text: string) => (
   <div class="px-3.5 py-3 text-(length:--text-sm) text-(--ink-4)">{text}</div>
 )
 
-const parseCoordinate = (coordinate: string | undefined) => {
-  if (!coordinate) {
-    return ''
-  }
-  const parts = coordinate.split(':')
-  if (parts.length === 2) {
-    return coordinate
-  } else if (parts.length === 3 || parts.length === 4) {
-    return parts[0] + ':' + parts[1]
-  } else {
-    return ''
-  }
-}
-
 export default function Autocomplete(props: AutocompleteProps) {
+  const navigate = useNavigate()
   const params = useParams()
-  const [query, debouncedQuery, setQuery] = createDebouncedSignal(() => parseCoordinate(params['coordinate']), props.debounceMs ?? DEBOUNCE_MS)
+  const gav = () => parseGav(params['coordinate'])
+  const [query, debouncedQuery, setQuery] = createDebouncedSignal(() => gav() ? params['coordinate']! : '', props.debounceMs ?? DEBOUNCE_MS)
   const [opened, setOpened] = createSignal(false)
   const [activeIndex, setActiveIndex] = createSignal<number | null>(null)
 
@@ -93,15 +82,15 @@ export default function Autocomplete(props: AutocompleteProps) {
         break
       case 'Enter': {
         const idx = activeIndex()
-        if (idx !== null) {
+        if (idx === null) {
+          navigate('/packages/' + query())
+        } else {
           const option = document.getElementById(optionId(idx)!)
           if (option) {
             e.preventDefault()
             option.click()
           }
         }
-        /* With nothing highlighted Enter falls through — that is the
-           "press Enter to queue it" path, still to be implemented. */
         break
       }
       case 'Escape':
