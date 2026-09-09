@@ -1,4 +1,4 @@
-import {createMemo, createSignal, createUniqueId, Errored, For, latest, Show, untrack} from 'solid-js'
+import {createMemo, createSignal, createUniqueId, Errored, For, latest, Show} from 'solid-js'
 import {useParams} from '@solidjs/router'
 import { createDebouncedSignal } from '../utils/createDebouncedSignal'
 import { Icon } from '../icons'
@@ -35,8 +35,7 @@ const parseCoordinate = (coordinate: string | undefined) => {
 export default function Autocomplete(props: AutocompleteProps) {
   const params = useParams()
   const [query, debouncedQuery, setQuery] = createDebouncedSignal(() => parseCoordinate(params['coordinate']), props.debounceMs ?? DEBOUNCE_MS)
-  const [focused, setFocused] = createSignal(false)
-  const [dismissed, setDismissed] = createSignal(false)
+  const [opened, setOpened] = createSignal(false)
   const [activeIndex, setActiveIndex] = createSignal<number | null>(null)
 
   const listId = createUniqueId()
@@ -44,7 +43,7 @@ export default function Autocomplete(props: AutocompleteProps) {
 
   const results = createMemo(async (prev): Promise<SearchResult[]> => {
     const q = debouncedQuery().trim()
-    if (untrack(dismissed) || !q) {
+    if (!opened() || !q) {
       return prev
     }
     const res = await fetch(`/api/v1/packages/search?query=${encodeURIComponent(q)}`)
@@ -58,11 +57,12 @@ export default function Autocomplete(props: AutocompleteProps) {
 
   const select = (r: SearchResult) => {
     setQuery(`${r.g}:${r.a}`)
-    setDismissed(true)
+    setOpened(false)
     setActiveIndex(null)
   }
 
-  const open = () => focused() && !dismissed() && query().trim().length > 0 && debouncedQuery().trim().length > 0
+  const hasQuery = () => query().trim().length > 0 && debouncedQuery().trim().length > 0
+  const open = () => opened() && hasQuery()
   const settledResults = () => (open() ? latest(results) : [])
 
   const moveActiveIndex = (delta: number) => {
@@ -83,12 +83,13 @@ export default function Autocomplete(props: AutocompleteProps) {
   const onKeyDown = (e: KeyboardEvent) => {
     switch (e.key) {
       case 'ArrowDown':
-        e.preventDefault()
-        moveActiveIndex(1)
-        break
       case 'ArrowUp':
         e.preventDefault()
-        moveActiveIndex(-1)
+        if (open()) {
+          moveActiveIndex(e.key === 'ArrowDown' ? 1 : -1)
+        } else {
+          setOpened(true)
+        }
         break
       case 'Enter': {
         const idx = activeIndex()
@@ -104,7 +105,7 @@ export default function Autocomplete(props: AutocompleteProps) {
         break
       }
       case 'Escape':
-        setDismissed(true)
+        setOpened(false)
         setActiveIndex(null)
         break
     }
@@ -112,28 +113,19 @@ export default function Autocomplete(props: AutocompleteProps) {
 
   return (
     <div class="relative max-w-[520px] flex-1">
-      <label
-        class={[
-          'flex h-9 cursor-text items-center gap-2.5 rounded-(--radius-field) border bg-(--surface-sunken) px-[13px]',
-          focused() ? 'border-(--accent)' : 'border-(--hairline-strong)',
-        ]}
-      >
+      <label class="flex h-9 cursor-text items-center gap-2.5 rounded-(--radius-field) border border-(--hairline-strong) bg-(--surface-sunken) px-[13px] focus-within:border-(--accent)">
         <input
           value={query()}
           onInput={e => {
             setQuery(e.currentTarget.value)
-            setDismissed(false)
+            setOpened(true)
             setActiveIndex(null)
           }}
-          onFocus={() => {
-            setFocused(true)
-            setDismissed(false)
+          onBlur={() => {
+            setOpened(false)
+            setActiveIndex(null)
           }}
-          onBlur={() => setFocused(false)}
-          onClick={() => {
-            setFocused(true)
-            setDismissed(false)
-          }}
+          onClick={() => setOpened(true)}
           onKeyDown={onKeyDown}
           placeholder="group:artifact"
           aria-label="Search packages"
