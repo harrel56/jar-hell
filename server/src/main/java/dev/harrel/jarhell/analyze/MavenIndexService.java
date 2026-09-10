@@ -81,7 +81,7 @@ public class MavenIndexService {
                             created += inserted;
                             updated += n - inserted;
                             batch.clear();
-                            logger.info("Scanned {} rows, saved {}", rows, created);
+                            logger.info("Scanned {} rows, created={}, updated={}", rows, created, updated);
                         }
                     }
                 }
