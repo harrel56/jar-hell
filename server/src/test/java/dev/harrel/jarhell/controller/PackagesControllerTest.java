@@ -6,6 +6,7 @@ import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.extension.Host;
 import dev.harrel.jarhell.model.ArtifactInfo;
 import dev.harrel.jarhell.model.ArtifactTree;
+import dev.harrel.jarhell.model.ArtifactVersion;
 import dev.harrel.jarhell.model.DependencyInfo;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.util.TestUtil;
@@ -305,15 +306,14 @@ class PackagesControllerTest {
             );
         }
 
-        ContentResponse res = httpClient.GET(host + "/api/v1/packages?groupId=org.test&artifactId=lib");
+        ContentResponse res = httpClient.GET(host + "/api/v1/packages/org.test:lib/versions");
 
         assertThat(res.getStatus()).isEqualTo(200);
-        List<ArtifactTree> body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
-        assertThat(body).hasSize(2);
-        assertArtifact(body.get(0), "org.test", "lib", "1.0.0", null);
-        assertThat(body.get(0).dependencies()).isNull();
-        assertArtifact(body.get(1), "org.test", "lib", "1.2.0", null);
-        assertThat(body.get(1).dependencies()).isNull();
+        List<ArtifactVersion> body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        assertThat(body).containsExactly(
+                new ArtifactVersion("1.0.0", true),
+                new ArtifactVersion("1.2.0", true)
+        );
     }
 
     @Test
@@ -328,36 +328,98 @@ class PackagesControllerTest {
             );
         }
 
-        ContentResponse res = httpClient.GET(host + "/api/v1/packages?groupId=org.test&artifactId=lib");
+        ContentResponse res = httpClient.GET(host + "/api/v1/packages/org.test:lib/versions");
 
         assertThat(res.getStatus()).isEqualTo(200);
-        List<ArtifactTree> body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        List<ArtifactVersion> body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(body).isEmpty();
 
-        res = httpClient.GET(host + "/api/v1/packages?groupId=org.test&artifactId=lib&classifier=doc");
+        res = httpClient.GET(host + "/api/v1/packages/org.test:lib/versions?classifier=doc");
 
         assertThat(res.getStatus()).isEqualTo(200);
         body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
-        assertThat(body).hasSize(2);
-        assertArtifact(body.get(0), "org.test", "lib", "1.0.0", "doc");
-        assertThat(body.get(0).dependencies()).isNull();
-        assertArtifact(body.get(1), "org.test", "lib", "1.2.0", "doc");
-        assertThat(body.get(1).dependencies()).isNull();
+        assertThat(body).containsExactly(
+                new ArtifactVersion("1.0.0", true),
+                new ArtifactVersion("1.2.0", true)
+        );
     }
 
     @Test
-    void shouldFailFindAllVersionsWithoutArtifactId() throws InterruptedException, ExecutionException, TimeoutException {
+    void shouldFindAllVersionsSortedByVersion() throws InterruptedException, ExecutionException, TimeoutException {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(
                     tx -> tx.run("""
                             CREATE
-                            (:Artifact {groupId: 'org.test', artifactId: 'lib'}),
-                            (:Artifact {groupId: 'org.test', artifactId: 'lib'})
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.10.0', classifier: ''}),
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.2.0', classifier: ''}),
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '2.0.0', classifier: ''})
                             """)
             );
         }
 
-        String uri = host + "/api/v1/packages?groupId=dev.harrel";
+        ContentResponse res = httpClient.GET(host + "/api/v1/packages/org.test:lib/versions");
+
+        assertThat(res.getStatus()).isEqualTo(200);
+        List<ArtifactVersion> body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        assertThat(body).containsExactly(
+                new ArtifactVersion("1.2.0", true),
+                new ArtifactVersion("1.10.0", true),
+                new ArtifactVersion("2.0.0", true)
+        );
+    }
+
+    @Test
+    void shouldFindUnresolvedVersionsOnlyIfFromMavenIndex() throws InterruptedException, ExecutionException, TimeoutException {
+        try (var session = driver.session()) {
+            session.executeWriteWithoutResult(
+                    tx -> tx.run("""
+                            CREATE
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0', classifier: ''}),
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '2.0.0', classifier: '', fromMavenIndex: true, unresolved: true}),
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '3.0.0', classifier: '', unresolved: true}),
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '4.0.0', classifier: '', fromMavenIndex: true})
+                            """)
+            );
+        }
+
+        ContentResponse res = httpClient.GET(host + "/api/v1/packages/org.test:lib/versions");
+
+        assertThat(res.getStatus()).isEqualTo(200);
+        List<ArtifactVersion> body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        assertThat(body).containsExactly(
+                new ArtifactVersion("1.0.0", true),
+                new ArtifactVersion("2.0.0", false),
+                new ArtifactVersion("4.0.0", true)
+        );
+    }
+
+    @Test
+    void shouldNotFindVersionsUnresolvedOutsideOfMavenIndex() throws InterruptedException, ExecutionException, TimeoutException {
+        try (var session = driver.session()) {
+            session.executeWriteWithoutResult(
+                    tx -> tx.run("""
+                            CREATE
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0', classifier: '', unresolved: true}),
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.2.0', classifier: '', unresolved: true, fromMavenIndex: false})
+                            """)
+            );
+        }
+
+        ContentResponse res = httpClient.GET(host + "/api/v1/packages/org.test:lib/versions");
+
+        assertThat(res.getStatus()).isEqualTo(200);
+        List<ArtifactVersion> body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        assertThat(body).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "groupId",
+            "groupId:artifactId:version",
+            "groupId:artifactId:version:classifier"
+    })
+    void shouldFailFindAllVersionsForInvalidCoordinates(String coordinate) throws InterruptedException, ExecutionException, TimeoutException {
+        String uri = host + "/api/v1/packages/%s/versions".formatted(coordinate);
         ContentResponse res = httpClient.GET(uri);
 
         assertThat(res.getStatus()).isEqualTo(400);
@@ -365,7 +427,7 @@ class PackagesControllerTest {
         assertThat(err).isEqualTo(
                 new ErrorResponse(uri,
                         HandlerType.GET,
-                        "artifactId parameter is required")
+                        "Invalid g:a format " + coordinate)
         );
     }
 
