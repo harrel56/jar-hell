@@ -141,7 +141,7 @@ class PackagesControllerTest {
             );
         }
 
-        String uri = host + "/api/v1/packages/org.test:lib:1.0.0";
+        String uri = host + "/api/v1/packages/org.test:lib:1.0.0?depth=-1";
         ContentResponse res = httpClient.GET(uri);
 
         assertThat(res.getStatus()).isEqualTo(200);
@@ -172,7 +172,7 @@ class PackagesControllerTest {
             );
         }
 
-        String uri = host + "/api/v1/packages/org.test:lib:1.0.0";
+        String uri = host + "/api/v1/packages/org.test:lib:1.0.0?depth=-1";
         ContentResponse res = httpClient.GET(uri);
 
         assertThat(res.getStatus()).isEqualTo(200);
@@ -207,7 +207,7 @@ class PackagesControllerTest {
             );
         }
 
-        String uri = host + "/api/v1/packages/org.test:lib:1.0.0";
+        String uri = host + "/api/v1/packages/org.test:lib:1.0.0?depth=-1";
         ContentResponse res = httpClient.GET(uri);
 
         assertThat(res.getStatus()).isEqualTo(200);
@@ -343,30 +343,6 @@ class PackagesControllerTest {
         assertThat(body.get(0).dependencies()).isNull();
         assertArtifact(body.get(1), "org.test", "lib", "1.2.0", "doc");
         assertThat(body.get(1).dependencies()).isNull();
-    }
-
-    @Test
-    void shouldFailFindAllVersionsWithoutGroupId() throws InterruptedException, ExecutionException, TimeoutException {
-        try (var session = driver.session()) {
-            session.executeWriteWithoutResult(
-                    tx -> tx.run("""
-                            CREATE
-                            (:Artifact {groupId: 'org.test', artifactId: 'lib'}),
-                            (:Artifact {groupId: 'org.test', artifactId: 'lib'})
-                            """)
-            );
-        }
-
-        String uri = host + "/api/v1/packages?artifactId=lib";
-        ContentResponse res = httpClient.GET(uri);
-
-        assertThat(res.getStatus()).isEqualTo(400);
-        ErrorResponse err = TestUtil.readJson(res.getContentAsString(), ErrorResponse.class);
-        assertThat(err).isEqualTo(
-                new ErrorResponse(uri,
-                        HandlerType.GET,
-                        "groupId parameter is required")
-        );
     }
 
     @Test

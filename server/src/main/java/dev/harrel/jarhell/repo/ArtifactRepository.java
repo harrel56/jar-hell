@@ -8,7 +8,6 @@ import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.model.descriptor.License;
 import io.avaje.inject.PostConstruct;
 import org.apache.maven.artifact.versioning.ComparableVersion;
-import org.jspecify.annotations.Nullable;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.*;
 import org.neo4j.driver.summary.ResultSummary;
@@ -58,6 +57,7 @@ public class ArtifactRepository {
                                     root.groupId = $groupId
                                     AND root.artifactId = $artifactId
                                     AND root.classifier = $classifier
+                                    AND (coalesce(root.fromMavenIndex, false) OR NOT coalesce(root.unresolved, false))
                                 RETURN root.version, root.unresolved
                                 """,
                                 parameters(
@@ -83,26 +83,6 @@ public class ArtifactRepository {
                     .sorted(Map.Entry.comparingByKey())
                     .map(e -> new ArtifactVersion(e.getKey().toString(), e.getValue()))
                     .toList();
-        }
-    }
-
-    public boolean exists(Gav gav) {
-        Map<String, Object> gavData = objectMapper.convertValue(gav, new TypeReference<>() {});
-        gavData.computeIfAbsent("classifier", k -> "");
-        try (var session = session()) {
-            return session.executeRead(tx -> {
-                Result res = tx.run(new Query("""
-                        MATCH (root:Artifact)
-                        WHERE
-                            root.groupId = $props.groupId
-                            AND root.artifactId = $props.artifactId
-                            AND root.version = $props.version
-                            AND root.classifier = $props.classifier
-                        RETURN root""",
-                        parameters("props", gavData))
-                );
-                return res.hasNext();
-            });
         }
     }
 
@@ -269,8 +249,8 @@ public class ArtifactRepository {
             session.executeWriteWithoutResult(tx ->
                     tx.run("""
                                     MERGE (a:Artifact {groupId: $props.groupId, artifactId: $props.artifactId, version: $props.version, classifier: $props.classifier})
-                                    WITH a, a.unresolvedCount AS unresolvedCount
-                                    SET a = $props, a.analyzed = localdatetime()
+                                    WITH a, a.unresolvedCount AS unresolvedCount, a.fromMavenIndex AS fromMavenIndex
+                                    SET a = $props, a.analyzed = localdatetime(), a.fromMavenIndex = fromMavenIndex
                                     WITH a, unresolvedCount
                                     WHERE a.unresolved = true OR a.effectiveUnresolvedDependencies > 0
                                     SET a.unresolvedCount = coalesce(unresolvedCount, 0) + 1""",
@@ -282,16 +262,10 @@ public class ArtifactRepository {
         }
     }
 
-    /**
-     * Saves given gavs as unresolved artifacts in a single transaction.
-     * Artifacts that are already present are left untouched.
-     *
-     * @return number of newly created artifacts
-     */
-    public int saveUnresolvedBatch(List<Gav> gavs, String reason) {
+    public int saveBatchFromMavenIndex(List<Gav> gavs) {
         List<Map<String, Object>> batch = gavs.stream()
                 .map(gav -> {
-                    ArtifactProps artifactProps = toArtifactProps(ArtifactInfo.unresolved(gav, reason));
+                    ArtifactProps artifactProps = toArtifactProps(ArtifactInfo.fromMavenIndex(gav));
                     Map<String, Object> propsMap = objectMapper.convertValue(artifactProps, new TypeReference<Map<String, Object>>() {});
                     propsMap.computeIfAbsent("classifier", _ -> "");
                     return propsMap;
@@ -302,7 +276,8 @@ public class ArtifactRepository {
                     tx.run(new Query("""
                                     UNWIND $batch AS props
                                     MERGE (a:Artifact {groupId: props.groupId, artifactId: props.artifactId, version: props.version, classifier: props.classifier})
-                                    ON CREATE SET a = props, a.analyzed = localdatetime()""",
+                                    ON CREATE SET a = props, a.analyzed = localdatetime()
+                                    ON MATCH SET a.fromMavenIndex = true""",
                             parameters("batch", batch))
                     ).consume().counters().nodesCreated()
             );
@@ -429,7 +404,7 @@ public class ArtifactRepository {
             }
 
             return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier(),
-                    artifactProps.unresolved(), artifactProps.unresolvedCount(), artifactProps.unresolvedReason(), artifactProps.created(),
+                    artifactProps.fromMavenIndex(), artifactProps.unresolved(), artifactProps.unresolvedCount(), artifactProps.unresolvedReason(), artifactProps.created(),
                     artifactProps.packageSize(), artifactProps.packaging(), artifactProps.name(),
                     artifactProps.description(), artifactProps.url(), artifactProps.scmUrl(), artifactProps.issuesUrl(), artifactProps.inceptionYear(),
                     licenses, licenseTypes, artifactProps.classifiers(), artifactProps.extensions(), jarInfo, effectiveValues, artifactProps.analyzed());
@@ -496,7 +471,7 @@ public class ArtifactRepository {
                         .toList();
             }
             return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(),
-                    artifactInfo.unresolved(), artifactInfo.unresolvedCount(), artifactInfo.unresolvedReason(), artifactInfo.created(),
+                    artifactInfo.fromMavenIndex(), artifactInfo.unresolved(), artifactInfo.unresolvedCount(), artifactInfo.unresolvedReason(), artifactInfo.created(),
                     artifactInfo.packageSize(), artifactInfo.packaging(), artifactInfo.name(),
                     artifactInfo.description(), artifactInfo.url(), artifactInfo.scmUrl(), artifactInfo.issuesUrl(),
                     artifactInfo.inceptionYear(), licenses, licenseTypes, artifactInfo.classifiers(), artifactInfo.extensions(),
@@ -515,6 +490,7 @@ public class ArtifactRepository {
                                  String artifactId,
                                  String version,
                                  String classifier,
+                                 Boolean fromMavenIndex,
                                  Boolean unresolved,
                                  Integer unresolvedCount,
                                  String unresolvedReason,

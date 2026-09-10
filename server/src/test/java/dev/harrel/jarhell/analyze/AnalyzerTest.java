@@ -27,7 +27,7 @@ class AnalyzerTest {
     }
 
     private static ArtifactInfo resolved(Long size, String bytecodeVersion, List<LicenseType> licenseTypes) {
-        return new ArtifactInfo("org.resolved", "resolved", "1.0.0", null, null, null, null, null,
+        return new ArtifactInfo("org.resolved", "resolved", "1.0.0", null, null, null, null, null, null,
                 size, "jar", "resolved", "desc", null, null, null, null,
                 List.of(), licenseTypes, List.of(), List.of(), new JarAnalyzer.JarInfo(Map.of(), Map.of(),
                 0,BytecodeVersion.from(bytecodeVersion), null, false, false, Set.of(),

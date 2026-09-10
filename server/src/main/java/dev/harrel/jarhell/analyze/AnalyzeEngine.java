@@ -39,12 +39,6 @@ public class AnalyzeEngine {
         return CompletableFuture.supplyAsync(() -> doFullAnalysis(gav), Executors.newVirtualThreadPerTaskExecutor());
     }
 
-    public void saveUnresolved(Gav gav) {
-        if (!artifactRepository.exists(gav)) {
-            artifactRepository.saveArtifact(ArtifactInfo.unresolved(gav, "crawl"));
-        }
-    }
-
     ArtifactTree doFullAnalysis(Gav gav) {
         try {
             logger.info("START FULL analysis of [{}]", gav);
