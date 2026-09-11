@@ -96,11 +96,17 @@
             <span>Analysed <span style="font-family: 'JetBrains Mono', monospace; color: #4a453e;">23/08/2026</span></span>
           </div>
           <p style="margin: 14px 0 0; max-width: 520px; font-size: 16px; color: #4a453e;">Library for JSON schema validation</p>
-          <div style="display: flex; gap: 8px; margin-top: 18px; font-size: 13px;">
-            <a href="#" style="display: flex; align-items: center; gap: 7px; padding: 6px 12px; border: 1px solid #e6e3de; border-radius: 8px; color: #14120f;" style-hover="border-color: #14120f;">Homepage</a>
-            <a href="#" style="display: flex; align-items: center; gap: 7px; padding: 6px 12px; border: 1px solid #e6e3de; border-radius: 8px; color: #14120f;" style-hover="border-color: #14120f;">Source</a>
-            <a href="#" style="display: flex; align-items: center; gap: 7px; padding: 6px 12px; border: 1px solid #e6e3de; border-radius: 8px; color: #14120f;" style-hover="border-color: #14120f;">Issues</a>
-            <a href="#" style="display: flex; align-items: center; gap: 7px; padding: 6px 12px; border: 1px solid #e6e3de; border-radius: 8px; color: #14120f;" style-hover="border-color: #14120f;">Badges</a>
+          <div style="display: flex; align-items: center; gap: 6px 18px; flex-wrap: wrap; margin-top: 18px; font-size: 13.5px;">
+            <a href="#" style="display: flex; align-items: center; gap: 7px; padding: 6px 12px; border: 1px solid #e6e3de; border-radius: 8px; font-size: 13px; color: #14120f; white-space: nowrap;" style-hover="border-color: #14120f; color: #14120f;">Badges</a>
+            <sc-for list="{{ metaLinks }}" as="l" hint-placeholder-count="3">
+              <a href="#" style="display: flex; align-items: center; gap: 6px; color: #4a453e; white-space: nowrap;" style-hover="color: #d94a22;">
+                <span style="font-size: 11px; color: #b5afa6;">↗</span>
+                <span style="border-bottom: 1px solid #e0dcd6; padding-bottom: 1px;">{{ l.label }}</span>
+              </a>
+            </sc-for>
+            <sc-if value="{{ noMetaLinks }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size: 13px; color: #a8a29a;">No project links in the package metadata</span>
+            </sc-if>
           </div>
         </div>
 
@@ -142,7 +148,7 @@
               <div style="position: absolute; left: 50.3%; top: -4px; bottom: -4px; width: 1px; background: #e0dcd6;"></div>
               <div style="position: absolute; left: 88.8%; top: -4px; bottom: -4px; width: 1px; background: #e0dcd6;"></div>
               <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ fillWidth }}; display: flex; gap: 2px; border-radius: 3px; overflow: hidden;">
-                <div style="flex: {{ selfFlex }}; background: #4a453e;"></div>
+                <div style="flex: {{ selfFlex }}; background: {{ publicColor }};"></div>
                 <div style="flex: {{ depsFlex }}; background: {{ bandColor }};"></div>
               </div>
             </div>
@@ -152,7 +158,7 @@
               <span style="position: absolute; left: 88.8%; transform: translateX(-50%);">10MB</span>
             </div>
             <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: #6f6a62;">
-              <span style="display: flex; align-items: center; gap: 7px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #4a453e; flex-shrink: 0;"></span>{{ selfCaption }}</span>
+              <span style="display: flex; align-items: center; gap: 7px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: {{ publicColor }}; flex-shrink: 0;"></span>{{ selfCaption }}</span>
               <span style="display: flex; align-items: center; gap: 7px; color: {{ depsCaptionColor }};"><span style="width: 9px; height: 9px; border-radius: 2px; background: {{ depsSwatch }}; flex-shrink: 0;"></span>{{ depsCaption }}</span>
             </div>
           </div>
@@ -251,17 +257,17 @@
           <div style="background: #ffffff; padding: 24px 24px 20px;">
             <div style="display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap;">
               <div style="display: flex; align-items: baseline; gap: 9px; white-space: nowrap;">
-                <span style="font-family: 'JetBrains Mono', monospace; font-size: 48px; font-weight: 500; letter-spacing: -0.04em; line-height: 0.9; color: #4a453e;">{{ publicPctRounded }}</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 48px; font-weight: 500; letter-spacing: -0.04em; line-height: 0.9; color: {{ publicColor }};">{{ publicPctRounded }}</span>
                 <span style="font-size: 15px; font-weight: 600; color: #4a453e;">of classes are public</span>
               </div>
             </div>
 
             <div style="margin-top: 20px; display: flex; height: 12px; gap: 2px; border-radius: 3px; overflow: hidden; background: #f4f2ef;">
-              <div style="width: {{ publicPct }}; background: #4a453e;"></div>
+              <div style="width: {{ publicPct }}; background: {{ publicColor }};"></div>
               <div style="flex: 1; background: #d8cfc2;"></div>
             </div>
             <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: #6f6a62;">
-              <span style="display: flex; align-items: center; gap: 7px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #4a453e; flex-shrink: 0;"></span>{{ publicCaption }}</span>
+              <span style="display: flex; align-items: center; gap: 7px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: {{ publicColor }}; flex-shrink: 0;"></span>{{ publicCaption }}</span>
               <span style="display: flex; align-items: center; gap: 7px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #d8cfc2; flex-shrink: 0;"></span>{{ internalCaption }}</span>
             </div>
             <div style="margin-top: 10px; font-size: 12.5px; color: #8d877e;">{{ apiNote }}</div>
@@ -270,7 +276,7 @@
             <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px;">
               <sc-for list="{{ kinds }}" as="k" hint-placeholder-count="6">
                 <div style="padding: 10px 12px; border: 1px solid #eceae6; border-radius: 9px; background: #fbfaf8;">
-                  <div style="font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 500; letter-spacing: -0.03em; color: #4a453e;">{{ k.count }}</div>
+                  <div style="font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 500; letter-spacing: -0.03em; color: {{ publicColor }};">{{ k.count }}</div>
                   <div style="margin-top: 2px; font-size: 12px; color: #6f6a62;">{{ k.label }}</div>
                 </div>
               </sc-for>
@@ -380,7 +386,7 @@
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;dataSample&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Real data&quot;,&quot;With Jakarta provider&quot;,&quot;Kotlin + full stack&quot;],&quot;default&quot;:&quot;Real data&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Sample data&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;dataSample&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Real data&quot;,&quot;With Jakarta provider&quot;,&quot;Kotlin + full stack&quot;],&quot;default&quot;:&quot;Real data&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Sample data&quot;},&quot;projectLinks&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;All present&quot;,&quot;Homepage only&quot;,&quot;None&quot;],&quot;default&quot;:&quot;All present&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Sample data&quot;},&quot;publicColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#4a453e&quot;,&quot;#5f6b3a&quot;,&quot;#8a6d3b&quot;,&quot;#2f6f6a&quot;],&quot;default&quot;:&quot;#4a453e&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Palette&quot;}}">
 const TREE = {
   name: 'json-schema', version: '1.9.1', size: '211.01 KB', bytecode: 'Java 8', license: 'MIT',
   children: [
@@ -670,6 +676,12 @@ class Component extends DCLogic {
     return {
       rows,
       versionGroups,
+      metaLinks: (this.props.projectLinks === 'None'
+        ? []
+        : this.props.projectLinks === 'Homepage only'
+          ? ['Homepage']
+          : ['Homepage', 'Source', 'Issues']).map(label => ({ label })),
+      noMetaLinks: this.props.projectLinks === 'None',
       jarFileName: jar.file,
       entryTotal: String(entryTotal),
       langs: jar.languages.map(l => ({
@@ -684,6 +696,7 @@ class Component extends DCLogic {
       compressionNote: kb(bytesTotal) + ' uncompressed, ' + kb(packedTotal) + ' packed — '
         + Math.round((1 - packedTotal / bytesTotal) * 100) + '% saved',
       publicCount: String(jar.publicTypes),
+      publicColor: this.props.publicColor || '#4a453e',
       publicPct: (publicShare * 100).toFixed(1) + '%',
       publicPctRounded: Math.round(publicShare * 100) + '%',
       publicCaption: jar.publicTypes + ' public types',
