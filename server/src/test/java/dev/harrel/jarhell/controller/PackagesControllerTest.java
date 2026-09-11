@@ -558,9 +558,36 @@ class PackagesControllerTest {
         assertThat(found).hasSize(40);
     }
 
+    @Test
+    void shouldSearchOnlyPackagesFromMavenIndex() throws InterruptedException, ExecutionException, TimeoutException {
+        try (var session = driver.session()) {
+            session.executeWriteWithoutResult(
+                    tx -> tx.run("""
+                            CREATE
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib1', version: '1.0.0', fromMavenIndex: true}),
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib2', version: '1.0.0', fromMavenIndex: false}),
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib3', version: '1.0.0'}),
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib4', version: '1.0.0', fromMavenIndex: false}),
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib4', version: '2.0.0', fromMavenIndex: true})
+                            """)
+            );
+        }
+
+        for (String query : List.of("lib", "org.test:lib")) {
+            ContentResponse res = httpClient.GET(host + "/api/v1/packages/search?query=" + query);
+
+            assertThat(res.getStatus()).isEqualTo(200);
+            List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+            assertThat(found).containsExactlyInAnyOrder(
+                    new SearchResult("org.test", "lib1"),
+                    new SearchResult("org.test", "lib4")
+            );
+        }
+    }
+
     void insertGavs(List<Gav> gavs) {
         String statement = gavs.stream()
-                .map(gav -> "(:Artifact {groupId: '%s', artifactId: '%s', version: '%s'})"
+                .map(gav -> "(:Artifact {groupId: '%s', artifactId: '%s', version: '%s', fromMavenIndex: true})"
                         .formatted(gav.groupId(), gav.artifactId(), gav.version()))
                 .collect(Collectors.joining(",", "CREATE", ""));
         try (var session = driver.session()) {

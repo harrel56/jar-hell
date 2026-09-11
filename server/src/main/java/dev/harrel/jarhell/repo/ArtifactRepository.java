@@ -136,7 +136,7 @@ public class ArtifactRepository {
                 Result res = tx.run("""
                                 MATCH (n:Artifact)
                                 WHERE (n.groupId CONTAINS $token OR n.artifactId CONTAINS $token)
-                                AND coalesce(root.fromMavenIndex, false)
+                                AND coalesce(n.fromMavenIndex, false)
                                 RETURN DISTINCT n.groupId, n.artifactId
                                 LIMIT 40""",
                         parameters("token", token));
@@ -153,7 +153,7 @@ public class ArtifactRepository {
                                 MATCH (n:Artifact)
                                 WHERE n.groupId CONTAINS $groupId
                                 AND n.artifactId CONTAINS $artifactId
-                                AND coalesce(root.fromMavenIndex, false)
+                                AND coalesce(n.fromMavenIndex, false)
                                 RETURN DISTINCT n.groupId, n.artifactId
                                 LIMIT 40""",
                         parameters("groupId", groupId, "artifactId", artifactId));
