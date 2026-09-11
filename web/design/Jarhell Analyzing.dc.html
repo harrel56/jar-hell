@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #ffffff; }
+  * { box-sizing: border-box; }
+  a { color: #d94a22; text-decoration: none; }
+  a:hover { color: #b13a17; }
+  @keyframes jh-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+  @keyframes jh-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+  @keyframes jh-spin { to { transform: rotate(360deg); } }
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #ffffff; color: #14120f; font-family: 'Inter Tight', system-ui, sans-serif; font-size: 15px; line-height: 1.5; text-wrap: pretty;">
+
+  <header style="position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 24px; height: 60px; padding: 0 28px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); border-bottom: 1px solid #eceae6;">
+    <a href="#" style="display: flex; align-items: center; gap: 9px; color: #14120f; font-size: 19px; font-weight: 700; letter-spacing: -0.025em;">
+      <span style="width: 24px; height: 24px; border-radius: 7px; background: #14120f; display: flex; align-items: center; justify-content: center;"><span style="width: 9px; height: 11px; background: #ff5c2b; clip-path: polygon(50% 0%, 100% 62%, 78% 100%, 22% 100%, 0% 62%);"></span></span>
+      <span>Jar<span style="color: #d94a22;">hell</span></span>
+    </a>
+    <div style="position: relative; flex: 1; max-width: 520px;">
+      <div style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 13px; background: #f7f6f4; border: 1px solid {{ searchBorder }}; border-radius: 9px;">
+        <input value="{{ searchQuery }}" onChange="{{ onSearch }}" onFocus="{{ onSearchFocus }}" onBlur="{{ onSearchBlur }}" placeholder="group:artifact" style="flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #14120f;" />
+        <span style="flex-shrink: 0; color: #8d877e; font-size: 12px;">⌕</span>
+      </div>
+      <sc-if value="{{ showSearchSuggest }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; left: 0; right: 0; top: 44px; z-index: 40; background: #ffffff; border: 1px solid #eceae6; border-radius: 11px; box-shadow: 0 18px 44px rgba(20,18,15,0.13); overflow: hidden;">
+          <sc-for list="{{ searchSuggestions }}" as="s" hint-placeholder-count="4">
+            <div style="display: flex; align-items: baseline; gap: 9px; padding: 9px 14px; border-bottom: 1px solid #f4f2ef; cursor: pointer; font-family: 'JetBrains Mono', monospace;" style-hover="background: #faf9f7;">
+              <span style="flex-shrink: 0; font-size: 11.5px; color: #a8a29a;">{{ s.group }}</span>
+              <span style="font-size: 13px; color: #14120f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ s.name }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6f6a62;">
+      <span style="padding: 6px 10px; border-radius: 7px; cursor: pointer;" style-hover="background: #f4f2ef;">API</span>
+      <span style="padding: 6px 10px; border-radius: 7px; cursor: pointer;" style-hover="background: #f4f2ef;">GitHub</span>
+      <span style="padding: 6px 10px; border-radius: 7px; cursor: pointer;" style-hover="background: #f4f2ef;">☀</span>
+    </div>
+  </header>
+
+  <div style="display: flex; align-items: flex-start; max-width: 1340px; margin: 0 auto;">
+
+    <aside style="width: 268px; flex-shrink: 0; position: sticky; top: 60px; align-self: flex-start; max-height: calc(100vh - 60px); overflow-y: auto; padding: 26px 20px 40px; border-right: 1px solid #eceae6;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; padding: 0 6px 12px;">
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8d877e;">Versions</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #a8a29a;">{{ versionTotal }}</span>
+      </div>
+
+      <sc-for list="{{ versionGroups }}" as="g" hint-placeholder-count="6">
+        <div style="border-top: 1px solid #f1efeb;">
+          <div onClick="{{ g.toggle }}" style="display: flex; align-items: center; gap: 9px; padding: 10px 6px; cursor: pointer; border-radius: 7px;" style-hover="background: #f7f6f4;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: {{ g.labelColor }};">{{ g.label }}</span>
+            <span style="font-size: 11.5px; color: #a8a29a;">{{ g.count }}</span>
+            <span style="margin-left: auto; font-size: 10px; color: #a8a29a;">{{ g.chevron }}</span>
+          </div>
+          <sc-if value="{{ g.open }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-direction: column; gap: 1px; padding: 0 0 8px 6px;">
+              <sc-for list="{{ g.versions }}" as="v" hint-placeholder-count="2">
+                <div onClick="{{ v.select }}" style="display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-left: 2px solid {{ v.rail }}; border-radius: 0 7px 7px 0; cursor: pointer; background: {{ v.bg }};" style-hover="background: #f4f2ef;">
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: {{ v.color }};">{{ v.name }}</span>
+                  <sc-if value="{{ v.analyzed }}" hint-placeholder-val="{{ false }}">
+                    <span style="margin-left: auto; font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #2f7a3d; background: #eef7ef; border: 1px solid #d5e8d7; padding: 2px 6px; border-radius: 20px;">Analyzed</span>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </aside>
+
+    <main style="flex: 1; min-width: 0; padding: 34px 40px 96px;">
+
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #8d877e;">dev.harrel</div>
+      <div style="display: flex; align-items: center; gap: 12px; margin-top: 5px; flex-wrap: wrap;">
+        <h1 style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 36px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1;">json-schema</h1>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #d94a22; background: #fdf2ee; border: 1px solid #f6ddd3; padding: 3px 9px; border-radius: 6px;">{{ selectedVersion }}</span>
+        <span style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #b13a17; background: #fdf2ee; border: 1px solid #f6ddd3; padding: 4px 11px 4px 9px; border-radius: 20px;">
+          <span style="width: 11px; height: 11px; border-radius: 50%; border: 2px solid #f0c3b0; border-top-color: #d94a22; animation: jh-spin 0.8s linear infinite;"></span>
+          Analysing
+        </span>
+      </div>
+      <p style="margin: 14px 0 0; max-width: 560px; font-size: 16px; color: #4a453e;">{{ statusLine }}</p>
+
+      <div style="margin-top: 20px; font-size: 12.5px; color: #8d877e;">{{ etaNote }}</div>
+
+      <div style="margin-top: 38px; max-width: 900px; display: flex; flex-direction: column; gap: 26px;">
+        <sc-for list="{{ skeletons }}" as="sk" hint-placeholder-count="3">
+          <div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="width: 3px; height: 13px; border-radius: 2px; background: #e0dcd6; flex-shrink: 0;"></span>
+              <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #b5afa6;">{{ sk.title }}</span>
+            </div>
+            <div style="margin-top: 12px; border: 1px solid #f1efeb; border-radius: 14px; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px; position: relative; overflow: hidden;">
+              <sc-for list="{{ sk.bars }}" as="b" hint-placeholder-count="3">
+                <div style="height: {{ b.h }}; width: {{ b.w }}; border-radius: 6px; background: #f4f2ef; animation: jh-pulse 1.8s ease-in-out infinite; animation-delay: {{ b.delay }};"></div>
+              </sc-for>
+              <div style="position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.65) 50%, rgba(255,255,255,0) 100%); animation: jh-sweep 2.2s ease-in-out infinite;"></div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+const ALL_VERSIONS = [
+  '1.9.1', '1.9.0',
+  '1.8.2', '1.8.1', '1.8.0',
+  '1.7.3', '1.7.2', '1.7.1', '1.7.0',
+  '1.6.1', '1.6.0',
+  '1.5.2', '1.5.1', '1.5.0',
+  '1.4.3', '1.4.2', '1.4.1', '1.4.0',
+  '1.3.4', '1.3.3', '1.3.2', '1.3.1', '1.3.0',
+  '1.2.2', '1.2.1', '1.2.0',
+  '1.1.0',
+  '1.0.4', '1.0.3', '1.0.2', '1.0.1', '1.0.0'
+];
+
+const GROUPS = ALL_VERSIONS.reduce((acc, v) => {
+  const label = v.split('.').slice(0, 2).join('.') + '.x';
+  let g = acc.find(x => x.label === label);
+  if (!g) { g = { label, versions: [] }; acc.push(g); }
+  g.versions.push(v);
+  return acc;
+}, []);
+
+const CATALOG = [
+  { group: 'dev.harrel', name: 'json-schema' },
+  { group: 'com.networknt', name: 'json-schema-validator' },
+  { group: 'io.vertx', name: 'vertx-json-schema' },
+  { group: 'com.fasterxml.jackson.core', name: 'jackson-databind' }
+];
+
+
+class Component extends DCLogic {
+  state = {
+    query: 'dev.harrel:json-schema',
+    searchFocused: false,
+    openGroup: '1.9.x',
+    selected: '1.9.1'
+  };
+
+  renderVals() {
+    const q = this.state.query.trim().toLowerCase();
+
+    const versionGroups = GROUPS.map(g => {
+      const open = this.state.openGroup === g.label;
+      return {
+        label: g.label,
+        labelColor: open ? '#d94a22' : '#14120f',
+        count: g.versions.length + (g.versions.length === 1 ? ' item' : ' items'),
+        chevron: open ? '▲' : '▼',
+        open,
+        toggle: () => this.setState(s => ({ openGroup: s.openGroup === g.label ? null : g.label })),
+        versions: g.versions.map(v => ({
+          name: v,
+          analyzed: false,
+          bg: v === this.state.selected ? '#f7f6f4' : 'transparent',
+          rail: v === this.state.selected ? '#d94a22' : 'transparent',
+          color: v === this.state.selected ? '#d94a22' : '#4a453e',
+          select: () => this.setState({ selected: v })
+        }))
+      };
+    });
+
+    return {
+      searchQuery: this.state.query,
+      searchBorder: this.state.searchFocused ? '#d94a22' : '#e6e3de',
+      onSearch: e => this.setState({ query: e.target.value }),
+      onSearchFocus: () => this.setState({ searchFocused: true }),
+      onSearchBlur: () => setTimeout(() => this.setState({ searchFocused: false }), 120),
+      showSearchSuggest: this.state.searchFocused,
+      searchSuggestions: CATALOG.filter(c => (c.group + ':' + c.name).toLowerCase().includes(q)).slice(0, 4),
+
+      versionGroups,
+      versionTotal: String(ALL_VERSIONS.length),
+      selectedVersion: this.state.selected,
+
+      statusLine: 'This version has not been analysed before. The jar is being unpacked and measured now — the page fills in when the run finishes.',
+      etaNote: 'Usually under a minute. You can leave and come back — the run continues.',
+
+      skeletons: [
+        { title: 'Effective cost', bars: [
+          { h: '46px', w: '38%', delay: '0s' },
+          { h: '12px', w: '100%', delay: '0.1s' },
+          { h: '12px', w: '54%', delay: '0.2s' }
+        ] },
+        { title: 'Inside this jar', bars: [
+          { h: '28px', w: '30%', delay: '0.1s' },
+          { h: '12px', w: '86%', delay: '0.2s' },
+          { h: '12px', w: '72%', delay: '0.3s' },
+          { h: '12px', w: '48%', delay: '0.4s' }
+        ] },
+        { title: 'Dependency explorer', bars: [
+          { h: '12px', w: '64%', delay: '0.15s' },
+          { h: '12px', w: '78%', delay: '0.25s' },
+          { h: '12px', w: '42%', delay: '0.35s' }
+        ] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
