@@ -1,7 +1,9 @@
-import {createRouter, useNavigate} from '@solidjs/router'
+import {createMemo} from 'solid-js'
+import {createRouter, RouteSectionProps, useNavigate} from '@solidjs/router'
 import {PackagePage} from './pages/PackagePage'
 import {parseGav} from './utils/gav'
-import {getVersions} from './api'
+import {getVersions, HttpError} from './api'
+import {ErrorView} from './components/ErrorView'
 
 export const Router = createRouter({
   preloadLinks: false,
@@ -31,11 +33,17 @@ export const Router = createRouter({
         const gav = parseGav(coordinate)!
         const versions = await getVersions(gav.groupId, gav.artifactId, gav.classifier)
         if (versions.length === 0) {
-          throw new Error('No versions found for ' + coordinate)
+          throw new HttpError(404, 'No versions found for ' + coordinate)
         }
         navigate(`/packages/${coordinate}:${versions.at(-1)?.version}`, {replace: true})
-      }
+      },
+      // The router hands the preload promise only to the route component - without one, a rejection is
+      // unobservable. Reading it from a memo turns it into an async computation the App boundaries see.
+      component: (props: RouteSectionProps<Promise<void>>) => {
+        const redirect = createMemo(() => props.data)
+        return <>{redirect()}</>
+      },
     },
-    { path: '*404', component: () => <p>not found</p> },
+    { path: '*404', component: () => <ErrorView code={404} title='Page not found' details='How did you end up here?'/> },
   ],
 })

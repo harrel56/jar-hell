@@ -18,6 +18,7 @@ export interface ArtifactInfo {
   url?: string
   licenseTypes?: string[]
   unresolved?: boolean
+  unresolvedReason?: string
 }
 
 export interface ArtifactTree {
@@ -31,10 +32,24 @@ export interface DependencyInfo {
   scope: string
 }
 
+export class HttpError extends Error {
+  constructor(readonly status: number, message: string) {
+    super(message)
+    this.name = 'HttpError'
+  }
+}
+
+interface ErrorResponse {
+  url: string
+  method: string
+  message: string
+}
+
 const json = async <T>(path: string, method = 'get', body: BodyInit | null = null): Promise<T> => {
   const res = await fetch(path, {method, body})
   if (!res.ok) {
-    throw new Error(`${path} failed with ${res.status}`)
+    const message = await res.json().then((err: ErrorResponse) => err.message, () => res.statusText)
+    throw new HttpError(res.status, message || `${method.toUpperCase()} ${path} failed with ${res.status}`)
   }
   return res.json()
 }
