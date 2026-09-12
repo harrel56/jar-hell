@@ -1,4 +1,4 @@
-import {createMemo, Errored, isPending, latest, Loading, Show, untrack} from 'solid-js'
+import {createMemo, Errored, isPending, Loading, Show, untrack} from 'solid-js'
 import { useParams } from '@solidjs/router'
 import { VersionsSidebar, VersionsSidebarSkeleton } from '../components/VersionsSidebar'
 import { NotFoundView, ThrownErrorView } from '../components/ErrorView'
@@ -27,7 +27,7 @@ export function PackagePage() {
 
       <Errored fallback={err => <ThrownErrorView error={err()}/>}>
         <Loading fallback={<PackageMainSkeleton gav={gav()}/>}>
-          <Show when={!isPending(pkg) || isAnalyzed()} fallback={<PackageMainSkeleton gav={gav()!}/>}>
+          <Show when={!isPending(pkg) || isAnalyzed()} fallback={<PackageMainSkeleton gav={gav()}/>}>
             <Show when={!isNotFound(pkg())} fallback={<NotFoundView/>}>
               <PackageView tree={pkg()}/>
             </Show>
