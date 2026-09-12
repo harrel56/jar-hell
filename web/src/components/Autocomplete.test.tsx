@@ -197,14 +197,15 @@ describe('panel visibility', () => {
     expect(panel()).toBeInTheDocument()
   })
 
-  test('refocusing reopens it with the previous results', async () => {
+  test('clicking input triggers request', async () => {
     await search('lib')
     blurInput()
 
-    focusInput()
+    fireEvent.click(input)
+    await wait(DEBOUNCE_MS)
 
     expect(options()).toHaveLength(items.length)
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
   test('clearing the input closes it', async () => {
@@ -320,13 +321,24 @@ describe('keyboard navigation', () => {
     expect(history.get()).toBe('/packages/org.a:one')
   })
 
-  test('enter with nothing highlighted leaves the panel alone', async () => {
+  test('enter with nothing highlighted navigates', async () => {
+    await search('group:id')
+
+    press('Enter')
+
+    expect(input.value).toBe('group:id')
+    expect(panel()).not.toBeInTheDocument()
+    expect(history.get()).toBe('/packages/group:id')
+  })
+
+  test('enter with nothing highlighted navigates and clears input for invalid coordinate', async () => {
     await search('o')
 
     press('Enter')
 
-    expect(input.value).toBe('o')
-    expect(panel()).toBeInTheDocument()
+    expect(input.value).toBe('')
+    expect(panel()).not.toBeInTheDocument()
+    expect(history.get()).toBe('/packages/o')
   })
 
   test('typing clears the highlight', async () => {

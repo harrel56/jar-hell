@@ -25,7 +25,7 @@ export default function Autocomplete(props: AutocompleteProps) {
   const gav = () => parseGav(params['coordinate'])
   const [query, debouncedQuery, setQuery] = createDebouncedSignal(() => gav() ? params['coordinate']! : '', props.debounceMs ?? DEBOUNCE_MS)
   const [opened, setOpened] = createSignal(false)
-  const [activeIndex, setActiveIndex] = createSignal<number | null>(null)
+  const [activeIndex, setActiveIndex] = createSignal<number | null>(() => (opened(), null))
 
   const listId = createUniqueId()
   const optionId = (i: number | null) => i === null ? undefined : `${listId}-opt-${i}`
@@ -47,7 +47,6 @@ export default function Autocomplete(props: AutocompleteProps) {
   const select = (r: SearchResult) => {
     setQuery(`${r.g}:${r.a}`)
     setOpened(false)
-    setActiveIndex(null)
   }
 
   const hasQuery = () => query().trim().length > 0 && debouncedQuery().trim().length > 0
@@ -83,6 +82,7 @@ export default function Autocomplete(props: AutocompleteProps) {
       case 'Enter': {
         const idx = activeIndex()
         if (idx === null) {
+          setOpened(false)
           navigate('/packages/' + query())
         } else {
           const option = document.getElementById(optionId(idx)!)
@@ -95,7 +95,6 @@ export default function Autocomplete(props: AutocompleteProps) {
       }
       case 'Escape':
         setOpened(false)
-        setActiveIndex(null)
         break
     }
   }
@@ -110,10 +109,7 @@ export default function Autocomplete(props: AutocompleteProps) {
             setOpened(true)
             setActiveIndex(null)
           }}
-          onBlur={() => {
-            setOpened(false)
-            setActiveIndex(null)
-          }}
+          onBlur={() => setOpened(false)}
           onClick={() => setOpened(true)}
           onKeyDown={onKeyDown}
           placeholder="group:artifact"
