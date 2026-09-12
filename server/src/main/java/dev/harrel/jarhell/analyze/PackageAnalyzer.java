@@ -82,8 +82,11 @@ class PackageAnalyzer {
         String lastModifiedHeader = Objects.requireNonNull(res.getHeaders().get("Last-Modified"));
         LocalDateTime created = LocalDateTime.parse(lastModifiedHeader, DateTimeFormatter.RFC_1123_DATE_TIME);
 
-        String contentLengthHeader = Objects.requireNonNull(res.getHeaders().get("Content-Length"));
-        long packageSize = Long.parseLong(contentLengthHeader);
+        long packageSize = 0;
+        if (!"pom".equalsIgnoreCase(packaging)) {
+            String contentLengthHeader = Objects.requireNonNull(res.getHeaders().get("Content-Length"));
+            packageSize = Long.parseLong(contentLengthHeader);
+        }
 
         return new PackageInfo(created, packageSize, null);
     }
