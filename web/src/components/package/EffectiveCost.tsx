@@ -28,13 +28,17 @@ const MB = 1000 * KB
 interface Band {
   label: string
   color: string
+  chevrons: string
 }
 
+const band = (label: string, token: string): Band =>
+  ({ label, color: `var(--${token})`, chevrons: `var(--chevrons-${token})` })
+
 const sizeBand = (bytes: number): Band => {
-  if (bytes < 512 * KB) return { label: 'Light', color: 'var(--good)' }
-  if (bytes < 4 * MB) return { label: 'Moderate', color: 'var(--warn)' }
-  if (bytes < 20 * MB) return { label: 'Heavy', color: 'var(--bad)' }
-  return { label: 'Very heavy', color: 'var(--critical)' }
+  if (bytes < 512 * KB) return band('Light', 'good')
+  if (bytes < 4 * MB) return band('Moderate', 'warn')
+  if (bytes < 20 * MB) return band('Heavy', 'bad')
+  return band('Very heavy', 'critical')
 }
 
 // Rail is log-scaled from 50 KB to 20 MB
@@ -42,6 +46,8 @@ const RAIL_MIN = 50 * KB
 const RAIL_MAX = 20 * MB
 const railPosition = (bytes: number) =>
   Math.max(2, Math.min(100, Math.log10(Math.max(bytes, RAIL_MIN) / RAIL_MIN) / Math.log10(RAIL_MAX / RAIL_MIN) * 100))
+
+const bytesTitle = (bytes: number) => `${bytes.toLocaleString('en-US')} bytes`
 
 const RAIL_TICKS = [
   { label: '100KB', bytes: 100 * KB },
@@ -63,7 +69,7 @@ function EffectiveSize(props: EffectiveSizeProps) {
   return (
     <div class="bg-(--ground) px-6 pt-[26px] pb-6">
       <div class="flex flex-wrap items-end gap-4">
-        <div class="flex items-baseline gap-[9px] whitespace-nowrap font-(family-name:--font-data)">
+        <div class="flex items-baseline gap-[9px] whitespace-nowrap font-(family-name:--font-data)" title={bytesTitle(props.totalBytes)}>
           <span class="text-(length:--text-metric-xl) font-medium leading-(--leading-metric) tracking-(--tracking-metric)">{size().value}</span>
           <span class="text-[24px] text-(--ink-3)">{size().unit}</span>
         </div>
@@ -81,10 +87,10 @@ function EffectiveSize(props: EffectiveSizeProps) {
           {tick => <div class="absolute -top-1 -bottom-1 w-px bg-(--hairline-tick)" style={{ left: tick.left }}/>}
         </For>
         <div class="absolute inset-y-0 left-0 rounded-(--radius-bar)"
-             style={{ width: `${railPosition(props.totalBytes)}%`, background: band().color }}/>
+             style={{ width: `${railPosition(props.totalBytes)}%`, background: band().chevrons }}/>
         <Show when={props.selfBytes > 0}>
-          <div class={['absolute inset-y-0 left-0 bg-(--self-size)', hasDeps() ? 'rounded-l-(--radius-bar) shadow-[2px_0_0_var(--track)]' : 'rounded-(--radius-bar)']}
-               style={{ width: `${railPosition(props.selfBytes)}%` }}/>
+          <div class={['absolute inset-y-0 left-0', hasDeps() ? 'rounded-l-(--radius-bar) shadow-[2px_0_0_var(--track)]' : 'rounded-(--radius-bar)']}
+               style={{ width: `${railPosition(props.selfBytes)}%`, background: band().color }}/>
         </Show>
       </div>
       <div class="relative mt-1.5 h-3.5 font-(family-name:--font-data) text-(length:--text-micro) text-(--ink-5)">
@@ -94,12 +100,12 @@ function EffectiveSize(props: EffectiveSizeProps) {
       </div>
 
       <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-(length:--text-meta) text-(--ink-3)">
-        <span class="flex items-center gap-[7px]">
-          <span class="size-2.5 shrink-0 rounded-[3px] bg-(--self-size)"/>
+        <span class="flex items-center gap-[7px]" title={bytesTitle(props.selfBytes)}>
+          <span class="size-2.5 shrink-0 rounded-[3px]" style={{ background: band().color }}/>
           package {formatSizeText(props.selfBytes)}
         </span>
-        <span class={['flex items-center gap-[7px]', { 'text-(--ink-5)': !hasDeps() }]}>
-          <span class="size-[9px] shrink-0 rounded-[2px]" style={{ background: hasDeps() ? band().color : 'var(--hairline-strong)' }}/>
+        <span class={['flex items-center gap-[7px]', { 'text-(--ink-5)': !hasDeps() }]} title={bytesTitle(depsBytes())}>
+          <span class="size-[9px] shrink-0 rounded-[2px]" style={{ background: hasDeps() ? band().chevrons : 'var(--hairline-strong)' }}/>
           transitive {formatSizeText(depsBytes())}
         </span>
       </div>

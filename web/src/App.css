@@ -52,3 +52,22 @@
     text-wrap: pretty;
   }
 }
+
+:root {
+  --chevrons-good: repeating-linear-gradient(115deg,
+    color-mix(in srgb, var(--good) 45%, var(--ground)) 0 2.75px,
+    var(--good) 4.25px 9.75px,
+    color-mix(in srgb, var(--good) 45%, var(--ground)) 11.25px 14px);
+  --chevrons-warn: repeating-linear-gradient(115deg,
+    color-mix(in srgb, var(--warn) 45%, var(--ground)) 0 2.75px,
+    var(--warn) 4.25px 9.75px,
+    color-mix(in srgb, var(--warn) 45%, var(--ground)) 11.25px 14px);
+  --chevrons-bad: repeating-linear-gradient(115deg,
+    color-mix(in srgb, var(--bad) 45%, var(--ground)) 0 2.75px,
+    var(--bad) 4.25px 9.75px,
+    color-mix(in srgb, var(--bad) 45%, var(--ground)) 11.25px 14px);
+  --chevrons-critical: repeating-linear-gradient(115deg,
+    color-mix(in srgb, var(--critical) 45%, var(--ground)) 0 2.75px,
+    var(--critical) 4.25px 9.75px,
+    color-mix(in srgb, var(--critical) 45%, var(--ground)) 11.25px 14px);
+}
