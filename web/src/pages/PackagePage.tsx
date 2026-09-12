@@ -1,4 +1,4 @@
-import {createMemo, Errored, isPending, Loading, Show} from 'solid-js'
+import {createEffect, createMemo, Errored, isPending, Loading, Show} from 'solid-js'
 import { useParams } from '@solidjs/router'
 import { VersionsSidebar, VersionsSidebarSkeleton } from '../components/VersionsSidebar'
 import { NotFoundView, ThrownErrorView } from '../components/ErrorView'
@@ -18,7 +18,6 @@ export function PackagePage() {
   const versions = createMemo(() => getVersions(...versionsArgs()))
   const analyzed = createMemo(() => versions().some(av => av.version === gav().version && av.analyzed))
   const pkg = createMemo(() => analyzed() ? getPackage(coordinate()) : analyzePackage(gav()))
-
   return (
     <div class="mx-auto flex w-full max-w-(--measure-app) items-start">
       <Loading fallback={<VersionsSidebarSkeleton/>}>
@@ -27,7 +26,7 @@ export function PackagePage() {
 
       <Errored fallback={err => <ThrownErrorView error={err()} requested={coordinate()}/>}>
         <Loading fallback={<PackageMainSkeleton gav={gav()}/>}>
-          <Show when={analyzed() || !isPending(pkg)} fallback={<PackageMainSkeleton gav={gav()}/>}>
+          <Show when={(pkg() && !isPending(pkg)) || analyzed()} keyed fallback={<PackageMainSkeleton gav={gav()}/>}>
             <Show when={!isNotFound(pkg())} fallback={<NotFoundView/>}>
               <PackageView tree={pkg()}/>
             </Show>
