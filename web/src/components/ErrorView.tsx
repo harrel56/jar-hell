@@ -52,7 +52,7 @@ export function NotFoundView() {
   )
 }
 
-export function ThrownErrorView(props: { error: unknown, requested?: string | undefined }) {
+export function ThrownErrorView(props: { error: unknown }) {
   return (
     <Show when={props.error instanceof HttpError && props.error.status === 404}
           fallback={<ErrorView {...describeError(props.error)}/>}>
