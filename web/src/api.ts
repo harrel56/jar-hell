@@ -22,8 +22,19 @@ export interface ArtifactInfo {
   created?: string
   analyzed?: string
   licenseTypes?: string[]
+  effectiveValues?: EffectiveValues
   unresolved?: boolean
   unresolvedReason?: string
+}
+
+export interface EffectiveValues {
+  requiredDependencies: number
+  unresolvedDependencies: number
+  optionalDependencies: number
+  size: number
+  bytecodeVersion?: { major: number, minor: number }
+  licenseType: string
+  licenseTypes: Record<string, number>[]
 }
 
 export interface ArtifactTree {

@@ -1,6 +1,8 @@
+import { Show } from 'solid-js'
 import { ArtifactTree } from '../../api'
 import { PackageHeader } from './PackageHeader'
 import { InstallSnippet } from './InstallSnippet'
+import { EffectiveCost } from './EffectiveCost'
 
 interface PackageViewProps {
   tree: ArtifactTree
@@ -13,6 +15,9 @@ export function PackageView(props: PackageViewProps) {
         <PackageHeader info={props.tree.artifactInfo}/>
         <InstallSnippet gav={props.tree.artifactInfo}/>
       </div>
+      <Show when={props.tree.artifactInfo.effectiveValues}>
+        {effective => <EffectiveCost info={props.tree.artifactInfo} effective={effective()}/>}
+      </Show>
     </main>
   )
 }

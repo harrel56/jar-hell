@@ -61,7 +61,7 @@ export function ThrownErrorView(props: { error: unknown }) {
   )
 }
 
-function describeError(error: unknown): ErrorViewProps {
+const describeError = (error: unknown): ErrorViewProps => {
   if (error instanceof HttpError) {
     return {
       code: error.status,
