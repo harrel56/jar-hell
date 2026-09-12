@@ -16,6 +16,11 @@ export interface ArtifactInfo {
   packaging?: string
   packageSize?: number
   url?: string
+  scmUrl?: string
+  issuesUrl?: string
+  /** ISO local date-times, e.g. `2026-02-27T12:34:56` */
+  created?: string
+  analyzed?: string
   licenseTypes?: string[]
   unresolved?: boolean
   unresolvedReason?: string

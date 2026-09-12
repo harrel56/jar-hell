@@ -2,6 +2,7 @@ import {createMemo, Errored, isPending, Loading, Show} from 'solid-js'
 import { useParams } from '@solidjs/router'
 import { VersionsSidebar, VersionsSidebarSkeleton } from '../components/VersionsSidebar'
 import { NotFoundView, ThrownErrorView } from '../components/ErrorView'
+import { PackageView } from '../components/package/PackageView'
 import {analyzePackage, ArtifactTree, getPackage, getVersions} from '../api'
 import { Gav, parseGav } from '../utils/gav'
 
@@ -19,7 +20,7 @@ export function PackagePage() {
   const pkg = createMemo(() => analyzed() ? getPackage(coordinate()) : analyzePackage(gav()))
 
   return (
-    <div class="mx-auto flex max-w-(--measure-app) items-start">
+    <div class="mx-auto flex w-full max-w-(--measure-app) items-start">
       <Loading fallback={<VersionsSidebarSkeleton/>}>
         <VersionsSidebar gav={gav()} versions={versions()}/>
       </Loading>
@@ -28,13 +29,7 @@ export function PackagePage() {
         <Loading fallback={<PackageMainSkeleton gav={gav()}/>}>
           <Show when={analyzed() || !isPending(pkg)} fallback={<PackageMainSkeleton gav={gav()}/>}>
             <Show when={!isNotFound(pkg())} fallback={<NotFoundView/>}>
-              <main class="min-w-0 flex-1 px-10 pt-(--space-10) pb-24">
-                <PackageHeading gav={gav()}/>
-                <p class="mt-4 text-(--ink-2)">{pkg().artifactInfo.description}</p>
-                <pre class="mt-8 overflow-auto rounded-(--radius-panel) border border-(--hairline) bg-(--surface-sunken) p-4 font-(family-name:--font-data) text-(length:--text-meta) text-(--ink-2)">
-                  {JSON.stringify(pkg(), null, 2)}
-                </pre>
-              </main>
+              <PackageView tree={pkg()}/>
             </Show>
           </Show>
         </Loading>
