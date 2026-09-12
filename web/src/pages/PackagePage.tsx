@@ -1,4 +1,4 @@
-import {createEffect, createMemo, Errored, isPending, Loading, Show} from 'solid-js'
+import {createMemo, Errored, isPending, Loading, Show} from 'solid-js'
 import { useParams } from '@solidjs/router'
 import { VersionsSidebar, VersionsSidebarSkeleton } from '../components/VersionsSidebar'
 import { NotFoundView, ThrownErrorView } from '../components/ErrorView'
