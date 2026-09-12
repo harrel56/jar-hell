@@ -148,8 +148,8 @@
               <div style="position: absolute; left: 50.3%; top: -4px; bottom: -4px; width: 1px; background: #e0dcd6;"></div>
               <div style="position: absolute; left: 88.8%; top: -4px; bottom: -4px; width: 1px; background: #e0dcd6;"></div>
               <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ fillWidth }}; display: flex; gap: 2px; border-radius: 3px; overflow: hidden;">
-                <div style="flex: {{ selfFlex }}; background: {{ publicColor }};"></div>
-                <div style="flex: {{ depsFlex }}; background: {{ bandColor }};"></div>
+                <div style="flex: {{ selfFlex }}; background: {{ selfFill }};"></div>
+                <div style="flex: {{ depsFlex }}; background: {{ depsFill }};"></div>
               </div>
             </div>
             <div style="margin-top: 6px; position: relative; height: 14px; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #a8a29a;">
@@ -158,7 +158,7 @@
               <span style="position: absolute; left: 88.8%; transform: translateX(-50%);">10MB</span>
             </div>
             <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: #6f6a62;">
-              <span style="display: flex; align-items: center; gap: 7px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: {{ publicColor }}; flex-shrink: 0;"></span>{{ selfCaption }}</span>
+              <span style="display: flex; align-items: center; gap: 7px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: {{ selfFill }}; flex-shrink: 0;"></span>{{ selfCaption }}</span>
               <span style="display: flex; align-items: center; gap: 7px; color: {{ depsCaptionColor }};"><span style="width: 9px; height: 9px; border-radius: 2px; background: {{ depsSwatch }}; flex-shrink: 0;"></span>{{ depsCaption }}</span>
             </div>
           </div>
@@ -387,6 +387,26 @@
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;dataSample&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Real data&quot;,&quot;With Jakarta provider&quot;,&quot;Kotlin + full stack&quot;],&quot;default&quot;:&quot;Real data&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Sample data&quot;},&quot;projectLinks&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;All present&quot;,&quot;Homepage only&quot;,&quot;None&quot;],&quot;default&quot;:&quot;All present&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Sample data&quot;},&quot;publicColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#4a453e&quot;,&quot;#5f6b3a&quot;,&quot;#8a6d3b&quot;,&quot;#2f6f6a&quot;],&quot;default&quot;:&quot;#4a453e&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Palette&quot;}}">
+function mixWhite(hex, amount) {
+  const n = parseInt(hex.slice(1), 16);
+  const c = [n >> 16 & 255, n >> 8 & 255, n & 255]
+    .map(v => Math.round(v + (255 - v) * amount));
+  return 'rgb(' + c.join(',') + ')';
+}
+function chevrons(hex, step) {
+  const tint = mixWhite(hex, 0.55);
+  const f = 0.75, p = step * 2;
+  // feathered stops kill the stair-stepping on the diagonal; the repeat seam
+  // lands mid-tint (tint -> tint) so the wrap itself is invisible
+  return 'repeating-linear-gradient(115deg,'
+    + tint + ' 0,'
+    + tint + ' ' + (step / 2 - f) + 'px,'
+    + hex + ' ' + (step / 2 + f) + 'px,'
+    + hex + ' ' + (step * 1.5 - f) + 'px,'
+    + tint + ' ' + (step * 1.5 + f) + 'px,'
+    + tint + ' ' + p + 'px)';
+}
+
 const TREE = {
   name: 'json-schema', version: '1.9.1', size: '211.01 KB', bytecode: 'Java 8', license: 'MIT',
   children: [
@@ -788,7 +808,9 @@ class Component extends DCLogic {
       selfCaption: 'package ' + fmt(selfKB),
       depsCaption: 'transitive ' + fmt(depsKB),
       depsCaptionColor: depsKB > 0 ? '#4a453e' : '#a8a29a',
-      depsSwatch: depsKB > 0 ? band.color : '#e6e3de',
+      selfFill: band.color,
+      depsFill: depsKB > 0 ? chevrons(band.color, 7) : '#f0eeea',
+      depsSwatch: depsKB > 0 ? chevrons(band.color, 4) : '#e6e3de',
       requiredCount: String(sc.required),
       requiredUnit: sc.required === 1 ? 'artifact' : 'artifacts',
       requiredVerdict: sc.required === 0 ? 'Zero-dep' : sc.required <= 8 ? 'Contained' : 'Wide',
