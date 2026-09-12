@@ -15,6 +15,17 @@ const formatDate = (isoDateTime: string) => {
   return `${day}/${month}/${year}`
 }
 
+/** `2026-02-27T12:34:56.789` → `27/02/2026 12:34:56` */
+const formatDateTime = (isoDateTime: string) => `${formatDate(isoDateTime)} ${isoDateTime.slice(11, 19)}`
+
+function DateLabel(props: { isoDateTime: string }) {
+  return (
+    <span title={formatDateTime(props.isoDateTime)} class="font-(family-name:--font-data) text-(--ink-2)">
+      {formatDate(props.isoDateTime)}
+    </span>
+  )
+}
+
 export function PackageHeader(props: PackageHeaderProps) {
   const links = createMemo<ProjectLink[]>(() => [
     { label: 'Homepage', href: props.info.url },
@@ -37,7 +48,7 @@ export function PackageHeader(props: PackageHeaderProps) {
       <div class="mt-2.5 flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-(length:--text-meta) text-(--ink-4)">
         <Show when={props.info.created}>
           {created => (
-            <span>Published <span class="font-(family-name:--font-data) text-(--ink-2)">{formatDate(created())}</span></span>
+            <span>Published <DateLabel isoDateTime={created()}/></span>
           )}
         </Show>
         <Show when={props.info.created && props.info.analyzed}>
@@ -45,7 +56,7 @@ export function PackageHeader(props: PackageHeaderProps) {
         </Show>
         <Show when={props.info.analyzed}>
           {analyzed => (
-            <span>Analysed <span class="font-(family-name:--font-data) text-(--ink-2)">{formatDate(analyzed())}</span></span>
+            <span>Analysed <DateLabel isoDateTime={analyzed()}/></span>
           )}
         </Show>
       </div>
