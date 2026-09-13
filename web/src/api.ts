@@ -70,7 +70,8 @@ export interface EffectiveValues {
 
 export interface ArtifactTree {
   artifactInfo: ArtifactInfo
-  dependencies: DependencyInfo[] | null
+  /** absent beyond the requested `depth`, i.e. not yet known; `[]` is a true leaf */
+  dependencies?: DependencyInfo[] | null
 }
 
 export interface DependencyInfo {

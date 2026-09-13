@@ -5,6 +5,7 @@ import { InstallSnippet } from './InstallSnippet'
 import { EffectiveCost } from './effective/EffectiveCost'
 import { MessageBlock } from '../MessageBlock'
 import { InsideJar } from './jar/InsideJar'
+import { DependencyExplorer } from './explorer/DependencyExplorer'
 
 interface PackageViewProps {
   tree: ArtifactTree
@@ -32,6 +33,9 @@ export function PackageView(props: PackageViewProps) {
       </Show>
       <Show when={props.tree.artifactInfo.jarInfo}>
         {jar => <InsideJar info={props.tree.artifactInfo} jar={jar()}/>}
+      </Show>
+      <Show when={props.tree.dependencies}>
+        <DependencyExplorer tree={props.tree}/>
       </Show>
     </main>
   )

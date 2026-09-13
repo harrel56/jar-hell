@@ -33,3 +33,7 @@ export function parseGav(data: string | undefined): Gav | null {
     return null
   }
 }
+
+/** Inverse of `parseGav`: `group:artifact[:version[:classifier]]` */
+export const formatGav = (gav: Gav) =>
+  [gav.groupId, gav.artifactId, gav.version, gav.classifier].filter(Boolean).join(':')
