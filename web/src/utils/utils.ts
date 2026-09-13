@@ -1,3 +1,5 @@
+import type {BytecodeVersion} from '../api'
+
 export interface FormattedSize {
   value: string
   unit: string
@@ -22,4 +24,21 @@ export const formatSize = (bytes: number): FormattedSize => {
 export const formatSizeText = (bytes: number) => {
   const { value, unit } = formatSize(bytes)
   return `${value} ${unit}`
+}
+
+export const formatBytecodeVersion = (ver: BytecodeVersion): string => {
+  if (ver.major === 45 && ver.minor === 3) {
+    return '1.1'
+  } else if (ver.major === 45) {
+    return '1.0'
+  } else if (ver.major === 46) {
+    return '1.2'
+  } else if (ver.major === 47) {
+    return '1.3'
+  } else if (ver.major === 48) {
+    return '1.4'
+  }
+
+  const preview = ver.minor === 65535 ? ' (preview)': ''
+  return (ver.major - 44) + preview
 }

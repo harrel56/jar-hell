@@ -1,38 +1,16 @@
 import { createMemo, For, Show } from 'solid-js'
-import { ArtifactInfo, EffectiveValues } from '../../api'
-import { formatSize, formatSizeText } from '../../utils/utils'
-
-interface EffectiveCostProps {
-  info: ArtifactInfo
-  effective: EffectiveValues
-}
-
-export function EffectiveCost(props: EffectiveCostProps) {
-  return (
-    <section class="mt-(--space-11) overflow-hidden rounded-(--radius-section) border border-(--hairline)">
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-2.5 border-b border-(--hairline) bg-(--surface) px-[22px] py-3">
-        <span class="h-[13px] w-[3px] shrink-0 rounded-[2px] bg-(--accent)"/>
-        <span class="whitespace-nowrap text-[12px] font-semibold uppercase tracking-(--tracking-caps) text-(--ink-4)">Effective cost</span>
-        <span class="whitespace-nowrap text-(length:--text-meta) text-(--ink-5)">real resolved graph</span>
-      </div>
-      <div class="grid gap-px bg-(--hairline)">
-        <EffectiveSize selfBytes={props.info.packageSize ?? 0} totalBytes={props.effective.size}/>
-      </div>
-    </section>
-  )
-}
+import { formatSize, formatSizeText } from '../../../utils/utils'
+import { Verdict, verdict, VerdictPill } from './VerdictPill'
 
 const KB = 1000
 const MB = 1000 * KB
 
-interface Band {
-  label: string
-  color: string
+interface Band extends Verdict {
   chevrons: string
 }
 
 const band = (label: string, token: string): Band =>
-  ({ label, color: `var(--${token})`, chevrons: `var(--chevrons-${token})` })
+  ({ ...verdict(label, token), chevrons: `var(--chevrons-${token})` })
 
 const sizeBand = (bytes: number): Band => {
   if (bytes < 512 * KB) return band('Light', 'good')
@@ -60,7 +38,7 @@ interface EffectiveSizeProps {
   totalBytes: number
 }
 
-function EffectiveSize(props: EffectiveSizeProps) {
+export function EffectiveSize(props: EffectiveSizeProps) {
   const depsBytes = createMemo(() => Math.max(props.totalBytes - props.selfBytes, 0))
   const band = createMemo(() => sizeBand(props.totalBytes))
   const size = createMemo(() => formatSize(props.totalBytes))
@@ -75,10 +53,7 @@ function EffectiveSize(props: EffectiveSizeProps) {
         </div>
         <div class="flex items-center gap-2.5 pb-[5px]">
           <span class="text-[15px] font-semibold">Effective size</span>
-          <span class="rounded-(--radius-pill) px-2 py-[3px] text-(length:--text-label) font-semibold uppercase tracking-[0.05em] text-white"
-                style={{ background: band().color }}>
-            {band().label}
-          </span>
+          <VerdictPill verdict={band()}/>
         </div>
       </div>
 

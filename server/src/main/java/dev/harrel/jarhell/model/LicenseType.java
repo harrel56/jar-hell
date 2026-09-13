@@ -304,12 +304,16 @@ public enum LicenseType {
                 LicenseType.NO_LICENSE,
                 LicenseType.UNKNOWN,
                 LicenseType.SSPL_1,
-                LicenseType.CC0_1,
-                LicenseType.UNLICENSE,
+                LicenseType.CC0_1, // controversial
+                LicenseType.UNLICENSE, // controversial
+
+                // copyleft
                 LicenseType.AGPL_3,
                 LicenseType.CDDL_1,
                 LicenseType.GPL_2,
                 LicenseType.GPL_3,
+
+                // weak-copyleft
                 LicenseType.LGPL_2,
                 LicenseType.LGPL_3,
                 LicenseType.CPL_1,
@@ -317,6 +321,8 @@ public enum LicenseType {
                 LicenseType.EPL_2,
                 LicenseType.MPL_1,
                 LicenseType.MPL_2,
+
+                // permissive
                 LicenseType.BSD_1,
                 LicenseType.BSD_3,
                 LicenseType.APACHE_2,

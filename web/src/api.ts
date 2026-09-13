@@ -27,12 +27,17 @@ export interface ArtifactInfo {
   unresolvedReason?: string
 }
 
+export interface BytecodeVersion {
+  major: number,
+  minor: number
+}
+
 export interface EffectiveValues {
   requiredDependencies: number
   unresolvedDependencies: number
   optionalDependencies: number
   size: number
-  bytecodeVersion?: { major: number, minor: number }
+  bytecodeVersion?: BytecodeVersion
   licenseType: string
   licenseTypes: Record<string, number>[]
 }

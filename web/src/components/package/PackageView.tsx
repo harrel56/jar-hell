@@ -2,7 +2,7 @@ import { Show } from 'solid-js'
 import { ArtifactTree } from '../../api'
 import { PackageHeader } from './PackageHeader'
 import { InstallSnippet } from './InstallSnippet'
-import { EffectiveCost } from './EffectiveCost'
+import { EffectiveCost } from './effective/EffectiveCost'
 
 interface PackageViewProps {
   tree: ArtifactTree
