@@ -22,6 +22,10 @@ export interface ArtifactInfo {
   created?: string
   analyzed?: string
   licenseTypes?: string[]
+  /** other classifiers published for this version, e.g. `sources`, `javadoc` */
+  classifiers?: string[]
+  /** file extensions published for this version, e.g. `jar`, `pom`, `module`, `jar.asc`, `jar.sha1` */
+  extensions?: string[]
   jarInfo?: JarInfo
   effectiveValues?: EffectiveValues
   unresolved?: boolean

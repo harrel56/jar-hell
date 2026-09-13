@@ -1,6 +1,8 @@
 import { ArtifactInfo, JarInfo } from '../../../api'
 import { JarContents } from './JarContents'
 import { PublicApi } from './PublicApi'
+import { JarFacts } from './JarFacts'
+import { PublishedAlongside } from './PublishedAlongside'
 
 interface InsideJarProps {
   info: ArtifactInfo
@@ -24,6 +26,8 @@ export function InsideJar(props: InsideJarProps) {
         <JarContents jar={props.jar}/>
         <PublicApi jar={props.jar}/>
       </div>
+      <JarFacts jar={props.jar}/>
+      <PublishedAlongside info={props.info}/>
     </section>
   )
 }
