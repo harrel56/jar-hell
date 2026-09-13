@@ -1,5 +1,6 @@
 import { createMemo, For, Show } from 'solid-js'
 import { ArtifactInfo } from '../../api'
+import { Icon } from '../../icons'
 
 interface PackageHeaderProps {
   info: ArtifactInfo
@@ -75,7 +76,7 @@ export function PackageHeader(props: PackageHeaderProps) {
           {link => (
             <a href={link.href} target="_blank" rel="noopener"
                class="flex items-center gap-1.5 whitespace-nowrap text-[13.5px] text-(--ink-2) hover:text-(--accent)">
-              <span class="text-[11px] text-(--ink-5)">↗</span>
+              <Icon.ArrowUpRight class="size-3 text-(--ink-5)"/>
               <span class="border-b border-(--hairline-tick) pb-px">{link.label}</span>
             </a>
           )}

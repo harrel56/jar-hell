@@ -1,6 +1,7 @@
 import { createMemo, For, Show } from 'solid-js'
 import { ArtifactInfo } from '../../../api'
 import { StatusDot } from './StatusDot'
+import { Icon } from '../../../icons'
 
 interface Flag {
   label: string
@@ -25,7 +26,7 @@ const flags = (info: ArtifactInfo): Flag[] => {
       label: 'Javadoc',
       present: classifiers.includes('javadoc'),
       detail: `${info.artifactId}-${info.version}-javadoc.jar`,
-      link: { label: 'Browse ↗', href: `https://javadoc.io/doc/${info.groupId}/${info.artifactId}/${info.version}` },
+      link: { label: 'Browse', href: `https://javadoc.io/doc/${info.groupId}/${info.artifactId}/${info.version}` },
     },
     {
       label: 'Gradle module metadata',
@@ -62,7 +63,11 @@ export function PublishedAlongside(props: { info: ArtifactInfo }) {
                 <span class="font-(family-name:--font-data) text-(length:--text-label) text-(--ink-5)">{flag.detail}</span>
               </Show>
               <Show when={flag.present && flag.link}>
-                {link => <a href={link().href} target="_blank" rel="noopener" class="text-(length:--text-meta) font-medium hover:text-(--accent)">{link().label}</a>}
+                {link => (
+                  <a href={link().href} target="_blank" rel="noopener" class="flex items-center gap-0.5 text-(length:--text-meta) font-medium hover:text-(--accent)">
+                    {link().label}<Icon.ArrowUpRight class="size-3"/>
+                  </a>
+                )}
               </Show>
             </div>
           )}

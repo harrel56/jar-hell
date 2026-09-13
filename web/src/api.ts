@@ -22,9 +22,7 @@ export interface ArtifactInfo {
   created?: string
   analyzed?: string
   licenseTypes?: string[]
-  /** other classifiers published for this version, e.g. `sources`, `javadoc` */
   classifiers?: string[]
-  /** file extensions published for this version, e.g. `jar`, `pom`, `module`, `jar.asc`, `jar.sha1` */
   extensions?: string[]
   jarInfo?: JarInfo
   effectiveValues?: EffectiveValues
@@ -44,9 +42,7 @@ export interface JarContent {
 }
 
 export interface JarInfo {
-  /** keyed by backend `ContentType`: source language (`JAVA`, `KOTLIN`, ...), `RESOURCE`, `SYNTHETIC`, `UNKNOWN`, `INVALID` */
   contents: Record<string, JarContent>
-  /** keyed by backend `ClassType`: `CLASS`, `ABSTRACT_CLASS`, `INTERFACE`, `ANNOTATION`, `ENUM`, `RECORD` */
   publicClasses: Record<string, number>
   nonPublicClasses: number
   bytecodeVersion?: BytecodeVersion
@@ -70,7 +66,6 @@ export interface EffectiveValues {
 
 export interface ArtifactTree {
   artifactInfo: ArtifactInfo
-  /** absent beyond the requested `depth`, i.e. not yet known; `[]` is a true leaf */
   dependencies?: DependencyInfo[] | null
 }
 
