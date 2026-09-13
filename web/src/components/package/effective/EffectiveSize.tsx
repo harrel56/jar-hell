@@ -12,26 +12,25 @@ interface Band extends Verdict {
 const band = (label: string, token: string): Band =>
   ({ ...verdict(label, token), chevrons: `var(--chevrons-${token})` })
 
-const sizeBand = (bytes: number): Band => {
-  if (bytes < 512 * KB) return band('Light', 'good')
-  if (bytes < 4 * MB) return band('Moderate', 'warn')
-  if (bytes < 20 * MB) return band('Heavy', 'bad')
-  return band('Very heavy', 'critical')
-}
+const SIZE_BANDS = [
+  { upTo: 512 * KB, tickLabel: '512KB', ...band('Light', 'good') },
+  { upTo: 4 * MB, tickLabel: '4MB', ...band('Moderate', 'warn') },
+  { upTo: 20 * MB, tickLabel: '20MB', ...band('Heavy', 'bad') },
+  { upTo: Infinity, tickLabel: '', ...band('Very heavy', 'critical') },
+]
 
-// Rail is log-scaled from 50 KB to 20 MB
+const sizeBand = (bytes: number): Band => SIZE_BANDS.find(b => bytes < b.upTo)!
+
 const RAIL_MIN = 50 * KB
-const RAIL_MAX = 20 * MB
+const RAIL_MAX = 50 * MB
 const railPosition = (bytes: number) =>
   Math.max(2, Math.min(100, Math.log10(Math.max(bytes, RAIL_MIN) / RAIL_MIN) / Math.log10(RAIL_MAX / RAIL_MIN) * 100))
 
 const bytesTitle = (bytes: number) => `${bytes.toLocaleString('en-US')} bytes`
 
-const RAIL_TICKS = [
-  { label: '100KB', bytes: 100 * KB },
-  { label: '1MB', bytes: MB },
-  { label: '10MB', bytes: 10 * MB },
-].map(tick => ({ label: tick.label, left: `${railPosition(tick.bytes)}%` }))
+const RAIL_TICKS = SIZE_BANDS
+  .filter(b => Number.isFinite(b.upTo))
+  .map(b => ({ label: b.tickLabel, left: `${railPosition(b.upTo)}%` }))
 
 interface EffectiveSizeProps {
   selfBytes: number
