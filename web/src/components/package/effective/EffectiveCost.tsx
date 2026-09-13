@@ -2,7 +2,7 @@ import { Show } from 'solid-js'
 import { ArtifactInfo, EffectiveValues } from '../../../api'
 import { EffectiveSize } from './EffectiveSize'
 import { DependencyCount, requiredVerdict } from './DependencyCount'
-import { BytecodeVersion } from './BytecodeVersion'
+import { BytecodeVersionCell } from './BytecodeVersionCell'
 import { EffectiveLicense } from './EffectiveLicense'
 
 interface EffectiveCostProps {
@@ -31,7 +31,7 @@ export function EffectiveCost(props: EffectiveCostProps) {
           </DependencyCount>
         </div>
         <div class="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-px">
-          <BytecodeVersion bytecodeVersion={props.effective.bytecodeVersion}/>
+          <BytecodeVersionCell bytecodeVersion={props.effective.bytecodeVersion}/>
           <EffectiveLicense effective={props.effective}/>
         </div>
       </div>

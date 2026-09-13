@@ -2,7 +2,7 @@ import { Show } from 'solid-js'
 import {type BytecodeVersion} from '../../../api'
 import {formatBytecodeVersion} from '../../../utils/utils'
 
-export function BytecodeVersion(props: { bytecodeVersion: BytecodeVersion | undefined }) {
+export function BytecodeVersionCell(props: { bytecodeVersion: BytecodeVersion | undefined }) {
   return (
     <div class="bg-(--ground) px-6 pt-[22px] pb-5">
       <div class="whitespace-nowrap font-(family-name:--font-data) text-(length:--text-metric) font-medium leading-none tracking-[-0.035em]">
