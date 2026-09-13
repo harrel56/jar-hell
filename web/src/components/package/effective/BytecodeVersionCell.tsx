@@ -13,9 +13,9 @@ export function BytecodeVersionCell(props: { bytecodeVersion: BytecodeVersion | 
       <div class="mt-3 text-[14px] font-semibold">Effective bytecode version</div>
       <div class="mt-4 text-(length:--text-meta) text-(--ink-3)">
         <Show when={props.bytecodeVersion} fallback="No class files were found in the package and its required dependencies.">
-          {bv => bv().major <= 52
+          {bv => <>{bv().major <= 52
             ? `Runs on every current LTS. Class file ${bv().major}.`
-            : `Requires Java ${formatBytecodeVersion(bv())} or newer. Class file ${bv().major}.`}
+            : `Requires Java ${formatBytecodeVersion(bv())} or newer. Class file ${bv().major}.`}</>}
         </Show>
       </div>
     </div>
