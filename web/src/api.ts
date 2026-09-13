@@ -22,6 +22,7 @@ export interface ArtifactInfo {
   created?: string
   analyzed?: string
   licenseTypes?: string[]
+  jarInfo?: JarInfo
   effectiveValues?: EffectiveValues
   unresolved?: boolean
   unresolvedReason?: string
@@ -30,6 +31,27 @@ export interface ArtifactInfo {
 export interface BytecodeVersion {
   major: number,
   minor: number
+}
+
+export interface JarContent {
+  count: number
+  size: number
+  compressedSize: number
+}
+
+export interface JarInfo {
+  /** keyed by backend `ContentType`: source language (`JAVA`, `KOTLIN`, ...), `RESOURCE`, `SYNTHETIC`, `UNKNOWN`, `INVALID` */
+  contents: Record<string, JarContent>
+  /** keyed by backend `ClassType`: `CLASS`, `ABSTRACT_CLASS`, `INTERFACE`, `ANNOTATION`, `ENUM`, `RECORD` */
+  publicClasses: Record<string, number>
+  nonPublicClasses: number
+  bytecodeVersion?: BytecodeVersion
+  buildJdk?: string
+  multiReleaseJar: boolean
+  executable: boolean
+  services: string[]
+  moduleType: 'NAMED' | 'AUTOMATIC' | 'UNNAMED'
+  moduleName?: string
 }
 
 export interface EffectiveValues {

@@ -4,6 +4,7 @@ import { PackageHeader } from './PackageHeader'
 import { InstallSnippet } from './InstallSnippet'
 import { EffectiveCost } from './effective/EffectiveCost'
 import { MessageBlock } from '../MessageBlock'
+import { InsideJar } from './jar/InsideJar'
 
 interface PackageViewProps {
   tree: ArtifactTree
@@ -28,6 +29,9 @@ export function PackageView(props: PackageViewProps) {
             <EffectiveCost info={props.tree.artifactInfo} effective={effective()}/>
           </>
         )}
+      </Show>
+      <Show when={props.tree.artifactInfo.jarInfo}>
+        {jar => <InsideJar info={props.tree.artifactInfo} jar={jar()}/>}
       </Show>
     </main>
   )
