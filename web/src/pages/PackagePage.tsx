@@ -13,9 +13,8 @@ export function PackagePage() {
   const params = useParams()
   const coordinate = () => params['coordinate']!
   const gav = createMemo(() => parseGav(coordinate())!)
-  const versionsArgs = createMemo(() => [gav().groupId, gav().artifactId, gav().classifier] as const)
 
-  const versions = createMemo(() => getVersions(...versionsArgs()))
+  const versions = createMemo(() => getVersions(gav().groupId, gav().artifactId, gav().classifier))
   const isAnalyzed = () => untrack(versions).some(av => av.version === gav().version && av.analyzed)
   const pkg = createMemo(() => isAnalyzed() ? getPackage(coordinate()) : analyzePackage(gav()))
 
