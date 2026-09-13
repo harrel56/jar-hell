@@ -53,8 +53,8 @@ public class MavenApiClient {
                 .toList();
 
         Set<String> extensions = suffixes.stream()
-                .filter(f -> f.startsWith("."))
-                .map(f -> f.substring(1))
+                .filter(f -> f.contains("."))
+                .map(f -> f.substring(f.lastIndexOf('.') + 1))
                 .collect(Collectors.toSet());
         Set<String> classifiers = suffixes.stream()
                 .filter(f -> f.startsWith("-"))
