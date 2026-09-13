@@ -43,7 +43,7 @@ export const formatBytecodeVersion = (ver: BytecodeVersion): string => {
   return (ver.major - 44) + preview
 }
 
-export type LicenseKind = 'very-permissive' | 'permissive' | 'weak-copyleft' | 'copyleft' | 'risky' | 'unusable' | 'unknown'
+export type LicenseKind = 'permissive' | 'weak-copyleft' | 'copyleft' | 'risky' | 'unusable' | 'unknown'
 
 export const formatLicenseType = (type: string): [string, LicenseKind] => {
   switch (type) {
@@ -67,12 +67,12 @@ export const formatLicenseType = (type: string): [string, LicenseKind] => {
     case 'BSD_3': return ['BSD 3-clause', 'permissive']
     case 'APACHE_2': return ['Apache 2.0', 'permissive']
     case 'BSD_2': return ['BSD 2-clause', 'permissive']
-    case 'ICU': return ['ICU', 'very-permissive']
-    case 'ZLIB': return ['ZLIB', 'very-permissive']
-    case 'ISC': return ['ISC', 'very-permissive']
-    case 'MIT': return ['MIT', 'very-permissive']
-    case 'BSD_0': return ['BSD 0-clause', 'very-permissive']
-    case 'MIT0': return ['MIT No Attribution', 'very-permissive']
+    case 'ICU': return ['ICU', 'permissive']
+    case 'ZLIB': return ['ZLIB', 'permissive']
+    case 'ISC': return ['ISC', 'permissive']
+    case 'MIT': return ['MIT', 'permissive']
+    case 'BSD_0': return ['BSD 0-clause', 'permissive']
+    case 'MIT0': return ['MIT No Attribution', 'permissive']
     default: return [type, 'unknown']
   }
 }

@@ -16,7 +16,7 @@ const fileName = (info: ArtifactInfo) => {
 
 export function InsideJar(props: InsideJarProps) {
   return (
-    <section class="mt-(--space-11) overflow-hidden rounded-(--radius-section) border border-(--hairline)">
+    <section class="@container mt-(--space-11) overflow-hidden rounded-(--radius-section) border border-(--hairline)">
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2.5 border-b border-(--hairline) bg-(--surface) px-[22px] py-3">
         <span class="h-[13px] w-[3px] shrink-0 rounded-[2px] bg-(--accent)"/>
         <span class="whitespace-nowrap text-[12px] font-semibold uppercase tracking-(--tracking-caps) text-(--ink-4)">Inside this jar</span>

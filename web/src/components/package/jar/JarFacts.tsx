@@ -21,7 +21,7 @@ const facts = (jar: JarInfo): Fact[] => [
   {
     label: 'Built with',
     value: jar.buildJdk ? `JDK ${jar.buildJdk}` : 'Unknown JDK',
-    note: jar.buildJdk ? 'as declared in manifest' : 'no information in manifest',
+    note: jar.buildJdk ? 'as declared in the manifest' : 'no information in the manifest',
     on: Boolean(jar.buildJdk),
   },
   {
@@ -42,7 +42,7 @@ export function JarFacts(props: { jar: JarInfo }) {
   const rows = createMemo(() => facts(props.jar))
 
   return (
-    <div class="grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-px border-t border-(--hairline) bg-(--hairline)">
+    <div class="grid grid-cols-1 gap-px border-t border-(--hairline) bg-(--hairline) @[420px]:grid-cols-2 @[840px]:grid-cols-4">
       <For each={rows()}>
         {fact => (
           <div class="min-w-0 bg-(--ground) px-5 pt-[15px] pb-4">

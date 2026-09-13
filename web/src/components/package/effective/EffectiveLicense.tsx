@@ -4,10 +4,9 @@ import { Verdict, verdict, VerdictPill } from './VerdictPill'
 import {formatLicenseType, LicenseKind} from '../../../utils/utils'
 
 const LICENSE_VERDICTS: Record<LicenseKind, Verdict> = {
-  'very-permissive': verdict('Very permissive', 'good'),
   'permissive': verdict('Permissive', 'good'),
   'weak-copyleft': verdict('Weak copyleft', 'warn'),
-  'copyleft': verdict('Copyleft', 'critical'),
+  'copyleft': verdict('Copyleft', 'bad'),
   'risky': verdict('Legally unclear', 'critical'),
   'unusable': verdict('Unusable', 'critical'),
   'unknown': verdict('Unknown', 'ink-4'),
