@@ -5,8 +5,8 @@ import { StatusDot } from './StatusDot'
 interface Flag {
   label: string
   present: boolean
-  detail?: string | undefined
-  link?: { label: string, href: string } | undefined
+  detail: string
+  link?: { label: string, href: string }
 }
 
 const CHECKSUMS = ['md5', 'sha1', 'sha256', 'sha512']
