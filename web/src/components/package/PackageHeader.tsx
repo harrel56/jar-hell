@@ -20,8 +20,12 @@ function DateLabel(props: { isoDateTime: string }) {
   )
 }
 
+const mavenCentralUrl = (info: ArtifactInfo) =>
+  `https://repo1.maven.org/maven2/${info.groupId.replaceAll('.', '/')}/${info.artifactId}/${info.version}/`
+
 export function PackageHeader(props: PackageHeaderProps) {
   const links = createMemo<ProjectLink[]>(() => [
+    { label: 'Maven Central', href: mavenCentralUrl(props.info) },
     { label: 'Homepage', href: props.info.url },
     { label: 'Source', href: props.info.scmUrl },
     { label: 'Issues', href: props.info.issuesUrl },
@@ -65,7 +69,7 @@ export function PackageHeader(props: PackageHeaderProps) {
                 class="flex cursor-pointer items-center gap-[7px] whitespace-nowrap rounded-(--radius-button) border border-(--hairline-strong) px-3 py-1.5 text-(length:--text-sm) text-(--ink) hover:border-(--ink)">
           Badges
         </button>
-        <For each={links()} fallback={<span class="text-(length:--text-sm) text-(--ink-5)">No project links in the package metadata</span>}>
+        <For each={links()}>
           {link => (
             <a href={link.href} target="_blank" rel="noopener"
                class="flex items-center gap-1.5 whitespace-nowrap text-[13.5px] text-(--ink-2) hover:text-(--accent)">
