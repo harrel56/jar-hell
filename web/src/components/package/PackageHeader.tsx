@@ -1,6 +1,7 @@
 import { createMemo, For, Show } from 'solid-js'
 import { ArtifactInfo } from '../../api'
 import { Icon } from '../../icons'
+import { formatDate, formatDateTime } from '../../utils/utils'
 
 interface PackageHeaderProps {
   info: ArtifactInfo
@@ -10,14 +11,6 @@ interface ProjectLink {
   label: string
   href: string
 }
-
-const formatDate = (isoDateTime: string) => {
-  const [year, month, day] = isoDateTime.slice(0, 10).split('-')
-  return `${day}/${month}/${year}`
-}
-
-/** `2026-02-27T12:34:56.789` → `27/02/2026 12:34:56` */
-const formatDateTime = (isoDateTime: string) => `${formatDate(isoDateTime)} ${isoDateTime.slice(11, 19)}`
 
 function DateLabel(props: { isoDateTime: string }) {
   return (

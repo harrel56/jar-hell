@@ -99,6 +99,9 @@
   --good-wash:        #eef7ef;
   --good-wash-border: #d5e8d7;
   --good-wash-ink:    #2f7a3d;
+  --bad-wash:         #fdf1ef;
+  --bad-wash-border:  #f3d4ce;
+  --bad-wash-ink:     #a82914;
   --note-wash:        #fdfaf4;
   --note-wash-border: #f0e6d4;
   --note-ink:         #6b5f47;
@@ -153,6 +156,9 @@
     --good-wash:        #151815;
     --good-wash-border: #2c3b2e;
     --good-wash-ink:    #5fae6c;
+    --bad-wash:         #231613;
+    --bad-wash-border:  #4a2620;
+    --bad-wash-ink:     #e2634a;
     --note-wash:        #221d14;
     --note-wash-border: #3a3020;
     --note-ink:         #c2b38f;
@@ -201,6 +207,9 @@
   --good-wash:        #151815;
   --good-wash-border: #2c3b2e;
   --good-wash-ink:    #5fae6c;
+  --bad-wash:         #231613;
+  --bad-wash-border:  #4a2620;
+  --bad-wash-ink:     #e2634a;
   --note-wash:        #221d14;
   --note-wash-border: #3a3020;
   --note-ink:         #c2b38f;

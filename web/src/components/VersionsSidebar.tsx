@@ -1,4 +1,4 @@
-import {createMemo, createSignal, For, Repeat, Show} from 'solid-js'
+import {createMemo, createSignal, For, Match, Repeat, Switch} from 'solid-js'
 import {useLinkState} from '@solidjs/router'
 import {Gav} from '../utils/gav'
 import {ArtifactVersion} from '../api'
@@ -12,6 +12,7 @@ interface VersionsSidebarProps {
 const asideClass = 'sticky top-(--header-height) max-h-[calc(100vh-var(--header-height))] w-(--sidebar-width) shrink-0 self-start overflow-y-auto border-r border-(--hairline) px-5 pt-(--space-9) pb-10'
 const rowClass = 'flex items-center gap-2 rounded-r-(--radius-nav) border-l-2 px-2.5 py-[7px] font-(family-name:--font-data) text-(length:--text-sm)'
 const groupClass = 'border-t border-(--hairline-soft)'
+const pillClass = 'ml-auto rounded-(--radius-pill) border px-1.5 py-0.5 font-semibold uppercase tracking-[0.04em] text-(length:--text-micro)'
 
 function RailHeader(props: { count?: number }) {
   return (
@@ -56,11 +57,14 @@ function VersionLink(props: VersionLinkProps) {
       ]}
     >
       {props.version.version}
-      <Show when={props.version.state === 'ANALYZED'}>
-        <span class="ml-auto rounded-(--radius-pill) border border-(--good-wash-border) bg-(--good-wash) px-1.5 py-0.5 font-semibold uppercase tracking-[0.04em] text-(length:--text-micro) text-(--good-wash-ink)">
-          Analyzed
-        </span>
-      </Show>
+      <Switch>
+        <Match when={props.version.state === 'ANALYZED'}>
+          <span class={`${pillClass} border-(--good-wash-border) bg-(--good-wash) text-(--good-wash-ink)`}>Analyzed</span>
+        </Match>
+        <Match when={props.version.state === 'FAILED'}>
+          <span class={`${pillClass} border-(--bad-wash-border) bg-(--bad-wash) text-(--bad-wash-ink)`}>Failed</span>
+        </Match>
+      </Switch>
     </a>
   )
 }

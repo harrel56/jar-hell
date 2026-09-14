@@ -27,6 +27,7 @@ export interface ArtifactInfo {
   jarInfo?: JarInfo
   effectiveValues?: EffectiveValues
   unresolved?: boolean
+  unresolvedCount?: number
   unresolvedReason?: string
 }
 
@@ -105,8 +106,9 @@ export const getVersions = query((groupId: string, artifactId: string, classifie
   return json<ArtifactVersion[]>(`/api/v1/packages/${groupId}:${artifactId}/versions${classifierPart}`)
 }, 'getVersions')
 
-export const analyzePackage = query(async (gav: Gav) => {
+/** not a `query` on purpose: it has side effects and must not be cached or deduped */
+export const analyzePackage = async (gav: Gav) => {
   const tree = await json<ArtifactTree>(`/api/v1/analyze-and-wait`, 'post', JSON.stringify(gav))
   revalidate(getVersions.keyFor(gav.groupId, gav.artifactId, gav.classifier))
   return tree
-}, 'analyzePackage')
+}

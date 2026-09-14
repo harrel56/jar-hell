@@ -26,6 +26,15 @@ export const formatSizeText = (bytes: number) => {
   return `${value} ${unit}`
 }
 
+/** `2026-02-27T12:34:56.789` → `27/02/2026` */
+export const formatDate = (isoDateTime: string) => {
+  const [year, month, day] = isoDateTime.slice(0, 10).split('-')
+  return `${day}/${month}/${year}`
+}
+
+/** `2026-02-27T12:34:56.789` → `27/02/2026 12:34:56` */
+export const formatDateTime = (isoDateTime: string) => `${formatDate(isoDateTime)} ${isoDateTime.slice(11, 19)}`
+
 export const formatBytecodeVersion = (ver: BytecodeVersion): string => {
   if (ver.major === 45 && ver.minor === 3) {
     return '1.1'
