@@ -1,4 +1,4 @@
-import {createMemo, createSignal, createUniqueId, Errored, For, latest, Show} from 'solid-js'
+import {createMemo, createSignal, createUniqueId, Errored, For, latest, onCleanup, Show} from 'solid-js'
 import {useNavigate, useParams} from '@solidjs/router'
 import { createDebouncedSignal } from '../utils/createDebouncedSignal'
 import { Icon } from '../icons'
@@ -13,6 +13,9 @@ const DEBOUNCE_MS = 300
 
 interface AutocompleteProps {
   debounceMs?: number
+  /** `header` is the compact top bar field, `hero` the large home page one with the `/` shortcut */
+  variant?: 'header' | 'hero'
+  class?: string
 }
 
 const message = (text: string) => (
@@ -26,6 +29,20 @@ export default function Autocomplete(props: AutocompleteProps) {
   const [query, debouncedQuery, setQuery] = createDebouncedSignal(() => gav() ? params['coordinate']! : '', props.debounceMs ?? DEBOUNCE_MS)
   const [opened, setOpened] = createSignal(false)
   const [activeIndex, setActiveIndex] = createSignal<number | null>(() => (opened(), null))
+  const hero = () => props.variant === 'hero'
+  let input!: HTMLInputElement
+
+  // `/` focuses the field from anywhere on the page, as the kbd hint promises
+  const onSlash = (e: KeyboardEvent) => {
+    const target = e.target as HTMLElement | null
+    const typing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target?.isContentEditable
+    if (e.key === '/' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault()
+      input.focus()
+    }
+  }
+  document.addEventListener('keydown', onSlash)
+  onCleanup(() => document.removeEventListener('keydown', onSlash))
 
   const listId = createUniqueId()
   const optionId = (i: number | null) => i === null ? undefined : `${listId}-opt-${i}`
@@ -100,9 +117,14 @@ export default function Autocomplete(props: AutocompleteProps) {
   }
 
   return (
-    <div class="relative max-w-[520px] flex-1">
-      <label class="flex h-9 cursor-text items-center gap-2.5 rounded-(--radius-field) border border-(--hairline-strong) bg-(--surface-sunken) px-[13px] focus-within:border-(--accent)">
+    <div class={['relative', props.class]}>
+      <label class={['flex cursor-text items-center border', {
+        'h-9 gap-2.5 rounded-(--radius-field) border-(--hairline-strong) bg-(--surface-sunken) px-[13px] focus-within:border-(--accent)': !hero(),
+        'h-[58px] gap-3 rounded-[13px] border-(--hairline-strong) bg-(--ground) px-[18px] focus-within:border-(--ink-mute) focus-within:shadow-(--shadow-field)': hero(),
+      }]}>
+        <Icon.Search class={`shrink-0 text-(--ink-5) ${hero() ? 'size-[17px]' : 'size-4'}`}/>
         <input
+          ref={input}
           value={query()}
           onInput={e => {
             setQuery(e.currentTarget.value)
@@ -112,16 +134,18 @@ export default function Autocomplete(props: AutocompleteProps) {
           onBlur={() => setOpened(false)}
           onClick={() => setOpened(true)}
           onKeyDown={onKeyDown}
-          placeholder="group:artifact"
+          placeholder={hero() ? 'group:artifact — try json-schema' : 'group:artifact'}
           aria-label="Search packages"
           role="combobox"
           aria-expanded={open() ? 'true' : 'false'}
           aria-controls={listId}
           aria-autocomplete="list"
           aria-activedescendant={optionId(activeIndex())}
-          class="min-w-0 flex-1 border-none bg-transparent font-(family-name:--font-data) text-(length:--text-sm) text-(--ink) outline-none placeholder:text-(--ink-4)"
+          class={['min-w-0 flex-1 border-none bg-transparent font-(family-name:--font-data) text-(--ink) outline-none placeholder:text-(--ink-4)',
+            hero() ? 'text-(length:--text-body) tracking-[-0.01em]' : 'text-(length:--text-sm)']}
         />
-        <Icon.Search class="size-4 shrink-0 text-(--ink-4)"/>
+        <kbd class={['shrink-0 rounded-(--radius-chip) border border-(--hairline) font-(family-name:--font-data) text-(--ink-4)',
+          hero() ? 'px-1.5 py-[3px] text-[11px]' : 'px-[5px] py-px text-[10.5px]']}>/</kbd>
       </label>
 
       <Show when={open()}>
@@ -129,7 +153,8 @@ export default function Autocomplete(props: AutocompleteProps) {
           id={listId}
           role="listbox"
           onMouseDown={e => e.preventDefault()}
-          class="absolute inset-x-0 top-11 z-40 max-h-96 overflow-y-auto rounded-(--radius-panel) border border-(--hairline) bg-(--ground) shadow-(--shadow-menu)"
+          class={['absolute inset-x-0 z-40 max-h-96 overflow-y-auto border border-(--hairline) bg-(--ground) shadow-(--shadow-menu)',
+            hero() ? 'top-[66px] rounded-[13px]' : 'top-11 rounded-(--radius-panel)']}
         >
           <Errored fallback={() => message('Search is unavailable right now.')}>
             <For each={results()}>
@@ -147,12 +172,13 @@ export default function Autocomplete(props: AutocompleteProps) {
                   }}
                   onMouseMove={() => setActiveIndex(i())}
                   class={[
-                    'flex cursor-pointer items-baseline gap-[9px] border-b border-(--track) px-3.5 py-[9px] font-(family-name:--font-data)',
+                    'flex cursor-pointer items-baseline gap-[9px] border-b border-(--track) font-(family-name:--font-data)',
+                    hero() ? 'px-4 py-[11px]' : 'px-3.5 py-[9px]',
                     activeIndex() === i() ? 'bg-(--surface)' : '',
                   ]}
                 >
-                  <span class="shrink-0 text-(length:--text-label) text-(--ink-5)">{r.g}</span>
-                  <span class="truncate text-(length:--text-sm) text-(--ink)">{r.a}</span>
+                  <span class={['shrink-0 text-(--ink-5)', hero() ? 'text-[12px]' : 'text-(length:--text-label)']}>{r.g}</span>
+                  <span class={['truncate text-(--ink)', hero() ? 'text-[13.5px]' : 'text-(length:--text-sm)']}>{r.a}</span>
                 </a>
               )}
             </For>

@@ -1,6 +1,7 @@
 import {createMemo} from 'solid-js'
 import {createRouter, RouteSectionProps, useNavigate} from '@solidjs/router'
 import {PackagePage} from './pages/PackagePage'
+import {HomePage} from './pages/HomePage'
 import {parseGav} from './utils/gav'
 import {getVersions, HttpError} from './api'
 import {ErrorView} from './components/ErrorView'
@@ -8,7 +9,7 @@ import {ErrorView} from './components/ErrorView'
 export const Router = createRouter({
   preloadLinks: false,
   routes: [
-    { path: '/', component: () => <p>index</p> },
+    { path: '/', component: HomePage },
     {
       path: '/packages/:coordinate',
       matchFilters: {

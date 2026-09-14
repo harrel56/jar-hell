@@ -101,6 +101,8 @@ const json = async <T>(path: string, method = 'get', body: BodyInit | null = nul
 export const getPackage = query(
   (coordinate: string) => json<ArtifactTree>(`/api/v1/packages/${coordinate}`), 'getPackage')
 
+export const getAnalyzedCount = query(() => json<number>('/api/v1/packages/count'), 'getAnalyzedCount')
+
 export const getVersions = query((groupId: string, artifactId: string, classifier: string | undefined) => {
   const classifierPart = classifier ? `?classifier=${encodeURIComponent(classifier)}` : ''
   return json<ArtifactVersion[]>(`/api/v1/packages/${groupId}:${artifactId}/versions${classifierPart}`)

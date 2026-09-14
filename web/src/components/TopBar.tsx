@@ -1,4 +1,5 @@
 import { Show } from 'solid-js'
+import { useLocation } from '@solidjs/router'
 import Autocomplete from './Autocomplete'
 import Logo from './Logo'
 import { Icon } from '../icons'
@@ -7,10 +8,16 @@ import { theme, toggleTheme } from '../utils/theme'
 const navItemClass = 'cursor-pointer rounded-(--radius-nav) px-2.5 py-1.5 hover:bg-(--track)'
 
 export default function TopBar() {
+  const location = useLocation()
+  // the home page has its own hero search field
+  const home = () => location.pathname === '/'
+
   return (
     <header class="sticky top-0 z-30 flex h-(--header-height) items-center gap-6 border-b border-(--hairline) bg-(--ground)/90 px-7 backdrop-blur-[10px]">
       <Logo/>
-      <Autocomplete/>
+      <Show when={!home()}>
+        <Autocomplete class="max-w-[520px] flex-1"/>
+      </Show>
       <nav class="ml-auto flex items-center gap-2 text-(length:--text-sm) text-(--ink-3)">
         <a href="/api" class={navItemClass}>API</a>
         <a href="https://github.com/harrel56/jar-hell" class={navItemClass}>GitHub</a>
