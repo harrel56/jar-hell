@@ -8,6 +8,11 @@
     <meta name="description" content="Jarhell analyses JVM packages and presents important metrics like size, number of dependencies, bytecode version, licenses and many more.">
     <meta name="keywords" content="jar,package,size,dependencies,jvm,maven">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <script>
+      // apply the stored theme before first paint to avoid a flash of the wrong one (see utils/theme.ts)
+      const theme = localStorage.getItem('theme')
+      if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme
+    </script>
 </head>
 <body>
 <div id="root" class="min-h-screen flex flex-col"></div>

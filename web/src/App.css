@@ -43,6 +43,17 @@
 }
 
 @layer base {
+  /* same selectors as the color blocks in tokens.css */
+  :root {
+    color-scheme: light dark;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+  }
+
   body {
     background: var(--ground);
     color: var(--ink);
