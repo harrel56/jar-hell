@@ -56,7 +56,7 @@ function VersionLink(props: VersionLinkProps) {
       ]}
     >
       {props.version.version}
-      <Show when={props.version.analyzed}>
+      <Show when={props.version.state === 'ANALYZED'}>
         <span class="ml-auto rounded-(--radius-pill) border border-(--good-wash-border) bg-(--good-wash) px-1.5 py-0.5 font-semibold uppercase tracking-[0.04em] text-(length:--text-micro) text-(--good-wash-ink)">
           Analyzed
         </span>

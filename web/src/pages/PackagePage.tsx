@@ -15,7 +15,7 @@ export function PackagePage() {
   const gav = createMemo(() => parseGav(params['coordinate'])!)
 
   const versions = createMemo(() => getVersions(gav().groupId, gav().artifactId, gav().classifier))
-  const analyzed = createMemo(() => versions().some(av => av.version === gav().version && av.analyzed))
+  const analyzed = createMemo(() => versions().some(av => av.version === gav().version && av.state !== 'NOT_ANALYZED'))
   const [pkg, setPkg] = createSignal(() => (gav(), analyzed()) ? getPackage(formatGav(gav())) : undefined)
 
   // don't wait reactively for analysis to finish, but we want to get notified when it finishes (and use it returnde data)

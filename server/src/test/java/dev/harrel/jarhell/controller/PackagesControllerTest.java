@@ -25,6 +25,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static dev.harrel.jarhell.controller.PackagesController.*;
+import static dev.harrel.jarhell.model.ArtifactVersion.State.ANALYZED;
+import static dev.harrel.jarhell.model.ArtifactVersion.State.FAILED;
+import static dev.harrel.jarhell.model.ArtifactVersion.State.NOT_ANALYZED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @EnvironmentTest
@@ -311,8 +314,8 @@ class PackagesControllerTest {
         assertThat(res.getStatus()).isEqualTo(200);
         List<ArtifactVersion> body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(body).containsExactly(
-                new ArtifactVersion("1.0.0", true),
-                new ArtifactVersion("1.2.0", true)
+                new ArtifactVersion("1.0.0", ANALYZED),
+                new ArtifactVersion("1.2.0", ANALYZED)
         );
     }
 
@@ -339,8 +342,8 @@ class PackagesControllerTest {
         assertThat(res.getStatus()).isEqualTo(200);
         body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(body).containsExactly(
-                new ArtifactVersion("1.0.0", true),
-                new ArtifactVersion("1.2.0", true)
+                new ArtifactVersion("1.0.0", ANALYZED),
+                new ArtifactVersion("1.2.0", ANALYZED)
         );
     }
 
@@ -362,9 +365,9 @@ class PackagesControllerTest {
         assertThat(res.getStatus()).isEqualTo(200);
         List<ArtifactVersion> body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(body).containsExactly(
-                new ArtifactVersion("1.2.0", true),
-                new ArtifactVersion("1.10.0", true),
-                new ArtifactVersion("2.0.0", true)
+                new ArtifactVersion("1.2.0", ANALYZED),
+                new ArtifactVersion("1.10.0", ANALYZED),
+                new ArtifactVersion("2.0.0", ANALYZED)
         );
     }
 
@@ -375,9 +378,10 @@ class PackagesControllerTest {
                     tx -> tx.run("""
                             CREATE
                             (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '1.0.0', classifier: ''}),
-                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '2.0.0', classifier: '', fromMavenIndex: true, unresolved: true}),
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '2.0.0', classifier: '', fromMavenIndex: true, unresolved: true, unresolvedReason: 'initial-indexing'}),
                             (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '3.0.0', classifier: '', unresolved: true}),
-                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '4.0.0', classifier: '', fromMavenIndex: true})
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '4.0.0', classifier: '', fromMavenIndex: true}),
+                            (:Artifact {groupId: 'org.test', artifactId: 'lib', version: '5.0.0', classifier: '', fromMavenIndex: true, unresolved: true, unresolvedReason: 'boom'})
                             """)
             );
         }
@@ -387,9 +391,10 @@ class PackagesControllerTest {
         assertThat(res.getStatus()).isEqualTo(200);
         List<ArtifactVersion> body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
         assertThat(body).containsExactly(
-                new ArtifactVersion("1.0.0", true),
-                new ArtifactVersion("2.0.0", false),
-                new ArtifactVersion("4.0.0", true)
+                new ArtifactVersion("1.0.0", ANALYZED),
+                new ArtifactVersion("2.0.0", NOT_ANALYZED),
+                new ArtifactVersion("4.0.0", ANALYZED),
+                new ArtifactVersion("5.0.0", FAILED)
         );
     }
 

@@ -58,7 +58,7 @@ public class ArtifactRepository {
                                     AND root.artifactId = $artifactId
                                     AND root.classifier = $classifier
                                     AND (coalesce(root.fromMavenIndex, false) OR NOT coalesce(root.unresolved, false))
-                                RETURN root.version, root.unresolved
+                                RETURN root.version, root.unresolved, root.unresolvedReason
                                 """,
                                 parameters(
                                         "groupId", groupId,
@@ -79,7 +79,8 @@ public class ArtifactRepository {
             );
 
             return result.records().stream()
-                    .map(rec -> Map.entry(new ComparableVersion(rec.get("root.version").asString()), !rec.get("root.unresolved").asBoolean(false)))
+                    .map(rec -> Map.entry(new ComparableVersion(rec.get("root.version").asString()),
+                            ArtifactVersion.state(rec.get("root.unresolved", false), rec.get("root.unresolvedReason", ""))))
                     .sorted(Map.Entry.comparingByKey())
                     .map(e -> new ArtifactVersion(e.getKey().toString(), e.getValue()))
                     .toList();

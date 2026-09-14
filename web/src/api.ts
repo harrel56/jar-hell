@@ -3,7 +3,7 @@ import {Gav} from './utils/gav'
 
 export interface ArtifactVersion {
   version: string,
-  analyzed: boolean
+  state: 'ANALYZED' | 'NOT_ANALYZED' | 'FAILED'
 }
 
 export interface ArtifactInfo {

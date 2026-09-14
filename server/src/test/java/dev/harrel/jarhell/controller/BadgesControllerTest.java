@@ -169,6 +169,6 @@ class BadgesControllerTest {
     }
 
     private static ArtifactVersion av(String ver) {
-        return new ArtifactVersion(ver, true);
+        return new ArtifactVersion(ver, ArtifactVersion.State.ANALYZED);
     }
 }
