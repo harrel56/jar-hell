@@ -2,6 +2,7 @@ import { Show } from 'solid-js'
 import { ArtifactTree } from '../../api'
 import { PackageHeader } from './PackageHeader'
 import { InstallSnippet } from './InstallSnippet'
+import { ClassifierVariants } from './ClassifierVariants'
 import { EffectiveCost } from './effective/EffectiveCost'
 import { MessageBlock } from '../MessageBlock'
 import { InsideJar } from './jar/InsideJar'
@@ -18,6 +19,7 @@ export function PackageView(props: PackageViewProps) {
         <PackageHeader info={props.tree.artifactInfo}/>
         <InstallSnippet gav={props.tree.artifactInfo}/>
       </div>
+      <ClassifierVariants info={props.tree.artifactInfo}/>
       <Show when={props.tree.artifactInfo.effectiveValues}>
         {effective => (
           <>

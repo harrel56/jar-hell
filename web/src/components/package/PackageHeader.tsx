@@ -41,6 +41,14 @@ export function PackageHeader(props: PackageHeaderProps) {
         <span class="rounded-[6px] border border-(--accent-wash-border) bg-(--accent-wash) px-[9px] py-[3px] font-(family-name:--font-data) text-[14px] text-(--accent)">
           {props.info.version}
         </span>
+        <Show when={props.info.classifier}>
+          {classifier => (
+            <span class="flex items-center gap-[9px] font-(family-name:--font-data) text-[22px]">
+              <span class="text-(--ink-mute)">:</span>
+              <span class="font-semibold tracking-(--tracking-tight) text-(--ink)">{classifier()}</span>
+            </span>
+          )}
+        </Show>
       </div>
 
       <div class="mt-2.5 flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-(length:--text-meta) text-(--ink-4)">

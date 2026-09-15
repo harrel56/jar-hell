@@ -50,7 +50,10 @@ export function DependencyNode(props: DependencyNodeProps) {
              class={['min-w-0 truncate font-(family-name:--font-data) text-[13.5px] hover:text-(--accent) hover:underline', props.optional ? 'text-(--ink-2)' : 'text-(--ink)']}>
             {props.tree.artifactInfo.groupId}:{props.tree.artifactInfo.artifactId}
           </a>
-          <span class="shrink-0 whitespace-nowrap font-(family-name:--font-data) text-(length:--text-label) text-(--ink-5)">{props.tree.artifactInfo.version}</span>
+          <span class="shrink-0 whitespace-nowrap font-(family-name:--font-data) text-(length:--text-label) text-(--ink-5)">
+            {props.tree.artifactInfo.version}
+            <Show when={props.tree.artifactInfo.classifier}>{classifier => <>:{classifier()}</>}</Show>
+          </span>
           <Show when={props.optional}>
             <span class="shrink-0 rounded-(--radius-pill) border border-(--hairline-strong) px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.05em] text-(--ink-4)">Optional</span>
           </Show>

@@ -10,7 +10,7 @@ export interface ArtifactInfo {
   groupId: string
   artifactId: string
   version: string
-  classifier: string
+  classifier?: string
   name?: string
   description?: string
   packaging?: string
