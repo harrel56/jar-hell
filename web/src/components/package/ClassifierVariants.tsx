@@ -27,8 +27,6 @@ export function ClassifierVariants(props: ClassifierVariantsProps) {
     }))
   })
 
-  const jarFileName = () => `${props.info.artifactId}-${props.info.version}-${props.info.classifier}.jar`
-
   return (
     <Show when={props.info.classifier || variants().length > 0}>
       <div class="mt-(--space-9) border-t border-(--hairline) pt-(--space-7)">
@@ -36,7 +34,7 @@ export function ClassifierVariants(props: ClassifierVariantsProps) {
           <div class="mb-4 max-w-[560px] rounded-r-[9px] border border-l-[3px] border-(--accent-wash-border) border-l-(--accent) bg-(--accent-wash) px-[15px] py-3">
             <div class="text-[13.5px] font-semibold text-(--ink)">You are viewing a classifier artifact</div>
             <div class="mt-1 text-(length:--text-meta) leading-(--leading-body) text-(--ink-2)">
-              Everything below describes <span class="font-(family-name:--font-data)">{jarFileName()}</span>, not the main jar of this version.
+              Everything below describes the <span class="font-(family-name:--font-data)">{props.info.classifier}</span> variant, not the main artifact.
             </div>
           </div>
         </Show>
