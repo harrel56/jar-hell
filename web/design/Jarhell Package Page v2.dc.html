@@ -261,8 +261,11 @@
           <div style="background: #ffffff; padding: 24px 24px 20px;">
             <div style="display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap;">
               <div style="display: flex; align-items: baseline; gap: 9px; white-space: nowrap;">
-                <span style="font-family: 'JetBrains Mono', monospace; font-size: 48px; font-weight: 500; letter-spacing: -0.04em; line-height: 0.9; color: {{ topLangColor }};">{{ topLangName }}</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: {{ topLangSize }}; font-weight: 500; letter-spacing: -0.04em; line-height: 0.9; color: {{ topLangColor }};">{{ topLangName }}</span>
                 <span style="font-family: 'JetBrains Mono', monospace; font-size: 20px; color: #6f6a62;">{{ topLangPct }}</span>
+                <sc-if value="{{ heroHasNote }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size: 13px; color: #6f6a62;">{{ heroNote }}</span>
+                </sc-if>
               </div>
               <div style="display: flex; align-items: center; gap: 10px; padding-bottom: 4px;">
                 <span style="font-size: 15px; font-weight: 600;">Contents</span>
@@ -276,19 +279,26 @@
               </sc-for>
             </div>
 
-            <div style="margin-top: 16px; display: grid; grid-template-columns: minmax(0,1fr) 72px 82px; column-gap: 12px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #a8a29a;">
+            <div style="margin-top: 16px; display: grid; grid-template-columns: minmax(84px,1fr) 60px 68px; column-gap: 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #a8a29a;">
               <div>Kind</div>
               <div style="text-align: right;">Entries</div>
               <div style="text-align: right;">% of size</div>
             </div>
-            <sc-for list="{{ langs }}" as="l" hint-placeholder-count="2">
-              <div style="display: grid; grid-template-columns: minmax(0,1fr) 72px 82px; column-gap: 12px; align-items: center; padding: 8px 0; border-top: 1px solid #f4f2ef; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #4a453e;">
-                <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
-                  <span style="width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; background: {{ l.swatch }};"></span>
-                  <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #14120f;">{{ l.name }}</span>
-                </div>
+            <sc-for list="{{ contentRows }}" as="l" hint-placeholder-count="3">
+              <div style="display: grid; grid-template-columns: minmax(84px,1fr) 60px 68px; column-gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid #f4f2ef; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #4a453e;">
+                <sc-if value="{{ l.isSub }}" hint-placeholder-val="{{ false }}">
+                  <div title="{{ l.hint }}" style="min-width: 0; padding-left: 18px; display: flex;">
+                    <span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #4a453e; font-size: 12px; border-bottom: 1px dotted #cfcac2; cursor: help;">{{ l.name }}</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ l.plain }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                    <span style="width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; background: {{ l.swatch }};"></span>
+                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #14120f;">{{ l.name }}</span>
+                  </div>
+                </sc-if>
                 <div style="text-align: right; color: #8d877e;">{{ l.entries }}</div>
-                <div style="text-align: right; color: #14120f;">{{ l.sizePct }}</div>
+                <div style="text-align: right; color: {{ l.pctColor }};">{{ l.sizePct }}</div>
               </div>
             </sc-for>
             <div style="margin-top: 10px; font-size: 12.5px; color: #8d877e;">{{ compressionNote }}</div>
@@ -431,13 +441,25 @@
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;dataSample&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Real data&quot;,&quot;With Jakarta provider&quot;,&quot;Kotlin + full stack&quot;],&quot;default&quot;:&quot;Real data&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Sample data&quot;},&quot;projectLinks&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;All present&quot;,&quot;Homepage only&quot;,&quot;None&quot;],&quot;default&quot;:&quot;All present&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Sample data&quot;},&quot;artifactVariant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Main jar page&quot;,&quot;Classifier page&quot;],&quot;default&quot;:&quot;Classifier page&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Sample data&quot;},&quot;classifierStyle&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Coordinate segment&quot;,&quot;Solid variant tag&quot;,&quot;Eyebrow above name&quot;],&quot;default&quot;:&quot;Coordinate segment&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Sample data&quot;},&quot;publicColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#4a453e&quot;,&quot;#5f6b3a&quot;,&quot;#8a6d3b&quot;,&quot;#2f6f6a&quot;],&quot;default&quot;:&quot;#4a453e&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Palette&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;dataSample&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Real data&quot;,&quot;With Jakarta provider&quot;,&quot;Kotlin + full stack&quot;,&quot;Native-library jar&quot;],&quot;default&quot;:&quot;Native-library jar&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Sample data&quot;},&quot;projectLinks&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;All present&quot;,&quot;Homepage only&quot;,&quot;None&quot;],&quot;default&quot;:&quot;All present&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Sample data&quot;},&quot;artifactVariant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Main jar page&quot;,&quot;Classifier page&quot;],&quot;default&quot;:&quot;Classifier page&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Sample data&quot;},&quot;classifierStyle&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Coordinate segment&quot;,&quot;Solid variant tag&quot;,&quot;Eyebrow above name&quot;],&quot;default&quot;:&quot;Coordinate segment&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Sample data&quot;},&quot;publicColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#4a453e&quot;,&quot;#5f6b3a&quot;,&quot;#8a6d3b&quot;,&quot;#2f6f6a&quot;],&quot;default&quot;:&quot;#4a453e&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Palette&quot;}}">
 function mixWhite(hex, amount) {
   const n = parseInt(hex.slice(1), 16);
   const c = [n >> 16 & 255, n >> 8 & 255, n & 255]
     .map(v => Math.round(v + (255 - v) * amount));
   return 'rgb(' + c.join(',') + ')';
 }
+// swatch hues are tuned as 10px fills; anything too light to read as text falls back to ink
+function inkSafe(hex) {
+  if (!hex) return '#14120f';
+  const n = parseInt(hex.slice(1), 16);
+  const [r, g, b] = [n >> 16 & 255, n >> 8 & 255, n & 255].map(v => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return (1.05 / (lum + 0.05)) >= 4.5 ? hex : '#14120f';
+}
+
 function chevrons(hex, step) {
   const tint = mixWhite(hex, 0.55);
   const f = 0.75, p = step * 2;
@@ -525,7 +547,18 @@ const JAR = {
   file: 'json-schema-1.9.1.jar',
   languages: [
     { name: 'Java', entries: 168, bytes: 402_100, packed: 176_400 },
-    { name: 'Resources', entries: 11, bytes: 21_300, packed: 8_900 }
+    { name: 'Resources', entries: 96, bytes: 128_400, packed: 41_200, sub: [
+      { name: 'JSON documents', entries: 34, bytes: 52_100 },
+      { name: 'Images', entries: 8, bytes: 21_400 },
+      { name: 'XML', entries: 5, bytes: 14_600 },
+      { name: 'Properties', entries: 12, bytes: 9_800 },
+      { name: 'HTML', entries: 4, bytes: 9_100 },
+      { name: 'Native libraries', entries: 2, bytes: 8_900 },
+      { name: 'Plain text', entries: 9, bytes: 6_300 },
+      { name: 'Manifest & META-INF', entries: 6, bytes: 3_200 },
+      { name: 'Other', entries: 14, bytes: 2_100 },
+      { name: 'Service descriptors', entries: 2, bytes: 900 }
+    ] }
   ],
   publicTypes: 61,
   internalTypes: 107,
@@ -547,6 +580,48 @@ const JAR = {
   entryPoint: null
 };
 
+// how each resource kind is recognised, shown on hover
+const SUB_HINT = {
+  'JSON documents': 'Entries ending .json — schema documents, config and fixture data.',
+  'Images': 'Entries ending .png, .jpg, .gif, .svg, .webp or .ico.',
+  'XML': 'Entries ending .xml, .xsd, .dtd or .xsl.',
+  'Properties': 'Entries ending .properties, including localised resource bundles.',
+  'HTML': 'Entries ending .html or .htm.',
+  'Native libraries': 'Entries ending .so, .dll, .dylib or .jnilib — platform binaries loaded via JNI.',
+  'Plain text': 'Entries ending .txt or .md, plus extensionless files that decode as UTF-8 text.',
+  'Manifest & META-INF': 'MANIFEST.MF and other META-INF entries, excluding service descriptors.',
+  'Service descriptors': 'Entries under META-INF/services — one file per service interface.',
+  'Other': 'Entries whose extension matched no rule above.'
+};
+
+const JAR_NATIVE = {
+  file: 'json-schema-1.9.1.jar',
+  languages: [
+    { name: 'Java', entries: 24, bytes: 38_600, packed: 17_200 },
+    { name: 'Resources', entries: 31, bytes: 1_246_800, packed: 1_108_400, sub: [
+      { name: 'Native libraries', entries: 8, bytes: 1_204_300 },
+      { name: 'JSON documents', entries: 11, bytes: 19_600 },
+      { name: 'Properties', entries: 5, bytes: 11_400 },
+      { name: 'Manifest & META-INF', entries: 4, bytes: 7_800 },
+      { name: 'Service descriptors', entries: 3, bytes: 3_700 }
+    ] }
+  ],
+  publicTypes: 9,
+  internalTypes: 15,
+  kinds: [
+    { label: 'Class', count: 5 },
+    { label: 'Interface', count: 3 },
+    { label: 'Enum', count: 1 }
+  ],
+  services: [
+    { interface: 'dev.harrel.jsonschema.providers.JsonNodeFactoryProvider', impls: 1 }
+  ],
+  module: { type: 'automatic', name: 'dev.harrel.jsonschema' },
+  builtWith: 'JDK 17.0.11',
+  multiRelease: false,
+  entryPoint: null
+};
+
 const JAR_MIXED = {
   file: 'json-schema-1.9.1.jar',
   languages: [
@@ -554,7 +629,13 @@ const JAR_MIXED = {
     { name: 'Kotlin', entries: 74, bytes: 188_200, packed: 79_600 },
     { name: 'Scala', entries: 18, bytes: 61_400, packed: 24_300 },
     { name: 'Groovy', entries: 9, bytes: 22_600, packed: 9_400 },
-    { name: 'Resources', entries: 24, bytes: 44_900, packed: 17_800 }
+    { name: 'Resources', entries: 24, bytes: 44_900, packed: 17_800, sub: [
+      { name: 'JSON documents', entries: 9, bytes: 19_800 },
+      { name: 'Properties', entries: 6, bytes: 11_200 },
+      { name: 'Manifest & META-INF', entries: 4, bytes: 7_400 },
+      { name: 'Plain text', entries: 3, bytes: 4_100 },
+      { name: 'Service descriptors', entries: 2, bytes: 2_400 }
+    ] }
   ],
   publicTypes: 148,
   internalTypes: 40,
@@ -610,7 +691,8 @@ class Component extends DCLogic {
     query: 'dev.harrel:json-schema',
     searchFocused: false,
     kindsOpen: true,
-    servicesOpen: false
+    servicesOpen: false,
+    subOpen: { Resources: true }
   };
 
   flatten(node, prefix, depth, guides, isLast, out) {
@@ -701,12 +783,18 @@ class Component extends DCLogic {
       { tab: 'Kotlin + full stack', depsKB: 11980, required: 34, javaFloor: 21,
         licenses: ['MIT', 'Apache-2.0', 'EPL-2.0', 'BSD-3', 'LGPL-2.1'], licenseVerdict: 'Copyleft', licenseColor: '#a82914',
         licenseNote: 'LGPL-2.1 arrives transitively — review before shipping a closed distribution.',
-        floorNote: 'kotlin-stdlib 2.2.20 raises the floor to Java 21, dropping 8, 11 and 17.' }
+        floorNote: 'kotlin-stdlib 2.2.20 raises the floor to Java 21, dropping 8, 11 and 17.' },
+      { tab: 'Native-library jar', depsKB: 0, required: 0, javaFloor: 8,
+        licenses: ['MIT'], licenseVerdict: 'Permissive', licenseColor: '#3f7a46',
+        licenseNote: 'No copyleft or attribution-heavy terms inherited.',
+        floorNote: "No dependency raises the floor above the package's own Java 8." }
     ];
     const scIdx = Math.max(0, SCENARIOS.findIndex(s => s.tab === (this.props.dataSample || 'Real data')));
     const sc = SCENARIOS[scIdx];
 
-    const selfKB = 211.01;
+    const jar = scIdx === 2 ? JAR_MIXED : scIdx === 3 ? JAR_NATIVE : JAR;
+    const packedTotal = jar.languages.reduce((a, l) => a + l.packed, 0);
+    const selfKB = packedTotal / 1024;
     const depsKB = sc.depsKB;
     const totalKB = selfKB + depsKB;
     const fmt = kb => kb === 0 ? 'none' : kb >= 1024 ? (kb / 1024).toFixed(2) + ' MB' : kb.toFixed(2) + ' KB';
@@ -736,15 +824,18 @@ class Component extends DCLogic {
     const matches = q ? SEARCH_POOL.filter(p => (p.group + ':' + p.name).toLowerCase().includes(q)).slice(0, 5) : [];
     const showSearch = this.state.searchFocused && q.length > 0;
 
-    const jar = scIdx === 2 ? JAR_MIXED : JAR;
     const kb = b => b >= 1024 * 1024 ? (b / 1048576).toFixed(2) + ' MB' : Math.round(b / 1024) + ' KB';
     const entryTotal = jar.languages.reduce((a, l) => a + l.entries, 0);
     const bytesTotal = jar.languages.reduce((a, l) => a + l.bytes, 0);
-    const packedTotal = jar.languages.reduce((a, l) => a + l.packed, 0);
     const typeTotal = jar.publicTypes + jar.internalTypes;
     const publicShare = jar.publicTypes / typeTotal;
     const kindMax = Math.max.apply(null, jar.kinds.map(k => k.count));
     const topLang = jar.languages.slice().sort((a, b) => b.bytes - a.bytes)[0];
+    // when one family dominates and it is a bucket like Resources, name the subtype
+    // instead — "Resources 99%" says nothing, "Native libraries 97%" does
+    const topSub = (topLang.sub || []).slice().sort((a, b) => b.bytes - a.bytes)[0];
+    const subLeads = !!topSub && topSub.bytes / topLang.bytes >= 0.5;
+    const hero = subLeads ? topSub : topLang;
     const moduleLabel = { named: 'Named module', automatic: 'Automatic module', unnamed: 'Unnamed' }[jar.module.type];
 
     return {
@@ -761,15 +852,41 @@ class Component extends DCLogic {
       coordinate: 'dev.harrel:json-schema:' + this.state.selected
         + (classifier ? ':' + classifier : ''),
       entryTotal: String(entryTotal),
+      contentRows: jar.languages.reduce((out, l) => {
+        const sub = l.sub || [];
+        out.push({
+          name: l.name,
+          isSub: false,
+          plain: true,
+          swatch: LANG_COLOR[l.name] || '#b5afa6',
+          entries: String(l.entries),
+          sizePct: (l.bytes / bytesTotal * 100).toFixed(1) + '%',
+          pctColor: '#14120f',
+          hint: sub.length ? l.name + ' — grouped by file kind below' : ''
+        });
+        sub.forEach(s => out.push({
+          name: s.name,
+          isSub: true,
+          plain: false,
+          entries: String(s.entries),
+          sizePct: (s.bytes / bytesTotal * 100).toFixed(1) + '%',
+          pctColor: '#4a453e',
+          hint: SUB_HINT[s.name] || ''
+        }));
+        return out;
+      }, []),
       langs: jar.languages.map(l => ({
         name: l.name,
         swatch: LANG_COLOR[l.name] || '#b5afa6',
         entries: String(l.entries),
         sizePct: (l.bytes / bytesTotal * 100).toFixed(1) + '%'
       })),
-      topLangName: topLang.name,
-      topLangPct: Math.round(topLang.bytes / bytesTotal * 100) + '%',
-      topLangColor: LANG_COLOR[topLang.name] || '#4a453e',
+      topLangName: hero.name,
+      topLangPct: Math.round(hero.bytes / bytesTotal * 100) + '%',
+      topLangColor: inkSafe(LANG_COLOR[topLang.name]),
+      topLangSize: hero.name.length > 11 ? '30px' : '48px',
+      heroNote: subLeads ? 'in ' + topLang.name.toLowerCase() : '',
+      heroHasNote: subLeads,
       compressionNote: kb(bytesTotal) + ' uncompressed, ' + kb(packedTotal) + ' packed — '
         + Math.round((1 - packedTotal / bytesTotal) * 100) + '% saved',
       publicCount: String(jar.publicTypes),
