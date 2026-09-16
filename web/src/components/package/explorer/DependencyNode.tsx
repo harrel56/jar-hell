@@ -1,10 +1,10 @@
 import { createMemo, createSignal, For, Loading, Show } from 'solid-js'
 import { ArtifactTree, DependencyInfo, getPackage } from '../../../api'
 import { formatGav } from '../../../utils/gav'
-import { formatLicenseType, formatSizeText } from '../../../utils/utils'
+import { formatBytecodeVersion, formatLicenseType, formatSizeText } from '../../../utils/utils'
 import { Icon } from '../../../icons'
 
-export const EXPLORER_COLUMNS = 'grid grid-cols-[minmax(0,1fr)_90px_104px] gap-x-5'
+export const EXPLORER_COLUMNS = 'grid grid-cols-[minmax(0,1fr)_90px_64px_104px] gap-x-5'
 
 interface DependencyNodeProps {
   tree: ArtifactTree
@@ -31,6 +31,11 @@ export function DependencyNode(props: DependencyNodeProps) {
   const license = () => {
     const type = props.tree.artifactInfo.licenseTypes?.[0]
     return formatLicenseType(type ?? 'NO_LICENSE')[0]
+  }
+
+  const bytecode = () => {
+    const version = props.tree.artifactInfo.jarInfo?.bytecodeVersion
+    return version ? formatBytecodeVersion(version) : '–'
   }
 
   return (
@@ -60,6 +65,9 @@ export function DependencyNode(props: DependencyNodeProps) {
         </div>
         <div class={['text-right font-(family-name:--font-data) text-(length:--text-meta)', props.optional ? 'text-(--ink-5)' : 'text-(--ink-3)']}>
           {formatSizeText(props.tree.artifactInfo.packageSize ?? 0)}
+        </div>
+        <div class={['text-right font-(family-name:--font-data) text-(length:--text-meta)', props.optional ? 'text-(--ink-5)' : 'text-(--ink-3)']}>
+          {bytecode()}
         </div>
         <div class={['text-right text-[12px]', props.optional ? 'text-(--ink-5)' : 'text-(--ink-3)']}>{license()}</div>
       </div>

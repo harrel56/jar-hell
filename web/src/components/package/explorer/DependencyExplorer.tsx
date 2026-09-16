@@ -18,6 +18,7 @@ export function DependencyExplorer(props: { tree: ArtifactTree }) {
         <div class={[EXPLORER_COLUMNS, 'border-b border-(--hairline) bg-(--surface) px-[18px] py-[11px] text-(length:--text-label) font-semibold uppercase tracking-[0.07em] text-(--ink-4)']}>
           <div>Package</div>
           <div class="text-right">Size</div>
+          <div class="text-right" title="Minimum Java version the jar's class files require">Java</div>
           <div class="text-right">License</div>
         </div>
         <DependencyNode tree={props.tree} depth={0} optional={false} initiallyOpened/>
