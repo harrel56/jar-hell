@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.junit.jupiter.api.Named.named;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 class JarAnalyzerTest {
@@ -59,8 +60,8 @@ class JarAnalyzerTest {
 
         assertThat(info.buildJdk()).isEqualTo("21");
         assertThat(info.executable()).isTrue();
-        // manifest is counted as a single resource, its size is deliberately ignored
-        assertThat(info.contents()).containsExactly(entry(ContentType.RESOURCE, new Content(1, 0, 0)));
+        // manifest is counted as a single metadata entry, its size is deliberately ignored
+        assertThat(info.contents()).containsExactly(entry(ContentType.METADATA, new Content(1, 0, 0)));
         assertThat(info.publicClasses()).isEmpty();
         assertThat(info.nonPublicClasses()).isZero();
         assertThat(info.bytecodeVersion()).isNull();
@@ -75,7 +76,7 @@ class JarAnalyzerTest {
         assertThat(info.publicClasses()).containsExactly(entry(ClassType.CLASS, 1));
         assertThat(info.nonPublicClasses()).isZero();
         assertThat(info.bytecodeVersion()).hasToString("52.0");
-        assertThat(info.contents()).containsOnlyKeys(ContentType.JAVA, ContentType.RESOURCE);
+        assertThat(info.contents()).containsOnlyKeys(ContentType.JAVA, ContentType.METADATA);
 
         Content java = info.contents().get(ContentType.JAVA);
         assertThat(java.count()).isEqualTo(1);
@@ -148,7 +149,7 @@ class JarAnalyzerTest {
         assertThat(info.contents().get(ContentType.SCALA).count()).isEqualTo(1);
         assertThat(info.contents().get(ContentType.GROOVY).count()).isEqualTo(1);
         assertThat(info.contents().get(ContentType.CLOJURE).count()).isEqualTo(1);
-        assertThat(info.contents().get(ContentType.RESOURCE).count()).isEqualTo(1);
+        assertThat(info.contents().get(ContentType.METADATA).count()).isEqualTo(1);
     }
 
     @ParameterizedTest
@@ -172,14 +173,52 @@ class JarAnalyzerTest {
         assertThat(info.nonPublicClasses()).isZero();
     }
 
-    @Test
-    void shouldCountNonClassEntryAsResource() throws IOException {
-        JarBuilder builder = new JarBuilder().entry("com/example/data.txt", "hello".getBytes(UTF_8));
+    @ParameterizedTest
+    @MethodSource("resourceTypes")
+    void shouldClassifyNonClassEntry(String name, ContentType expected) throws IOException {
+        JarBuilder builder = new JarBuilder().entry(name, "hello".getBytes(UTF_8));
         JarInfo info = analyze(builder);
 
-        assertThat(info.contents().get(ContentType.RESOURCE).count()).isEqualTo(1);
+        assertThat(info.contents()).containsOnlyKeys(expected);
+        assertThat(info.contents().get(expected).count()).isEqualTo(1);
         assertThat(info.publicClasses()).isEmpty();
         assertThat(info.bytecodeVersion()).isNull();
+    }
+
+    @ParameterizedTest
+    @MethodSource("nativeMagic")
+    void shouldSniffNativeBinaryWithoutExtension(byte[] magic) throws IOException {
+        byte[] content = new byte[64];
+        System.arraycopy(magic, 0, content, 0, magic.length);
+        JarBuilder builder = new JarBuilder().entry("driver/linux/node", content);
+        JarInfo info = analyze(builder);
+
+        assertThat(info.contents()).containsOnlyKeys(ContentType.NATIVE);
+    }
+
+    @Test
+    void shouldNotSniffClassFileMagicAsNative() throws IOException {
+        byte[] content = {(byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE, 0, 0, 0, 52};
+        JarBuilder builder = new JarBuilder().entry("com/example/Dispatcher.raw", content);
+        JarInfo info = analyze(builder);
+
+        assertThat(info.contents()).containsOnlyKeys(ContentType.RESOURCE);
+    }
+
+    @Test
+    void shouldNotSniffEntryShorterThanMagic() throws IOException {
+        JarBuilder builder = new JarBuilder().entry("com/example/blob", new byte[]{0x7F, 'E'});
+        JarInfo info = analyze(builder);
+
+        assertThat(info.contents()).containsOnlyKeys(ContentType.RESOURCE);
+    }
+
+    @Test
+    void shouldPreferExtensionOverMagicBytes() throws IOException {
+        JarBuilder builder = new JarBuilder().entry("com/example/data.json", new byte[]{0x7F, 'E', 'L', 'F', 0, 0, 0, 0});
+        JarInfo info = analyze(builder);
+
+        assertThat(info.contents()).containsOnlyKeys(ContentType.JSON);
     }
 
     @Test
@@ -443,7 +482,7 @@ class JarAnalyzerTest {
         JarInfo info = analyze(builder);
 
         assertThat(info.contents().get(ContentType.JAVA).count()).isEqualTo(1);
-        assertThat(info.contents().get(ContentType.RESOURCE).count()).isEqualTo(1);
+        assertThat(info.contents().get(ContentType.METADATA).count()).isEqualTo(1);
         assertThat(info.services()).containsExactly("com.example.Service");
         assertThat(info.publicClasses()).containsExactly(entry(ClassType.CLASS, 1));
     }
@@ -456,7 +495,7 @@ class JarAnalyzerTest {
         JarInfo info = analyze(builder);
 
         assertThat(info.services()).containsExactlyInAnyOrder("com.example.Service", "com.example.OtherService");
-        assertThat(info.contents().get(ContentType.RESOURCE).count()).isEqualTo(2);
+        assertThat(info.contents().get(ContentType.METADATA).count()).isEqualTo(2);
     }
 
     @Test
@@ -467,7 +506,7 @@ class JarAnalyzerTest {
         JarInfo info = analyze(builder);
 
         assertThat(info.services()).isEmpty();
-        assertThat(info.contents().get(ContentType.RESOURCE).count()).isEqualTo(2);
+        assertThat(info.contents().get(ContentType.METADATA).count()).isEqualTo(2);
     }
 
     private static ModuleAttribute module(String name) {
@@ -490,6 +529,51 @@ class JarAnalyzerTest {
                 arguments(PUBLIC_CLASS | ClassFile.ACC_ENUM, ClassType.ENUM),
                 // an enum with constant bodies is abstract, ENUM still has to win
                 arguments(PUBLIC_CLASS | ClassFile.ACC_ENUM | ClassFile.ACC_ABSTRACT, ClassType.ENUM)
+        );
+    }
+
+    private static Stream<Arguments> resourceTypes() {
+        return Stream.of(
+                arguments("META-INF/maven/com.example/lib/pom.xml", ContentType.METADATA), // path wins over extension
+                arguments("META-INF/LICENSE.txt", ContentType.METADATA),
+                arguments("META-INF/versions/11/OSGI-INF/MANIFEST.MF", ContentType.METADATA),
+                arguments("linux/x86_64/libfoo.so", ContentType.NATIVE),
+                arguments("win/amd64/foo.DLL", ContentType.NATIVE), // case-insensitive
+                arguments("BOOT-INF/lib/dep.jar", ContentType.ARCHIVE),
+                arguments("com/example/beans.xml", ContentType.XML),
+                arguments("com/example/schema.xsd", ContentType.XML),
+                arguments("com/example/schema.json", ContentType.JSON),
+                arguments("com/example/messages.properties", ContentType.CONFIG),
+                arguments("reference.conf", ContentType.CONFIG),
+                arguments("com/example/app.yml", ContentType.CONFIG),
+                arguments("webapp/static/app.js", ContentType.WEB),
+                arguments("webapp/static/index.html", ContentType.WEB),
+                arguments("com/example/icon.png", ContentType.MEDIA),
+                arguments("com/example/font.woff2", ContentType.MEDIA),
+                arguments("bin/run.sh", ContentType.SCRIPT),
+                arguments("com/example/Foo.java", ContentType.SOURCE),
+                arguments("com/example/Foo.kt", ContentType.SOURCE),
+                arguments("THIRD-PARTY.txt", ContentType.TEXT),
+                arguments("readme.md", ContentType.TEXT),
+                arguments("LICENSE", ContentType.TEXT), // extension-less, matched by basename
+                arguments("licenses/LICENSE-foo", ContentType.TEXT),
+                arguments("com/example/data.bin", ContentType.RESOURCE),
+                arguments("com/example/schema.sql", ContentType.RESOURCE),
+                arguments("com/example/page.ftl", ContentType.RESOURCE), // templates deliberately have no bucket of their own
+                arguments("com/example/.keep", ContentType.RESOURCE),
+                arguments("com.example/blob", ContentType.RESOURCE) // dot in directory name is not an extension
+        );
+    }
+
+    private static Stream<Arguments> nativeMagic() {
+        return Stream.of(
+                arguments(named("ELF", new byte[]{0x7F, 'E', 'L', 'F'})),
+                arguments(named("PE", new byte[]{'M', 'Z'})),
+                arguments(named("Mach-O 32 BE", new byte[]{(byte) 0xFE, (byte) 0xED, (byte) 0xFA, (byte) 0xCE})),
+                arguments(named("Mach-O 64 BE", new byte[]{(byte) 0xFE, (byte) 0xED, (byte) 0xFA, (byte) 0xCF})),
+                arguments(named("Mach-O 32 LE", new byte[]{(byte) 0xCE, (byte) 0xFA, (byte) 0xED, (byte) 0xFE})),
+                arguments(named("Mach-O 64 LE", new byte[]{(byte) 0xCF, (byte) 0xFA, (byte) 0xED, (byte) 0xFE})),
+                arguments(named("ar", "!<arch>\n".getBytes(UTF_8)))
         );
     }
 

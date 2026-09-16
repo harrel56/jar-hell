@@ -154,7 +154,7 @@ class AnalyzeControllerTest {
         JarAnalyzer.JarInfo jarInfo = new JarAnalyzer.JarInfo(
                 Map.of(
                         JarAnalyzer.ContentType.JAVA, new JarAnalyzer.Content(16, 49197L, 23678L),
-                        JarAnalyzer.ContentType.RESOURCE, new JarAnalyzer.Content(3, 10988L, 2422L)
+                        JarAnalyzer.ContentType.METADATA, new JarAnalyzer.Content(3, 10988L, 2422L)
                 ),
                 Map.of(
                         JarAnalyzer.ClassType.CLASS, 11,
@@ -207,7 +207,7 @@ class AnalyzeControllerTest {
         JarAnalyzer.JarInfo jarInfo = new JarAnalyzer.JarInfo(
                 Map.of(
                         JarAnalyzer.ContentType.JAVA, new JarAnalyzer.Content(1, 540L, 338L),
-                        JarAnalyzer.ContentType.RESOURCE, new JarAnalyzer.Content(3, 920L, 415L)
+                        JarAnalyzer.ContentType.METADATA, new JarAnalyzer.Content(3, 920L, 415L)
                 ),
                 Map.of(JarAnalyzer.ClassType.CLASS, 1),
                 0,

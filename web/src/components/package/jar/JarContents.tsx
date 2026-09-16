@@ -11,13 +11,24 @@ interface ContentRow {
 }
 
 const CONTENT_LABELS: Record<string, string> = {
-  RESOURCE: 'Resources',
   SYNTHETIC: 'Synthetic classes',
   UNKNOWN: 'Unknown source',
   INVALID: 'Unreadable classes',
   JRUBY: 'JRuby',
   JYTHON: 'Jython',
   X10: 'X10',
+  NATIVE: 'Native libraries',
+  ARCHIVE: 'Archives',
+  XML: 'XML',
+  JSON: 'JSON',
+  CONFIG: 'Config',
+  WEB: 'Web assets',
+  MEDIA: 'Media',
+  SCRIPT: 'Scripts',
+  TEXT: 'Text',
+  SOURCE: 'Source files',
+  METADATA: 'Metadata',
+  RESOURCE: 'Other resources',
 }
 
 const LANGUAGE_COLORS = ['JAVA', 'KOTLIN', 'SCALA', 'GROOVY', 'CLOJURE', 'RESOURCE']

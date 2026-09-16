@@ -28,7 +28,19 @@ public final class JarAnalyzer {
     private static final String MULTI_RELEASE_PREFIX = "META-INF/versions/";
     private static final String MODULE_INFO = "module-info.class";
     private static final String PACKAGE_INFO = "package-info.class";
+    private static final String METADATA_PREFIX = "META-INF/";
     private static final int MAX_ENTRY_SIZE = 2 * 1024 * 1024;
+    private static final int MAGIC_LENGTH = 8;
+    private static final List<byte[]> NATIVE_MAGIC = List.of(
+            new byte[]{0x7F, 'E', 'L', 'F'}, // ELF (linux, bsd, android, aix)
+            new byte[]{'M', 'Z'}, // PE (windows dll/exe)
+            new byte[]{(byte) 0xFE, (byte) 0xED, (byte) 0xFA, (byte) 0xCE}, // Mach-O 32-bit big-endian
+            new byte[]{(byte) 0xFE, (byte) 0xED, (byte) 0xFA, (byte) 0xCF}, // Mach-O 64-bit big-endian
+            new byte[]{(byte) 0xCE, (byte) 0xFA, (byte) 0xED, (byte) 0xFE}, // Mach-O 32-bit little-endian
+            new byte[]{(byte) 0xCF, (byte) 0xFA, (byte) 0xED, (byte) 0xFE}, // Mach-O 64-bit little-endian
+            // Mach-O fat binaries (0xCAFEBABE) are deliberately skipped: same magic as class files
+            new byte[]{'!', '<', 'a', 'r', 'c', 'h', '>', '\n'} // ar archive (static libs)
+    );
     private static final long MAX_TOTAL_SIZE = 1024L * 1024 * 1024;
 
     JarInfo analyzeJar(JarInputStream jis) throws IOException {
@@ -47,7 +59,7 @@ public final class JarAnalyzer {
         Manifest manifest = jis.getManifest();
         if (manifest != null) {
             // let's ignore manifest size for the sake of simplicity
-            contents.computeIfAbsent(ContentType.RESOURCE, _ -> new ContentAggregate()).count++;
+            contents.computeIfAbsent(ContentType.METADATA, _ -> new ContentAggregate()).count++;
 
             buildJdk = manifest.getMainAttributes().getValue("Build-Jdk-Spec");
             if (buildJdk == null) {
@@ -76,9 +88,13 @@ public final class JarAnalyzer {
             }
 
             if (!name.endsWith(".class")) {
+                ContentType type = ContentType.fromEntryName(name);
+                if (type == ContentType.RESOURCE && isNativeBinary(jis.readNBytes(MAGIC_LENGTH))) {
+                    type = ContentType.NATIVE;
+                }
                 jis.closeEntry();
                 totalSize = verifyTotalSize(entry, totalSize);
-                contents.computeIfAbsent(ContentType.RESOURCE, _ -> new ContentAggregate()).addEntry(entry);
+                contents.computeIfAbsent(type, _ -> new ContentAggregate()).addEntry(entry);
                 continue;
             }
 
@@ -146,6 +162,16 @@ public final class JarAnalyzer {
     private static boolean shouldCountClassType(String name, ClassModel classModel) {
         return !name.startsWith(MULTI_RELEASE_PREFIX) && !name.endsWith(MODULE_INFO) && !name.endsWith(PACKAGE_INFO)
                 && !classModel.flags().has(AccessFlag.SYNTHETIC) && classModel.findAttribute(Attributes.enclosingMethod()).isEmpty();
+    }
+
+    // extension-less executables and shared libraries (e.g. bundled node binaries) are only recognizable by their magic bytes
+    private static boolean isNativeBinary(byte[] head) {
+        for (byte[] magic : NATIVE_MAGIC) {
+            if (head.length >= magic.length && Arrays.mismatch(head, 0, magic.length, magic, 0, magic.length) < 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static Map<ContentType, Content> toContents(Map<ContentType, ContentAggregate> map) {
@@ -220,16 +246,39 @@ public final class JarAnalyzer {
         UNKNOWN, // unknown source file or unknown extension
         INVALID, // parsing classfile failed or too big
 
-        RESOURCE; // non .class file
+        // non .class entries, classified by extension
+        NATIVE("so", "dll", "dylib", "jnilib", "a", "lib", "exe"),
+        ARCHIVE("jar", "war", "ear", "aar", "zip", "gz", "tgz", "tar", "xz", "bz2", "zst", "7z", "rar"),
+        XML("xml", "xsd", "dtd", "xsl", "xslt", "tld", "wsdl"),
+        JSON("json", "jsonc", "jsonl", "json5", "avsc", "geojson"),
+        CONFIG("properties", "yml", "yaml", "toml", "conf", "hocon", "ini", "cfg", "kdl"),
+        WEB("js", "mjs", "cjs", "ts", "jsx", "tsx", "vue", "css", "scss", "less", "html", "htm", "xhtml", "map"),
+        MEDIA("png", "jpg", "jpeg", "gif", "bmp", "webp", "svg", "ico", "icns", "tif", "tiff",
+                "ttf", "otf", "woff", "woff2", "eot",
+                "mp3", "wav", "ogg", "flac", "aac", "mid", "midi",
+                "mp4", "webm", "avi", "mov", "mkv"),
+        SCRIPT("sh", "bash", "bat", "cmd", "ps1"),
+        TEXT("txt", "md", "markdown"),
 
-        private static final Map<String, ContentType> BY_EXTENSION = Arrays.stream(values())
-                .flatMap(type -> type.extensions.stream().map(ext -> Map.entry(ext, type)))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        // non .class entries, classified by other means
+        SOURCE, // source file of any language listed above
+        METADATA, // anything under META-INF/
+        RESOURCE; // anything else
+
+        private static final Map<String, ContentType> BY_SOURCE_EXTENSION = byExtension(EnumSet.range(JAVA, JASMIN));
+        private static final Map<String, ContentType> BY_RESOURCE_EXTENSION = byExtension(EnumSet.range(NATIVE, TEXT));
+        private static final Set<String> TEXT_BASENAMES = Set.of("license", "notice", "readme", "copying", "copyright", "changelog", "authors");
 
         private final Set<String> extensions;
 
         ContentType(String... extensions) {
             this.extensions = Set.of(extensions);
+        }
+
+        private static Map<String, ContentType> byExtension(Set<ContentType> types) {
+            return types.stream()
+                    .flatMap(type -> type.extensions.stream().map(ext -> Map.entry(ext, type)))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         }
 
         static ContentType from(ClassModel classModel) {
@@ -240,13 +289,34 @@ public final class JarAnalyzer {
             return classModel.findAttribute(Attributes.sourceFile())
                     .map(attr -> attr.sourceFile().stringValue())
                     .map(ContentType::resolveExtension)
-                    .map(ext -> BY_EXTENSION.getOrDefault(ext, UNKNOWN))
+                    .map(ext -> BY_SOURCE_EXTENSION.getOrDefault(ext, UNKNOWN))
                     .orElseGet(() -> classModel.flags().has(AccessFlag.SYNTHETIC) ? ContentType.SYNTHETIC : ContentType.UNKNOWN);
+        }
+
+        static ContentType fromEntryName(String name) {
+            if (name.startsWith(METADATA_PREFIX)) {
+                return METADATA;
+            }
+            String ext = resolveExtension(name);
+            ContentType byExtension = BY_RESOURCE_EXTENSION.get(ext);
+            if (byExtension != null) {
+                return byExtension;
+            }
+            if (BY_SOURCE_EXTENSION.containsKey(ext)) {
+                return SOURCE;
+            }
+            String basename = name.substring(name.lastIndexOf('/') + 1).toLowerCase();
+            for (String textBasename : TEXT_BASENAMES) {
+                if (basename.startsWith(textBasename)) {
+                    return TEXT;
+                }
+            }
+            return RESOURCE;
         }
 
         private static String resolveExtension(String sourceFile) {
             int dotIndex = sourceFile.lastIndexOf('.');
-            return dotIndex < 0 ? "" : sourceFile.substring(dotIndex + 1).toLowerCase();
+            return dotIndex < 0 || dotIndex < sourceFile.lastIndexOf('/') ? "" : sourceFile.substring(dotIndex + 1).toLowerCase();
         }
     }
 
