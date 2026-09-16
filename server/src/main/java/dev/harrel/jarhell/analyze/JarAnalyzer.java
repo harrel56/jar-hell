@@ -5,6 +5,7 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import javax.inject.Singleton;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.classfile.AccessFlags;
 import java.lang.classfile.Attributes;
@@ -58,8 +59,7 @@ public final class JarAnalyzer {
 
         Manifest manifest = jis.getManifest();
         if (manifest != null) {
-            // let's ignore manifest size for the sake of simplicity
-            contents.computeIfAbsent(ContentType.METADATA, _ -> new ContentAggregate()).count++;
+            contents.computeIfAbsent(ContentType.METADATA, _ -> new ContentAggregate()).addManifest(manifest);
 
             buildJdk = manifest.getMainAttributes().getValue("Build-Jdk-Spec");
             if (buildJdk == null) {
@@ -332,6 +332,16 @@ public final class JarAnalyzer {
             count++;
             size += Math.max(entry.getSize(), 0);
             compressedSize += Math.max(entry.getCompressedSize(), 0);
+        }
+
+        // JarInputStream consumes the manifest entry before we can see its sizes,
+        // so re-serialize it instead; compressed size is a rough guess
+        void addManifest(Manifest manifest) throws IOException {
+            var out = new ByteArrayOutputStream();
+            manifest.write(out);
+            count++;
+            size += out.size();
+            compressedSize += out.size() / 2;
         }
 
         Content toContent() {

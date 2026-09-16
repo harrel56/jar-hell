@@ -37,7 +37,7 @@ class JarAnalyzerRealJarTest {
                 entry(ContentType.JAVA, new Content(148, 414088, 175461)),
                 entry(ContentType.JSON, new Content(11, 20023, 5383)),
                 entry(ContentType.CONFIG, new Content(1, 1793, 633)),
-                entry(ContentType.METADATA, new Content(1, 0, 0))
+                entry(ContentType.METADATA, new Content(1, 71, 35))
         );
     }
 
@@ -62,7 +62,7 @@ class JarAnalyzerRealJarTest {
         assertThat(info.nonPublicClasses()).isEqualTo(11);
         assertThat(info.contents()).containsExactly(
                 entry(ContentType.JAVA, new Content(53, 120313, 52947)),
-                entry(ContentType.METADATA, new Content(2, 56, 48))
+                entry(ContentType.METADATA, new Content(2, 1085, 562))
         );
     }
 

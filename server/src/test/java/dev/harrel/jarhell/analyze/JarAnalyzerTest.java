@@ -60,8 +60,9 @@ class JarAnalyzerTest {
 
         assertThat(info.buildJdk()).isEqualTo("21");
         assertThat(info.executable()).isTrue();
-        // manifest is counted as a single metadata entry, its size is deliberately ignored
-        assertThat(info.contents()).containsExactly(entry(ContentType.METADATA, new Content(1, 0, 0)));
+        // manifest is a single metadata entry sized by re-serializing it; compressed size is half of that
+        // "Manifest-Version: 1.0\r\n" + "Build-Jdk-Spec: 21\r\n" + "Main-Class: com.example.Main\r\n" + "\r\n"
+        assertThat(info.contents()).containsExactly(entry(ContentType.METADATA, new Content(1, 75, 37)));
         assertThat(info.publicClasses()).isEmpty();
         assertThat(info.nonPublicClasses()).isZero();
         assertThat(info.bytecodeVersion()).isNull();
