@@ -7,6 +7,7 @@ import { PackageMainSkeleton } from '../components/package/PackageMainSkeleton'
 import { AnalysisFailedView } from '../components/package/AnalysisFailedView'
 import {analyzePackage, ArtifactTree, getPackage, getVersions} from '../api'
 import {formatGav, Gav, parseGav} from '../utils/gav'
+import { rememberViewed } from '../utils/recentlyViewed'
 
 const isNotFound = (tree: ArtifactTree) =>
   tree.artifactInfo.unresolved === true && (tree.artifactInfo.unresolvedReason?.includes('ArtifactNotFoundException') ?? false)
@@ -34,6 +35,15 @@ export function PackagePage() {
     g => {
       if (g) {
         analyze(g)
+      }
+    }
+  )
+
+  createEffect(
+    () => pkg(),
+    p => {
+      if (p && !isFailed(p)) {
+        rememberViewed(p.artifactInfo)
       }
     }
   )

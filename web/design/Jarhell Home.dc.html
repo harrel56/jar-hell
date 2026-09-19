@@ -24,7 +24,7 @@
 
   <header style="display: flex; align-items: center; gap: 24px; height: 60px; padding: 0 28px; border-bottom: 1px solid #eceae6;">
     <a href="#" style="display: flex; align-items: center; gap: 9px; color: #14120f; font-size: 19px; font-weight: 700; letter-spacing: -0.025em;">
-      <span style="width: 24px; height: 24px; border-radius: 7px; background: #14120f; display: flex; align-items: center; justify-content: center;"><span style="width: 9px; height: 11px; background: #ff5c2b; clip-path: polygon(50% 0%, 100% 62%, 78% 100%, 22% 100%, 0% 62%);"></span></span>
+      <img src="uploads/jarhell.png" alt="Jarhell" style="width: 21px; height: 32px; display: block; image-rendering: pixelated; flex-shrink: 0;" />
       <span>Jar<span style="color: #d94a22;">hell</span></span>
     </a>
     <div style="margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6f6a62;">
@@ -36,8 +36,19 @@
 
   <main style="max-width: 1060px; margin: 0 auto; padding: 0 40px 110px;">
 
-    <section style="padding: 92px 0 0; text-align: center;">
-      <h1 style="margin: 0; font-size: 34px; font-weight: 600; letter-spacing: -0.03em;">What does that dependency really cost?</h1>
+    <section style="position: relative; padding: 78px 0 0; text-align: center;">
+      <sc-if value="{{ iconAbove }}" hint-placeholder-val="{{ true }}">
+        <img src="uploads/jarhell.png" alt="" style="width: 74px; height: 112px; display: block; margin: 0 auto 26px; image-rendering: pixelated;" />
+      </sc-if>
+      <sc-if value="{{ iconWatermark }}" hint-placeholder-val="{{ false }}">
+        <img src="uploads/jarhell.png" alt="" style="position: absolute; top: 8px; left: 50%; width: 224px; height: 339px; margin-left: -112px; opacity: 0.09; image-rendering: pixelated; pointer-events: none;" />
+      </sc-if>
+      <div style="position: relative; display: flex; align-items: center; justify-content: center; gap: 22px;">
+        <sc-if value="{{ iconBeside }}" hint-placeholder-val="{{ false }}">
+          <img src="uploads/jarhell.png" alt="" style="width: 60px; height: 91px; display: block; flex-shrink: 0; image-rendering: pixelated;" />
+        </sc-if>
+        <h1 style="margin: 0; max-width: 700px; font-size: 46px; font-weight: 600; letter-spacing: -0.035em; line-height: 1.08; text-align: {{ headlineAlign }};">What does that dependency <span style="color: #d94a22; white-space: nowrap;">really cost?</span></h1>
+      </div>
       <p style="margin: 12px auto 0; max-width: 520px; font-size: 15.5px; color: #6f6a62;">Jarhell resolves a Maven artifact's full transitive graph and reports its weight, bytecode floor and effective license.</p>
 
       <div style="position: relative; max-width: 620px; margin: 30px auto 0; text-align: left;">
@@ -97,6 +108,36 @@
           </div>
         </sc-if>
 
+        <sc-if value="{{ sec.isGrid }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top: 14px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;">
+            <sc-for list="{{ sec.items }}" as="p" hint-placeholder-count="6">
+              <div style="padding: 14px 15px 13px; border: 1px solid #eceae6; border-radius: 12px; cursor: pointer;" style-hover="border-color: #d9d4cc; background: #faf9f7;">
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #a8a29a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ p.group }}</div>
+                <div style="margin-top: 3px; font-family: 'JetBrains Mono', monospace; font-size: 14.5px; font-weight: 500; letter-spacing: -0.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ p.name }}</div>
+                <div style="margin-top: 11px; display: flex; align-items: baseline; justify-content: space-between; gap: 10px;">
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #8d877e;">{{ p.version }}</span>
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: {{ p.sizeColor }};">{{ p.size }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ sec.isRows }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top: 10px; border-top: 1px solid #eceae6;">
+            <sc-for list="{{ sec.items }}" as="p" hint-placeholder-count="6">
+              <div style="display: grid; grid-template-columns: minmax(0, 1fr) 96px 120px 82px; align-items: center; gap: 14px; padding: 10px 6px; border-bottom: 1px solid #f4f2ef; cursor: pointer;" style-hover="background: #faf9f7;">
+                <div style="min-width: 0; font-family: 'JetBrains Mono', monospace; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><span style="color: #a8a29a;">{{ p.group }}</span><span style="color: #cfcac2;">:</span><span style="font-weight: 500;">{{ p.name }}</span></div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #8d877e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ p.version }}</div>
+                <div style="height: 5px; background: #f0eeea; border-radius: 3px; overflow: hidden;">
+                  <div style="height: 100%; width: {{ p.barWidth }}; background: {{ p.sizeColor }}; border-radius: 3px;"></div>
+                </div>
+                <div style="text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: {{ p.sizeColor }};">{{ p.size }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
       </section>
     </sc-for>
 
@@ -104,7 +145,7 @@
 </div>
 
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;cardLayout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;carousel&quot;,&quot;grid&quot;,&quot;rows&quot;],&quot;default&quot;:&quot;rows&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Card collections&quot;},&quot;heroIcon&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;above&quot;,&quot;beside&quot;,&quot;watermark&quot;,&quot;none&quot;],&quot;default&quot;:&quot;none&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Hero&quot;}}">
 const VIEWED = [
   { group: 'dev.harrel', name: 'json-schema', version: '1.9.1', kb: 211.01 },
   { group: 'io.avaje', name: 'avaje-jsonb', version: '3.13-RC1', kb: 168.4 },
@@ -127,7 +168,7 @@ const fmt = kb => kb >= 1024 ? (kb / 1024).toFixed(2) + ' MB' : kb.toFixed(2) + 
 const sizeColor = kb => kb >= 2048 ? '#a82914' : kb >= 512 ? '#c08a1e' : '#4a453e';
 
 class Component extends DCLogic {
-  state = { query: '', focused: false, layout: 'carousel', offsets: { viewed: 0, analyzed: 0 } };
+  state = { query: '', focused: false, offsets: { viewed: 0, analyzed: 0 } };
 
   shift(key, dir, count) {
     const max = Math.max(0, count - 4);
@@ -138,9 +179,10 @@ class Component extends DCLogic {
   }
 
   buildSection(key, title, meta, data) {
-    const layout = this.state.layout;
+    const layout = this.props.cardLayout || 'carousel';
     const off = this.state.offsets[key];
     const max = Math.max(0, data.length - 4);
+    const peak = Math.max.apply(null, data.map(p => p.kb));
     return {
       title, meta,
       isCarousel: layout === 'carousel',
@@ -153,7 +195,8 @@ class Component extends DCLogic {
       next: () => this.shift(key, 1, data.length),
       items: data.map(p => ({
         group: p.group, name: p.name, version: p.version,
-        size: fmt(p.kb), sizeColor: sizeColor(p.kb)
+        size: fmt(p.kb), sizeColor: sizeColor(p.kb),
+        barWidth: Math.max(6, Math.round((p.kb / peak) * 100)) + '%'
       }))
     };
   }
@@ -166,7 +209,13 @@ class Component extends DCLogic {
       : [];
     const showSuggest = this.state.focused && q.length > 0;
 
+    const icon = this.props.heroIcon || 'above';
+
     return {
+      iconAbove: icon === 'above',
+      iconBeside: icon === 'beside',
+      iconWatermark: icon === 'watermark',
+      headlineAlign: icon === 'beside' ? 'left' : 'center',
       query: this.state.query,
       onQuery: e => this.setState({ query: e.target.value }),
       onFocus: () => this.setState({ focused: true }),
