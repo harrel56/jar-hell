@@ -21,6 +21,7 @@ export interface ArtifactInfo {
   /** ISO local date-times, e.g. `2026-02-27T12:34:56` */
   created?: string
   analyzed?: string
+  licenses?: License[]
   licenseTypes?: string[]
   classifiers?: string[]
   extensions?: string[]
@@ -29,6 +30,11 @@ export interface ArtifactInfo {
   unresolved?: boolean
   unresolvedCount?: number
   unresolvedReason?: string
+}
+
+export interface License {
+  name?: string
+  url?: string
 }
 
 export interface BytecodeVersion {
