@@ -101,7 +101,7 @@ export default function Autocomplete(props: AutocompleteProps) {
           document.getElementById(optionId(activeIndex())!)?.click()
         } else if (settledResults().length) {
           document.getElementById(optionId(0)!)?.click()
-        } else if (settledResults().length === 0 && parseGav(query().trim())) {
+        } else if (parseGav(query().trim())) {
           setOpened(false)
           navigate('/packages/' + query().trim())
         }
@@ -180,7 +180,7 @@ export default function Autocomplete(props: AutocompleteProps) {
               )}
             </For>
             <Show when={results().length === 0}>
-              {message('Nothing analysed under that name yet — type the full group:artifact:version and press Enter to queue it.')}
+              {message('Nothing analysed under that name yet — type the full group:artifact and press Enter to queue it.')}
             </Show>
           </Errored>
         </div>
