@@ -2,6 +2,7 @@ import { createMemo, Errored, Loading } from 'solid-js'
 import Autocomplete from '../components/Autocomplete'
 import { getAnalyzedCount } from '../api'
 import { RecentlyViewed } from '../components/home/RecentlyViewed'
+import { RecentlyAnalyzed } from '../components/home/RecentlyAnalyzed'
 
 const formatCount = (count: number) => count.toLocaleString('en-US')
 
@@ -32,7 +33,10 @@ export function HomePage() {
         </div>
       </section>
 
-      <RecentlyViewed/>
+      <div class="mt-[74px]">
+        <RecentlyViewed class="mt-[34px]"/>
+        <RecentlyAnalyzed class="mt-[34px]"/>
+      </div>
     </main>
   )
 }

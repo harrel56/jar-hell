@@ -109,6 +109,8 @@ export const getPackage = query(
 
 export const getAnalyzedCount = query(() => json<number>('/api/v1/packages/count'), 'getAnalyzedCount')
 
+export const getLatestAnalyzed = query(() => json<ArtifactInfo[]>('/api/v1/packages/latest'), 'getLatestAnalyzed')
+
 export const getVersions = query((groupId: string, artifactId: string, classifier: string | undefined) => {
   const classifierPart = classifier ? `?classifier=${encodeURIComponent(classifier)}` : ''
   return json<ArtifactVersion[]>(`/api/v1/packages/${groupId}:${artifactId}/versions${classifierPart}`)

@@ -324,7 +324,7 @@ public class ArtifactRepository {
                         AND n.effectiveUnresolvedDependencies = 0
                         RETURN n
                         ORDER BY n.analyzed DESC
-                        LIMIT 10""");
+                        LIMIT $limit""", Map.of("limit", ArtifactStatsHolder.SIZE_LIMIT));
                 return res.list(r -> toArtifactInfo(toArtifactProps(r.get("n").asNode())));
             });
         }
