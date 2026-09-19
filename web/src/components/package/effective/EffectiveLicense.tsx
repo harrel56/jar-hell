@@ -33,7 +33,7 @@ export function EffectiveLicense(props: { effective: EffectiveValues }) {
         <div class="mt-4 flex min-h-[26px] flex-wrap items-center gap-1.5">
           <For each={others()}>
             {license => (
-              <span class="rounded-(--radius-chip) bg-(--chip-bg) px-[9px] py-1 font-(family-name:--font-data) text-[12px] text-(--ink)">
+              <span class="rounded-(--radius-chip) bg-(--chip-bg) border border-(--chip-border) px-[9px] py-1 font-(family-name:--font-data) text-[12px] text-(--ink-2)">
                 {license}
               </span>
             )}
