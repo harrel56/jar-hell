@@ -44,7 +44,7 @@ public class MavenApiClient {
             throw new ArtifactNotFoundException("HTTP call failed [%s] for url [%s]".formatted(res.getStatus(), url));
         }
 
-        String filePrefix = "%s-%s".formatted(gav.artifactId(), gav.version());
+        String filePrefix = gav.classifier() == null ? "%s-%s".formatted(gav.artifactId(), gav.version()) : "%s-%s-%s".formatted(gav.artifactId(), gav.version(), gav.classifier());
         Document doc = Jsoup.parse(res.getContentAsString());
         List<String> suffixes = doc.getElementsByTag("a").stream()
                 .map(el -> el.attr("href"))
