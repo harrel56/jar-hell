@@ -13,7 +13,6 @@ const DEBOUNCE_MS = 300
 
 interface AutocompleteProps {
   debounceMs?: number
-  /** `header` is the compact top bar field, `hero` the large home page one with the `/` shortcut */
   variant?: 'header' | 'hero'
   class?: string
 }
@@ -97,16 +96,14 @@ export default function Autocomplete(props: AutocompleteProps) {
         }
         break
       case 'Enter': {
-        const idx = activeIndex()
-        if (idx === null) {
+        e.preventDefault()
+        if (activeIndex() !== null) {
+          document.getElementById(optionId(activeIndex())!)?.click()
+        } else if (settledResults().length) {
+          document.getElementById(optionId(0)!)?.click()
+        } else if (settledResults().length === 0 && parseGav(query().trim())) {
           setOpened(false)
-          navigate('/packages/' + query())
-        } else {
-          const option = document.getElementById(optionId(idx)!)
-          if (option) {
-            e.preventDefault()
-            option.click()
-          }
+          navigate('/packages/' + query().trim())
         }
         break
       }
@@ -183,7 +180,7 @@ export default function Autocomplete(props: AutocompleteProps) {
               )}
             </For>
             <Show when={results().length === 0}>
-              {message('Nothing analysed under that name yet — press Enter to queue it.')}
+              {message('Nothing analysed under that name yet — type the full group:artifact:version and press Enter to queue it.')}
             </Show>
           </Errored>
         </div>

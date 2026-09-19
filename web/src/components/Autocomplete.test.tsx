@@ -321,7 +321,18 @@ describe('keyboard navigation', () => {
     expect(history.get()).toBe('/packages/org.a:one')
   })
 
-  test('enter with nothing highlighted navigates', async () => {
+  test('enter with nothing highlighted selects the first option', async () => {
+    await search('o')
+
+    press('Enter')
+
+    expect(input.value).toBe('org.a:one')
+    expect(panel()).toBeNull()
+    expect(history.get()).toBe('/packages/org.a:one')
+  })
+
+  test('enter with no results queues a valid coordinate', async () => {
+    stubFetch(ok([]))
     await search('group:id')
 
     press('Enter')
@@ -331,14 +342,15 @@ describe('keyboard navigation', () => {
     expect(history.get()).toBe('/packages/group:id')
   })
 
-  test('enter with nothing highlighted navigates and clears input for invalid coordinate', async () => {
+  test('enter with no results ignores text that is not a coordinate', async () => {
+    stubFetch(ok([]))
     await search('o')
 
     press('Enter')
 
-    expect(input.value).toBe('')
-    expect(panel()).not.toBeInTheDocument()
-    expect(history.get()).toBe('/packages/o')
+    expect(input.value).toBe('o')
+    expect(panel()).toBeInTheDocument()
+    expect(history.get()).toBe('/')
   })
 
   test('typing clears the highlight', async () => {
