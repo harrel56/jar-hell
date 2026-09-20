@@ -31,7 +31,7 @@ public class MavenIndexService {
     private static final String INDEX_PROPERTIES = "nexus-maven-repository-index.properties";
     private static final int BATCH_SIZE = 1_000;
     private static final Set<String> IGNORED_CLASSIFIERS = Set.of("sources", "javadoc");
-    private static final Set<String> CHECKSUM_EXTENSIONS = Set.of("asc", "md5", "sha1", "sha256", "sha512");
+    public static final Set<String> CHECKSUM_EXTENSIONS = Set.of("asc", "md5", "sha1", "sha256", "sha512");
 
     private final ArtifactRepository repo;
     private final AtomicBoolean running = new AtomicBoolean();

@@ -2,6 +2,7 @@ package dev.harrel.jarhell;
 
 import dev.harrel.jarhell.analyze.ArtifactNotFoundException;
 import dev.harrel.jarhell.analyze.FilesInfo;
+import dev.harrel.jarhell.analyze.MavenIndexService;
 import dev.harrel.jarhell.model.Gav;
 import io.avaje.config.Config;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -12,6 +13,7 @@ import javax.inject.Singleton;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -44,7 +46,7 @@ public class MavenApiClient {
             throw new ArtifactNotFoundException("HTTP call failed [%s] for url [%s]".formatted(res.getStatus(), url));
         }
 
-        String filePrefix = gav.classifier() == null ? "%s-%s".formatted(gav.artifactId(), gav.version()) : "%s-%s-%s".formatted(gav.artifactId(), gav.version(), gav.classifier());
+        String filePrefix = "%s-%s".formatted(gav.artifactId(), gav.version());
         Document doc = Jsoup.parse(res.getContentAsString());
         List<String> suffixes = doc.getElementsByTag("a").stream()
                 .map(el -> el.attr("href"))
@@ -52,15 +54,11 @@ public class MavenApiClient {
                 .map(href -> href.substring(filePrefix.length()))
                 .toList();
 
-        Set<String> extensions = suffixes.stream()
-                .filter(f -> f.contains("."))
-                .map(f -> f.substring(f.lastIndexOf('.') + 1))
-                .collect(Collectors.toSet());
         Set<String> classifiers = suffixes.stream()
                 .filter(f -> f.startsWith("-"))
-                .map(f -> f.substring(1, f.indexOf(".")))
+                .map(f -> f.indexOf('.') < 0 ? f.substring(1) : f.substring(1, f.indexOf('.')))
                 .collect(Collectors.toSet());
-        return new FilesInfo(extensions, classifiers);
+        return new FilesInfo(parseExtensions(gav, suffixes), classifiers);
     }
 
     private ContentResponse fetchRaw(String url) {
@@ -86,5 +84,29 @@ public class MavenApiClient {
         String resource = "%s/%s/%s/%s".formatted(groupPath, gav.artifactId(), gav.version(), fileName);
         String encodedResource = URLEncoder.encode(resource, StandardCharsets.UTF_8);
         return CONTENT_URL + "/" + encodedResource;
+    }
+
+    private static Set<String> parseExtensions(Gav gav, List<String> suffixes) {
+        if (gav.classifier() != null) {
+            String prefix = "-%s.".formatted(gav.classifier());
+            suffixes = suffixes.stream()
+                    .filter(s -> s.startsWith(prefix))
+                    .map(s -> s.substring(prefix.length() - 1))
+                    .toList();
+        } else {
+            suffixes = suffixes.stream()
+                    .filter(s -> s.startsWith("."))
+                    .toList();
+        }
+        Set<String> res = new HashSet<>();
+        for (String suffix : suffixes) {
+            String last = suffix.substring(suffix.lastIndexOf('.') + 1);
+            if (MavenIndexService.CHECKSUM_EXTENSIONS.contains(last)) {
+                res.add(last);
+            } else {
+                res.add(suffix.substring(1));
+            }
+        }
+        return res;
     }
 }
