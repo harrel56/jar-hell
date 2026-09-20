@@ -3,12 +3,15 @@ package dev.harrel.jarhell.util;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.StructuredTaskScope;
 
 public final class ConcurrentUtil {
-    public static void joinScope(StructuredTaskScope scope) {
+    public static void joinScope(StructuredTaskScope<?, ?, ? extends ExecutionException> scope) {
         try {
             scope.join();
+        } catch(ExecutionException e) {
+            throw new CompletionException(e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new CompletionException(e);

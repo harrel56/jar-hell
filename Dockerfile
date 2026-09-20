@@ -1,4 +1,4 @@
-FROM eclipse-temurin:26-alpine
+FROM bellsoft/liberica-openjdk-alpine:27
 ARG BUILD_VERSION=unknown
 ENV BUILD_VERSION=${BUILD_VERSION}
 COPY build/*.jar app.jar
