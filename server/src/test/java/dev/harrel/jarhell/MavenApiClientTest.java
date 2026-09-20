@@ -110,6 +110,36 @@ public class MavenApiClientTest {
         assertThat(res.extensions()).containsExactlyInAnyOrder("pom", "asc", "sha512");
     }
 
+    @Test
+    void fetchFilesInfoHandlesAbsoluteHrefs() throws Exception {
+        stubListing("/maven2/org/test/lib/1.0.0/lib-1.0.0.jar", "https://repo.example.com/org/test/lib/1.0.0/lib-1.0.0-sources.jar");
+
+        FilesInfo res = mavenApiClient.fetchFilesInfo(new Gav("org.test", "lib", "1.0.0"));
+
+        assertThat(res.extensions()).containsExactly("jar");
+        assertThat(res.classifiers()).containsExactly("sources");
+    }
+
+    @Test
+    void fetchFilesInfoIgnoresSubdirectories() throws Exception {
+        stubListing("lib-1.0.0.jar", "lib-1.0.0-extras/");
+
+        FilesInfo res = mavenApiClient.fetchFilesInfo(new Gav("org.test", "lib", "1.0.0"));
+
+        assertThat(res.extensions()).containsExactly("jar");
+        assertThat(res.classifiers()).isEmpty();
+    }
+
+    @Test
+    void fetchFilesInfoDoesNotMatchClassifierByPrefix() throws Exception {
+        stubListing("lib-1.0.0-linux.jar", "lib-1.0.0-linux-x86_64.zip");
+
+        FilesInfo res = mavenApiClient.fetchFilesInfo(new Gav("org.test", "lib", "1.0.0", "linux"));
+
+        assertThat(res.extensions()).containsExactly("jar");
+        assertThat(res.classifiers()).containsExactlyInAnyOrder("linux", "linux-x86_64");
+    }
+
     private void stubListing(String... fileNames) throws Exception {
         StringBuilder html = new StringBuilder("<a href=\"../\">../</a>\n");
         for (String fileName : fileNames) {

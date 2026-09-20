@@ -50,8 +50,11 @@ public class MavenApiClient {
         Document doc = Jsoup.parse(res.getContentAsString());
         List<String> suffixes = doc.getElementsByTag("a").stream()
                 .map(el -> el.attr("href"))
-                .filter(href -> href.startsWith(filePrefix))
-                .map(href -> href.substring(filePrefix.length()))
+                // subdirectories are not files; hrefs may be absolute depending on the repository manager
+                .filter(href -> !href.endsWith("/"))
+                .map(href -> href.substring(href.lastIndexOf('/') + 1))
+                .filter(fileName -> fileName.startsWith(filePrefix))
+                .map(fileName -> fileName.substring(filePrefix.length()))
                 .toList();
 
         Set<String> classifiers = suffixes.stream()
