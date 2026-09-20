@@ -6,6 +6,7 @@ import dev.harrel.jarhell.model.PackageInfo;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,8 +86,11 @@ class PackageAnalyzer {
     private PackageInfo fetchOther(Gav gav, String extension) throws InterruptedException, ExecutionException, TimeoutException {
         String url = MavenApiClient.createFileUrl(gav, extension);
         InputStreamResponseListener listener = new InputStreamResponseListener();
+        // Central gzips text formats (json, xml, pom) on the fly and then omits Content-Length,
+        // so opt out of the gzip that Jetty advertises by default to get the real file size
         httpClient.newRequest(url)
                 .method(HttpMethod.HEAD)
+                .headers(headers -> headers.put(HttpHeader.ACCEPT_ENCODING, "identity"))
                 .send(listener);
         Response res = listener.get(5L, TimeUnit.SECONDS);
         if (res.getStatus() >= 400) {
