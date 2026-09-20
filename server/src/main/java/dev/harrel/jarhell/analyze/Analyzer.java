@@ -39,7 +39,7 @@ class Analyzer {
         try {
             FilesInfo filesInfo = mavenApiClient.fetchFilesInfo(gav);
             DescriptorInfo descriptorInfo = mavenRunner.resolveDescriptor(gav);
-            PackageInfo packageInfo = packageAnalyzer.analyzePackage(gav, filesInfo, descriptorInfo.packaging());
+            PackageInfo packageInfo = packageAnalyzer.analyzePackage(gav, filesInfo);
 
             return createArtifactInfo(gav, filesInfo, packageInfo, descriptorInfo);
         } catch (Exception e) {

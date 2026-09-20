@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -31,12 +32,13 @@ class PackageAnalyzer {
         this.httpClient = httpClient;
     }
 
-    PackageInfo analyzePackage(Gav gav, FilesInfo filesInfo, String packaging) {
+    PackageInfo analyzePackage(Gav gav, FilesInfo filesInfo) {
         try {
-            if (filesInfo.extensions().contains("jar")) {
+            String extension = selectExtension(filesInfo.extensions());
+            if ("jar".equals(extension)) {
                 return fetchJar(gav);
             } else {
-                return fetchOther(gav, packaging);
+                return fetchOther(gav, extension);
             }
         } catch (ExecutionException | TimeoutException e) {
             throw new IllegalArgumentException(e);
@@ -44,6 +46,18 @@ class PackageAnalyzer {
             Thread.currentThread().interrupt();
             throw new IllegalArgumentException(e);
         }
+    }
+
+    static String selectExtension(Set<String> extensions) {
+        if (extensions.contains("jar")) {
+            return "jar";
+        }
+        return extensions.stream()
+                .filter(ext -> !ext.equals("pom") && !ext.equals("module") && !MavenIndexService.CHECKSUM_EXTENSIONS.contains(ext))
+                .sorted()
+                .findFirst()
+                .or(() -> extensions.stream().filter("pom"::equals).findFirst())
+                .orElseThrow(() -> new IllegalArgumentException("No artifact files found among: " + extensions));
     }
 
     private PackageInfo fetchJar(Gav gav) throws InterruptedException, ExecutionException, TimeoutException {
@@ -68,8 +82,8 @@ class PackageAnalyzer {
         }
     }
 
-    private PackageInfo fetchOther(Gav gav, String packaging) throws InterruptedException, ExecutionException, TimeoutException {
-        String url = MavenApiClient.createFileUrl(gav, packaging);
+    private PackageInfo fetchOther(Gav gav, String extension) throws InterruptedException, ExecutionException, TimeoutException {
+        String url = MavenApiClient.createFileUrl(gav, extension);
         InputStreamResponseListener listener = new InputStreamResponseListener();
         httpClient.newRequest(url)
                 .method(HttpMethod.HEAD)
@@ -83,7 +97,7 @@ class PackageAnalyzer {
         LocalDateTime created = LocalDateTime.parse(lastModifiedHeader, DateTimeFormatter.RFC_1123_DATE_TIME);
 
         long packageSize = 0;
-        if (!"pom".equalsIgnoreCase(packaging)) {
+        if (!"pom".equals(extension)) {
             String contentLengthHeader = Objects.requireNonNull(res.getHeaders().get("Content-Length"));
             packageSize = Long.parseLong(contentLengthHeader);
         }
