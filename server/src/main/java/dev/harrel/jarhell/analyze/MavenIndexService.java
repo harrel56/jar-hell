@@ -19,8 +19,10 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Singleton
@@ -28,6 +30,8 @@ public class MavenIndexService {
     private static final Logger logger = LoggerFactory.getLogger(MavenIndexService.class);
     private static final String INDEX_PROPERTIES = "nexus-maven-repository-index.properties";
     private static final int BATCH_SIZE = 1_000;
+    private static final Set<String> IGNORED_CLASSIFIERS = Set.of("sources", "javadoc");
+    private static final Set<String> CHECKSUM_EXTENSIONS = Set.of("asc", "md5", "sha1", "sha256", "sha512");
 
     private final ArtifactRepository repo;
     private final AtomicBoolean running = new AtomicBoolean();
@@ -128,11 +132,26 @@ public class MavenIndexService {
             return null;
         }
         String[] split = data.split("\\|");
-        if (split.length > 3 && "NA".equals(split[3])) {
-            return new Gav(split[0], split[1], split[2]);
-        } else {
-            // ignore all classifiers & metadata (hashes, signatures)
+        if (split.length < 4 || isChecksumOrSignature(row)) {
             return null;
         }
+        String classifier = split[3];
+        if ("NA".equals(classifier)) {
+            return new Gav(split[0], split[1], split[2]);
+        } else if (IGNORED_CLASSIFIERS.contains(classifier)) {
+            return null;
+        } else {
+            return new Gav(split[0], split[1], split[2], classifier);
+        }
+    }
+
+    private static boolean isChecksumOrSignature(Map<String, String> row) {
+        String info = row.get("i");
+        if (info == null) {
+            return false;
+        }
+        int separator = info.indexOf('|');
+        String extension = separator < 0 ? info : info.substring(0, separator);
+        return Arrays.stream(extension.split("\\.")).anyMatch(CHECKSUM_EXTENSIONS::contains);
     }
 }
