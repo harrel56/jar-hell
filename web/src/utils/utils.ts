@@ -80,6 +80,7 @@ export const formatLicenseType = (type: string): [string, LicenseKind] => {
     case 'ZLIB': return ['ZLIB', 'permissive']
     case 'ISC': return ['ISC', 'permissive']
     case 'MIT': return ['MIT', 'permissive']
+    case 'UPL_1': return ['UPL 1.0', 'permissive']
     case 'BSD_0': return ['BSD 0-clause', 'permissive']
     case 'MIT0': return ['MIT No Attribution', 'permissive']
     default: return [type, 'unknown']

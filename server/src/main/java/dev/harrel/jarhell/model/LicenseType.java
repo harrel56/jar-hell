@@ -285,6 +285,19 @@ public enum LicenseType {
     ), uris(
             "https://opensource.org/license/unlicense"
     )),
+    UPL_1(lowercaseSet(
+            "UPL",
+            "UPL 1.0",
+            "UPL 1",
+            "Universal Permissive",
+            "Universal Permissive 1.0",
+            "Universal Permissive 1"
+    ), uris(
+            "https://opensource.org/license/UPL",
+            "https://oss.oracle.com/licenses/upl",
+            "https://oracle.com/technetwork/licenses/upl-license-2927578.html",
+            "https://spdx.org/licenses/UPL-1.0.html"
+    )),
     ZLIB(lowercaseSet(
             "zlib",
             "zlib/libpng",
@@ -331,6 +344,7 @@ public enum LicenseType {
                 LicenseType.ZLIB,
                 LicenseType.ISC,
                 LicenseType.MIT,
+                LicenseType.UPL_1,
                 LicenseType.BSD_0,
                 LicenseType.MIT0
         );
@@ -343,9 +357,13 @@ public enum LicenseType {
         ORDER_MAP = Collections.unmodifiableMap(orderMap);
     }
 
-    private static final Pattern NAME_CLEANER = Pattern.compile(
-            ",|(\\bthe\\b)|(\\bversion\\b)|(\\blicense\\b)|(\\blicence\\b)|(\\bv\\b)|(v(?=\\d))|(\\.$)|(\\(.*\\))");
-    private static final Pattern URI_CLEANER = Pattern.compile("((?<=//)www\\.)|(/$)");
+    // nested holder: enum constants are initialized before the enum's own static fields,
+    // and uris() already needs URI_CLEANER while constructing them
+    private static final class Cleaners {
+        private static final Pattern NAME = Pattern.compile(
+                ",|(\\bthe\\b)|(\\bversion\\b)|(\\blicense\\b)|(\\blicence\\b)|(\\bv\\b\\.?)|(v(?=\\d))|(\\.$)|(\\(.*\\))");
+        private static final Pattern URI = Pattern.compile("((?<=//)www\\.)|(/$)");
+    }
     public static final Comparator<LicenseType> COMPARATOR = Comparator.comparingInt(ORDER_MAP::get);
 
     private final Set<String> names;
@@ -369,7 +387,7 @@ public enum LicenseType {
 
     /// - lowercase
     /// - convert '-', '_' to spaces
-    /// - get rid of 'v' if preceding a number or as single letter
+    /// - get rid of 'v' if preceding a number or as single letter (including a trailing dot, 'v. 2.0')
     /// - remove 'the', 'version', 'license'
     /// - remove commas
     /// - remove trailing periods
@@ -384,20 +402,24 @@ public enum LicenseType {
                 .toLowerCase()
                 .replace('-', ' ')
                 .replace('_', ' ');
-        name = NAME_CLEANER.matcher(name).replaceAll("");
+        name = Cleaners.NAME.matcher(name).replaceAll("");
         return StringUtils.normalizeSpace(name).trim();
     }
 
+    /// - lowercase (paths are case-sensitive in theory, in practice license URLs are not)
     /// - http -> https
     /// - remove leading 'www'
     /// - remove trailing slash
+    /// - opensource.org/licenses/ -> opensource.org/license/ (both forms are in use)
     private static URI normalizeUri(String uriString) {
         if (uriString == null) {
             return null;
         }
         uriString = StringUtils.truncate(uriString, 64)
-                .replace("http://", "https://");
-        uriString = URI_CLEANER.matcher(uriString).replaceAll("");
+                .toLowerCase()
+                .replace("http://", "https://")
+                .replace("opensource.org/licenses/", "opensource.org/license/");
+        uriString = Cleaners.URI.matcher(uriString).replaceAll("");
         try {
             return new URI(uriString);
         } catch (URISyntaxException e) {
@@ -409,7 +431,8 @@ public enum LicenseType {
         return Arrays.stream(items).map(String::toLowerCase).collect(Collectors.toUnmodifiableSet());
     }
 
+    /** declared URLs go through the same normalization as the incoming ones, so they can be written in their natural form */
     private static Set<URI> uris(String... items) {
-        return Arrays.stream(items).map(URI::create).collect(Collectors.toUnmodifiableSet());
+        return Arrays.stream(items).map(LicenseType::normalizeUri).collect(Collectors.toUnmodifiableSet());
     }
 }
