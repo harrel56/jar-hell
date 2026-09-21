@@ -92,12 +92,18 @@ public enum LicenseType {
             "CDDL1",
             "CDDL1.0",
             "CDDL 1",
+            "CDDL 1.1",
+            "CDDL1.1",
             "Common Development and Distribution 1.0",
             "Common Development and Distribution 1",
+            "Common Development and Distribution 1.1",
             "Common Development and Distribution"
     ), uris(
             "https://opensource.org/license/cddl-1-0",
-            "https://repository.jboss.org/licenses/cddl.txt"
+            "https://opensource.org/license/cddl1.txt",
+            "https://repository.jboss.org/licenses/cddl.txt",
+            "https://oss.oracle.com/licenses/CDDL-1.1",
+            "https://spdx.org/licenses/CDDL-1.1.html"
     )),
     CPL_1(lowercaseSet(
             "CPL",
@@ -125,6 +131,52 @@ public enum LicenseType {
     ), uris(
             "https://opensource.org/license/gpl-2-0",
             "https://gnu.org/licenses/old-licenses/gpl-2.0.en.html"
+    )),
+    // GPL 2.0 with the Classpath Exception (OpenJDK, Jakarta EE, GlassFish, Jersey); the CDDL+GPL dual license
+    // of the javax.* era resolves here too, as the more permissive of the two options
+    GPL_2_CPE(lowercaseSet(
+            "GPL2 w/ CPE",
+            "GPL2+CE",
+            "GPL2 CE",
+            "GPL 2 CE",
+            "GPL 2.0 CE",
+            "GPL 2 CPE",
+            "GPL 2.0 CPE",
+            "GPL 2 with classpath exception",
+            "GPL 2.0 with classpath exception",
+            "GPL2 with classpath exception",
+            "GPL 2 with the classpath exception",
+            "GPL 2.0 with the classpath exception",
+            "GNU 2.0 with classpath exception",
+            "GNU General Public 2 with classpath exception",
+            "GNU General Public 2.0 with classpath exception",
+            "GNU General Public 2 with gnu classpath exception",
+            "GNU General Public 2.0 with gnu classpath exception",
+            "GNU General Public 2.0 only with classpath exception",
+            "CDDL+GPL",
+            "CDDL+GPL2",
+            "CDDL/GPL2+CE",
+            "CDDL + GPL2 with classpath exception",
+            "CDDL+GPL2 with classpath exception",
+            "CDDL or GPL2 with exceptions",
+            "Common Development and Distribution plus GPL",
+            "Dual consisting of CDDL 1.1 and GPL 2"
+    ), uris(
+            "https://gnu.org/software/classpath/license.html",
+            "https://openjdk.java.net/legal/gplv2+ce.html",
+            "https://openjdk.org/legal/gplv2+ce.html",
+            "https://repository.jboss.org/licenses/gpl-2.0-ce.txt",
+            "https://projects.eclipse.org/license/secondary-gpl-2.0-cp",
+            "https://spdx.org/licenses/GPL-2.0-with-classpath-exception.html",
+            "https://glassfish.dev.java.net/public/CDDL+GPL.html",
+            "https://glassfish.dev.java.net/public/CDDL+GPL_1_1.html",
+            "https://glassfish.dev.java.net/nonav/public/CDDL+GPL.html",
+            "https://glassfish.dev.java.net/nonav/public/CDDL+GPL_1_1.html",
+            "https://glassfish.java.net/public/CDDL+GPL.html",
+            "https://glassfish.java.net/public/CDDL+GPL_1_1.html",
+            "https://glassfish.java.net/nonav/public/CDDL+GPL.html",
+            "https://glassfish.java.net/nonav/public/CDDL+GPL_1_1.html",
+            "https://oss.oracle.com/licenses/CDDL+GPL-1.1"
     )),
     GPL_3(lowercaseSet(
             "GPL3",
@@ -327,6 +379,7 @@ public enum LicenseType {
                 LicenseType.GPL_3,
 
                 // weak-copyleft
+                LicenseType.GPL_2_CPE,
                 LicenseType.LGPL_2,
                 LicenseType.LGPL_3,
                 LicenseType.CPL_1,
@@ -398,8 +451,7 @@ public enum LicenseType {
         if (name == null) {
             return null;
         }
-        name = StringUtils.truncate(name, 64)
-                .toLowerCase()
+        name = name.toLowerCase()
                 .replace('-', ' ')
                 .replace('_', ' ');
         name = Cleaners.NAME.matcher(name).replaceAll("");
@@ -415,8 +467,7 @@ public enum LicenseType {
         if (uriString == null) {
             return null;
         }
-        uriString = StringUtils.truncate(uriString, 64)
-                .toLowerCase()
+        uriString = uriString.toLowerCase()
                 .replace("http://", "https://")
                 .replace("opensource.org/licenses/", "opensource.org/license/");
         uriString = Cleaners.URI.matcher(uriString).replaceAll("");

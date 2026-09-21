@@ -65,6 +65,7 @@ export const formatLicenseType = (type: string): [string, LicenseKind] => {
     case 'CDDL_1': return ['CDDL 1.0', 'copyleft']
     case 'GPL_2': return ['GPL 2.0', 'copyleft']
     case 'GPL_3': return ['GPL 3.0', 'copyleft']
+    case 'GPL_2_CPE': return ['GPL 2.0 + Classpath exception', 'weak-copyleft']
     case 'LGPL_2': return ['LGPL 2.1', 'weak-copyleft']
     case 'LGPL_3': return ['LGPL 3.0', 'weak-copyleft']
     case 'CPL_1': return ['CPL 1.0', 'weak-copyleft']
