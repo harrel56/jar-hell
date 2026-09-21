@@ -431,7 +431,6 @@ public enum LicenseType {
         return Arrays.stream(items).map(String::toLowerCase).collect(Collectors.toUnmodifiableSet());
     }
 
-    /** declared URLs go through the same normalization as the incoming ones, so they can be written in their natural form */
     private static Set<URI> uris(String... items) {
         return Arrays.stream(items).map(LicenseType::normalizeUri).collect(Collectors.toUnmodifiableSet());
     }
