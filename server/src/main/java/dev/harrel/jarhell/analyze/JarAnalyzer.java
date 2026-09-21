@@ -92,6 +92,9 @@ public final class JarAnalyzer {
                 if (type == ContentType.RESOURCE && isNativeBinary(jis.readNBytes(MAGIC_LENGTH))) {
                     type = ContentType.NATIVE;
                 }
+                if (name.startsWith(METADATA_PREFIX) && ContentType.METADATA_UNDER_META_INF.contains(type)) {
+                    type = ContentType.METADATA;
+                }
                 jis.closeEntry();
                 totalSize = verifyTotalSize(entry, totalSize);
                 contents.computeIfAbsent(type, _ -> new ContentAggregate()).addEntry(entry);
@@ -262,11 +265,12 @@ public final class JarAnalyzer {
 
         // non .class entries, classified by other means
         SOURCE, // source file of any language listed above
-        METADATA, // anything under META-INF/
+        METADATA, // descriptor-like files under META-INF/ (see METADATA_UNDER_META_INF)
         RESOURCE; // anything else
 
         private static final Map<String, ContentType> BY_SOURCE_EXTENSION = byExtension(EnumSet.range(JAVA, JASMIN));
         private static final Map<String, ContentType> BY_RESOURCE_EXTENSION = byExtension(EnumSet.range(NATIVE, TEXT));
+        static final Set<ContentType> METADATA_UNDER_META_INF = EnumSet.of(XML, JSON, CONFIG, TEXT, RESOURCE);
         private static final Set<String> TEXT_BASENAMES = Set.of("license", "notice", "readme", "copying", "copyright", "changelog", "authors");
 
         private final Set<String> extensions;
@@ -294,9 +298,6 @@ public final class JarAnalyzer {
         }
 
         static ContentType fromEntryName(String name) {
-            if (name.startsWith(METADATA_PREFIX)) {
-                return METADATA;
-            }
             String ext = resolveExtension(name);
             ContentType byExtension = BY_RESOURCE_EXTENSION.get(ext);
             if (byExtension != null) {

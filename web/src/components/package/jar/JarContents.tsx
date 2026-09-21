@@ -37,7 +37,7 @@ const RESOURCE_KINDS: Record<string, { label: string, hint: string }> = {
   SCRIPT: { label: 'Scripts', hint: 'Entries ending .sh, .bash, .bat, .cmd or .ps1.' },
   TEXT: { label: 'Text', hint: 'Entries ending .txt or .md, plus files named like LICENSE, NOTICE, README or CHANGELOG.' },
   SOURCE: { label: 'Source files', hint: 'Source code of any JVM language shipped in the jar, e.g. .java or .kt.' },
-  METADATA: { label: 'Metadata', hint: 'MANIFEST.MF and everything else under META-INF/.' },
+  METADATA: { label: 'Metadata', hint: 'Descriptors under META-INF/: MANIFEST.MF, services, XML, JSON, config, text and other extensionless files.' },
   RESOURCE: { label: 'Other', hint: 'Entries that matched no other rule.' },
 }
 

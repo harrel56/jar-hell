@@ -198,6 +198,16 @@ class JarAnalyzerTest {
     }
 
     @Test
+    void shouldSniffNativeBinaryUnderMetaInfBeforeFoldingIntoMetadata() throws IOException {
+        byte[] content = new byte[64];
+        System.arraycopy(new byte[]{0x7F, 'E', 'L', 'F'}, 0, content, 0, 4);
+        JarBuilder builder = new JarBuilder().entry("META-INF/native/libfoo", content);
+        JarInfo info = analyze(builder);
+
+        assertThat(info.contents()).containsOnlyKeys(ContentType.NATIVE);
+    }
+
+    @Test
     void shouldNotSniffClassFileMagicAsNative() throws IOException {
         byte[] content = {(byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE, 0, 0, 0, 52};
         JarBuilder builder = new JarBuilder().entry("com/example/Dispatcher.raw", content);
@@ -535,9 +545,19 @@ class JarAnalyzerTest {
 
     private static Stream<Arguments> resourceTypes() {
         return Stream.of(
-                arguments("META-INF/maven/com.example/lib/pom.xml", ContentType.METADATA), // path wins over extension
+                arguments("META-INF/maven/com.example/lib/pom.xml", ContentType.METADATA),
+                arguments("META-INF/maven/com.example/lib/pom.properties", ContentType.METADATA),
+                arguments("META-INF/spring-configuration-metadata.json", ContentType.METADATA),
                 arguments("META-INF/LICENSE.txt", ContentType.METADATA),
                 arguments("META-INF/versions/11/OSGI-INF/MANIFEST.MF", ContentType.METADATA),
+                arguments("META-INF/services/com.example.Service", ContentType.METADATA),
+                arguments("META-INF/com.example.kotlin_module", ContentType.METADATA),
+                arguments("META-INF/native/libnetty_transport_native_epoll_x86_64.so", ContentType.NATIVE),
+                arguments("META-INF/resources/webjars/app.js", ContentType.WEB),
+                arguments("META-INF/resources/img/logo.png", ContentType.MEDIA),
+                arguments("META-INF/lib/nested.jar", ContentType.ARCHIVE),
+                arguments("META-INF/bin/setup.sh", ContentType.SCRIPT),
+                arguments("META-INF/src/Foo.java", ContentType.SOURCE),
                 arguments("linux/x86_64/libfoo.so", ContentType.NATIVE),
                 arguments("win/amd64/foo.DLL", ContentType.NATIVE), // case-insensitive
                 arguments("BOOT-INF/lib/dep.jar", ContentType.ARCHIVE),
