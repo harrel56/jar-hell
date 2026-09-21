@@ -92,6 +92,7 @@ public enum LicenseType {
             "CDDL1",
             "CDDL1.0",
             "CDDL 1",
+            "CDDL 1.0",
             "CDDL 1.1",
             "CDDL1.1",
             "Common Development and Distribution 1.0",
@@ -132,8 +133,6 @@ public enum LicenseType {
             "https://opensource.org/license/gpl-2-0",
             "https://gnu.org/licenses/old-licenses/gpl-2.0.en.html"
     )),
-    // GPL 2.0 with the Classpath Exception (OpenJDK, Jakarta EE, GlassFish, Jersey); the CDDL+GPL dual license
-    // of the javax.* era resolves here too, as the more permissive of the two options
     GPL_2_CPE(lowercaseSet(
             "GPL2 w/ CPE",
             "GPL2+CE",
@@ -167,16 +166,7 @@ public enum LicenseType {
             "https://openjdk.org/legal/gplv2+ce.html",
             "https://repository.jboss.org/licenses/gpl-2.0-ce.txt",
             "https://projects.eclipse.org/license/secondary-gpl-2.0-cp",
-            "https://spdx.org/licenses/GPL-2.0-with-classpath-exception.html",
-            "https://glassfish.dev.java.net/public/CDDL+GPL.html",
-            "https://glassfish.dev.java.net/public/CDDL+GPL_1_1.html",
-            "https://glassfish.dev.java.net/nonav/public/CDDL+GPL.html",
-            "https://glassfish.dev.java.net/nonav/public/CDDL+GPL_1_1.html",
-            "https://glassfish.java.net/public/CDDL+GPL.html",
-            "https://glassfish.java.net/public/CDDL+GPL_1_1.html",
-            "https://glassfish.java.net/nonav/public/CDDL+GPL.html",
-            "https://glassfish.java.net/nonav/public/CDDL+GPL_1_1.html",
-            "https://oss.oracle.com/licenses/CDDL+GPL-1.1"
+            "https://spdx.org/licenses/GPL-2.0-with-classpath-exception.html"
     )),
     GPL_3(lowercaseSet(
             "GPL3",
@@ -215,36 +205,65 @@ public enum LicenseType {
             "https://gnu.org/licenses/agpl-3.0.en.html"
     )),
     LGPL_2(lowercaseSet(
+            "LGPL",
             "LGPL2",
             "LGPL2.1",
             "LGPL 2.1",
             "LGPL 2",
+            "LGPL 2.1 or later",
+            "LGPL 2.1+",
+            "GNU LGPL",
             "GNU LGPL 2.1",
             "GNU LGPL 2",
             "GNU LGPL2",
+            "Lesser General Public",
+            "Lesser General Public 2.1",
+            "Lesser General Public 2",
+            "Lesser GNU Public 2.1",
+            "GNU Lesser Public",
+            "GNU Lesser General Public",
             "GNU Lesser General Public 2.1",
             "GNU Lesser General Public 2",
-            "Lesser General Public 2.1",
-            "Lesser General Public 2"
+            "GNU Lesser General Public 2.1 or later",
+            "GNU Library General Public",
+            "GNU Library General Public 2.1",
+            "GNU Library General Public 2.1 or later",
+            "GNU Library or Lesser General Public 2.1"
     ), uris(
             "https://opensource.org/license/lgpl-2-1",
-            "https://gnu.org/licenses/old-licenses/lgpl-2.1.en.html"
+            "https://opensource.org/license/lgpl-2.1",
+            "https://opensource.org/license/lgpl-license.php",
+            "https://gnu.org/licenses/lgpl-2.1.html",
+            "https://gnu.org/licenses/lgpl-2.1.txt",
+            "https://gnu.org/licenses/old-licenses/lgpl-2.1.html",
+            "https://gnu.org/licenses/old-licenses/lgpl-2.1.en.html",
+            "https://gnu.org/licenses/old-licenses/lgpl-2.1.txt",
+            "https://repository.jboss.org/licenses/lgpl-2.1.txt",
+            "https://spdx.org/licenses/LGPL-2.1.html"
     )),
     LGPL_3(lowercaseSet(
             "LGPL3",
             "LGPL3.0",
             "LGPL 3.0",
             "LGPL 3",
+            "LGPL 3.0 or later",
+            "LGPL 3+",
             "GNU LGPL 3.0",
             "GNU LGPL 3",
             "GNU LGPL3",
             "GNU Lesser General Public 3.0",
             "GNU Lesser General Public 3",
+            "GNU Lesser General Public 3.0 or later",
+            "GNU General Lesser Public 3.0",
+            "GNU General Lesser Public 3",
             "Lesser General Public 3.0",
             "Lesser General Public 3"
     ), uris(
             "https://opensource.org/license/lgpl-3-0",
-            "https://gnu.org/licenses/lgpl-3.0.en.html"
+            "https://gnu.org/licenses/lgpl-3.0.html",
+            "https://gnu.org/licenses/lgpl-3.0.en.html",
+            "https://gnu.org/licenses/lgpl-3.0.txt",
+            "https://spdx.org/licenses/LGPL-3.0.html"
     )),
     MIT(lowercaseSet(
             "MIT"
@@ -429,10 +448,19 @@ public enum LicenseType {
 
     public static LicenseType categorize(License license) {
         URI uri = normalizeUri(license.url());
+        if (uri != null) {
+            for (LicenseType type : LicenseType.values()) {
+                if (type.uris.contains(uri)) {
+                    return type;
+                }
+            }
+        }
         String name = normalizeName(license.name());
-        for (LicenseType type : LicenseType.values()) {
-            if ((uri != null && type.uris.contains(uri)) || (name != null && type.names.contains(name))) {
-                return type;
+        if (name != null) {
+            for (LicenseType type : LicenseType.values()) {
+                if (type.names.contains(name)) {
+                    return type;
+                }
             }
         }
         return UNKNOWN;

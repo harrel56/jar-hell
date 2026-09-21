@@ -106,10 +106,23 @@ class LicenseTypeTest {
                 Arguments.of(new License("CDDL + GPLv2 with classpath exception", null), LicenseType.GPL_2_CPE),
                 Arguments.of(new License(null, "https://www.gnu.org/software/classpath/license.html"), LicenseType.GPL_2_CPE),
                 Arguments.of(new License(null, "http://openjdk.java.net/legal/gplv2+ce.html"), LicenseType.GPL_2_CPE),
-                // one pom, two entries sharing the dual-license url: the name decides which half each one is
+                // one pom, two entries sharing the dual-license url (listed under no type): the name decides which half each one is
                 Arguments.of(new License("CDDL 1.1", "https://glassfish.java.net/public/CDDL+GPL_1_1.html"), LicenseType.CDDL_1),
+                Arguments.of(new License("CDDL 1.0", "https://glassfish.dev.java.net/public/CDDL+GPL.html"), LicenseType.CDDL_1),
+                Arguments.of(new License("unknown name", "https://glassfish.dev.java.net/public/CDDL+GPL.html"), LicenseType.UNKNOWN),
+                // a versioned url beats an unversioned name, whatever the declaration order
+                Arguments.of(new License("BSD", "https://opensource.org/licenses/BSD-3-Clause"), LicenseType.BSD_3),
                 Arguments.of(new License("GPL2 w/ CPE", "https://glassfish.java.net/public/CDDL+GPL_1_1.html"), LicenseType.GPL_2_CPE),
                 Arguments.of(new License("Common Development and Distribution License (CDDL), Version 1.1", "https://oss.oracle.com/licenses/CDDL-1.1"), LicenseType.CDDL_1),
+                // unversioned lgpl means 2.1, a versioned name decides when the url carries no version
+                Arguments.of(new License("LGPL", null), LicenseType.LGPL_2),
+                Arguments.of(new License("GNU Lesser General Public License", "http://www.gnu.org/licenses/lgpl.html"), LicenseType.LGPL_2),
+                Arguments.of(new License("GNU LESSER GENERAL PUBLIC LICENSE", "http://www.gnu.org/licenses/lgpl.txt"), LicenseType.LGPL_2),
+                Arguments.of(new License("GNU Library General Public License v2.1 or later", "http://www.opensource.org/licenses/LGPL-2.1"), LicenseType.LGPL_2),
+                Arguments.of(new License("Lesser Gnu Public License (LGPL), Version 2.1", null), LicenseType.LGPL_2),
+                Arguments.of(new License(null, "http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html"), LicenseType.LGPL_2),
+                Arguments.of(new License("GNU General Lesser Public License (LGPL) version 3.0", "http://www.gnu.org/licenses/lgpl.html"), LicenseType.LGPL_3),
+                Arguments.of(new License("GNU Lesser General Public License", "http://www.gnu.org/licenses/lgpl-3.0.txt"), LicenseType.LGPL_3),
                 // plain GPL 2 must not be pulled into the classpath-exception bucket
                 Arguments.of(new License("GNU General Public License, version 2", null), LicenseType.GPL_2),
                 Arguments.of(new License("The Universal Permissive License (UPL), Version 1.0", null), LicenseType.UPL_1),
