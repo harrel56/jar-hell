@@ -11,15 +11,23 @@ import java.util.stream.Collectors;
 
 public enum LicenseType {
     APACHE_2(lowercaseSet(
+            "Apache",
+            "Apache Software",
             "Apache Software 2.0",
             "Apache Software 2",
             "Apache 2.0",
             "Apache 2",
+            "Apache 2.0 January 2004",
             "AL 2.0",
             "AL 2",
             "AL2",
-            "AL2.0"
+            "AL2.0",
+            "ASL 2",
+            "ASL 2.0",
+            "ASL2",
+            "ASL2.0"
     ), uris(
+            "https://apache.org/licenses",
             "https://apache.org/licenses/LICENSE-2.0",
             "https://apache.org/licenses/LICENSE-2.0.txt",
             "https://apache.org/licenses/LICENSE-2.0.html",
@@ -28,6 +36,19 @@ public enum LicenseType {
             "https://opensource.org/licenses/apache-2.0",
             "https://opensource.org/licenses/apache-2-0",
             "https://repository.jboss.org/licenses/apache-2.0.txt"
+    )),
+    APACHE_1_1(lowercaseSet(
+            "Apache 1.1",
+            "Apache1.1",
+            "Apache Software 1.1",
+            "AL 1.1",
+            "AL1.1",
+            "ASL 1.1",
+            "ASL1.1"
+    ), uris(
+            "https://apache.org/licenses/LICENSE-1.1",
+            "https://apache.org/licenses/LICENSE-1.1.txt",
+            "https://spdx.org/licenses/Apache-1.1.html"
     )),
     BSD_0(lowercaseSet(
             "0BSD",
@@ -292,7 +313,8 @@ public enum LicenseType {
             "MPL 1.1"
     ), uris(
             "https://opensource.org/license/mpl-1-1",
-            "https://mozilla.org/en-US/MPL/1.1"
+            "https://mozilla.org/en-US/MPL/1.1",
+            "https://mozilla.org/MPL/MPL-1.1.html"
     )),
     MPL_2(lowercaseSet(
             "Mozilla Public 2.0",
@@ -339,6 +361,19 @@ public enum LicenseType {
     ), uris(
             "https://opensource.org/license/epl-2-0",
             "https://eclipse.org/legal/epl-2.0/"
+    )),
+    EDL_1(lowercaseSet(
+            "EDL",
+            "EDL1",
+            "EDL1.0",
+            "EDL 1",
+            "EDL 1.0",
+            "Eclipse Distribution",
+            "Eclipse Distribution 1.0",
+            "Eclipse Distribution 1"
+    ), uris(
+            "https://eclipse.org/org/documents/edl-v10.php",
+            "https://eclipse.org/org/documents/edl-v10.html"
     )),
     SSPL_1(lowercaseSet(
             "SSPL",
@@ -412,7 +447,9 @@ public enum LicenseType {
 
                 // permissive
                 LicenseType.BSD_1,
+                LicenseType.APACHE_1_1,
                 LicenseType.BSD_3,
+                LicenseType.EDL_1,
                 LicenseType.APACHE_2,
                 LicenseType.BSD_2,
                 LicenseType.ICU,
