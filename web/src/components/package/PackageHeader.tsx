@@ -2,6 +2,7 @@ import { createMemo, For, Show } from 'solid-js'
 import { ArtifactInfo } from '../../api'
 import { Icon } from '../../icons'
 import { formatDate, formatDateTime } from '../../utils/utils'
+import { BadgesDialog } from './BadgesDialog'
 
 interface PackageHeaderProps {
   info: ArtifactInfo
@@ -72,11 +73,11 @@ export function PackageHeader(props: PackageHeaderProps) {
       </Show>
 
       <div class="mt-[18px] flex flex-wrap items-center gap-x-[18px] gap-y-1.5">
-        {/* TODO: badges dialog */}
-        <button type="button"
+        <button type="button" commandfor={BadgesDialog.id} command="show-modal"
                 class="flex cursor-pointer items-center gap-[7px] whitespace-nowrap rounded-(--radius-button) border border-(--hairline-strong) px-3 py-1.5 text-(length:--text-sm) text-(--ink) hover:border-(--ink)">
           Badges
         </button>
+        <BadgesDialog info={props.info}/>
         <For each={links()}>
           {link => (
             <a href={link.href} target="_blank" rel="noopener"
