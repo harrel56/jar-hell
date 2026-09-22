@@ -8,8 +8,9 @@ group = 'dev.harrel'
 version = '1.0.0'
 
 java {
-    sourceCompatibility JavaVersion.VERSION_27
-    targetCompatibility JavaVersion.VERSION_27
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(27)
+    }
 }
 
 configurations {

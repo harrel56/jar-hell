@@ -12,11 +12,15 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v4
 
+      # 27 compiles the code, 26 runs Gradle itself (9.7.1 supports no newer jvm);
+      # JAVA_HOME ends up on the last listed version
       - name: Setup java
         uses: actions/setup-java@v4
         with:
           distribution: liberica
-          java-version: 27
+          java-version: |
+            27
+            26
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
@@ -51,7 +55,9 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: liberica
-          java-version: 27
+          java-version: |
+            27
+            26
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
