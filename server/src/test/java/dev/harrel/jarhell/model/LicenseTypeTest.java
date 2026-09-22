@@ -99,6 +99,8 @@ class LicenseTypeTest {
                 Arguments.of(new License(null, "http://opensource.org/licenses/UPL"), LicenseType.UPL_1),
                 Arguments.of(new License(null, "https://oss.oracle.com/licenses/upl"), LicenseType.UPL_1),
                 Arguments.of(new License("Universal Permissive License, Version 1.0", null), LicenseType.UPL_1),
+                Arguments.of(new License("Bouncy Castle Licence", null), LicenseType.MIT),
+                Arguments.of(new License("Bouncy Castle License", "http://www.bouncycastle.org/licence.html"), LicenseType.MIT),
                 Arguments.of(new License("GPL2 w/ CPE", null), LicenseType.GPL_2_CPE),
                 Arguments.of(new License("GPL-2.0-with-classpath-exception", null), LicenseType.GPL_2_CPE),
                 Arguments.of(new License("The GNU General Public License (GPL), Version 2, With Classpath Exception", null), LicenseType.GPL_2_CPE),

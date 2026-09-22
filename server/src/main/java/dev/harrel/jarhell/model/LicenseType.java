@@ -266,10 +266,13 @@ public enum LicenseType {
             "https://spdx.org/licenses/LGPL-3.0.html"
     )),
     MIT(lowercaseSet(
-            "MIT"
+            "MIT",
+            "Bouncy Castle" // the MIT text under a Bouncy Castle copyright line, SPDX lists it as MIT too
     ), uris(
             "https://opensource.org/license/mit",
-            "https://opensource.org/license/MIT"
+            "https://opensource.org/license/MIT",
+            "https://bouncycastle.org/licence.html",
+            "https://bouncycastle.org/license.html"
     )),
     MIT0(lowercaseSet(
             "MIT0",
