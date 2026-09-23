@@ -30,7 +30,7 @@ export function DependencyNode(props: DependencyNodeProps) {
 
   const licenseType = () => props.tree.artifactInfo.licenseTypes?.[0] ?? 'NO_LICENSE'
   const license = () => formatLicenseType(licenseType())[0]
-  const licenseTitle = () => licenseType() === 'UNKNOWN' ? props.tree.artifactInfo.licenses?.[0]?.name : undefined
+  const licenseTitle = () => licenseType() === 'UNKNOWN' ? props.tree.artifactInfo.licenses?.[0]?.name : license()
 
   const bytecode = () => {
     const version = props.tree.artifactInfo.jarInfo?.bytecodeVersion
@@ -68,7 +68,7 @@ export function DependencyNode(props: DependencyNodeProps) {
         <div class={['text-right font-(family-name:--font-data) text-(length:--text-meta)', props.optional ? 'text-(--ink-5)' : 'text-(--ink-3)']}>
           {bytecode()}
         </div>
-        <div class={['text-right text-[12px]', props.optional ? 'text-(--ink-5)' : 'text-(--ink-3)']} title={licenseTitle()}>{license()}</div>
+        <div class={['truncate text-right text-[12px]', props.optional ? 'text-(--ink-5)' : 'text-(--ink-3)']} title={licenseTitle()}>{license()}</div>
       </div>
       <Show when={opened()}>
         <Loading fallback={<LoadingRow depth={props.depth + 1}/>}>

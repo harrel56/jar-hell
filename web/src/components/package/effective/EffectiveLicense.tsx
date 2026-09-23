@@ -22,7 +22,7 @@ export function EffectiveLicense(props: { effective: EffectiveValues }) {
 
   return (
     <div class="bg-(--ground) px-6 pt-[22px] pb-5">
-      <div class="whitespace-nowrap font-(family-name:--font-data) text-(length:--text-metric) font-medium leading-none tracking-[-0.035em]">
+      <div class="font-(family-name:--font-data) text-(length:--text-metric) font-medium leading-[1.1] tracking-[-0.035em]">
         {effective()[0]}
       </div>
       <div class="mt-3 flex items-center gap-2.5">

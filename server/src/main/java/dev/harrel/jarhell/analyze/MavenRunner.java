@@ -99,6 +99,7 @@ class MavenRunner {
                     .toList();
             List<LicenseType> licenseTypes = licenses.stream()
                     .map(LicenseType::categorize)
+                    .sorted(LicenseType.COMPARATOR)
                     .toList();
 
             // todo: url seems to be resolved incorrectly sometimes :(
