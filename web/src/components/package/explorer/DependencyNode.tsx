@@ -6,6 +6,8 @@ import { Icon } from '../../../icons'
 
 export const EXPLORER_COLUMNS = 'grid grid-cols-[minmax(0,1fr)_90px_64px_104px] gap-x-5'
 
+const PILL_CLASS = 'shrink-0 rounded-(--radius-pill) border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.05em]'
+
 interface DependencyNodeProps {
   tree: ArtifactTree
   depth: number
@@ -16,7 +18,9 @@ interface DependencyNodeProps {
 export function DependencyNode(props: DependencyNodeProps) {
   const [opened, setOpened] = createSignal(props.initiallyOpened ?? false)
   const coordinate = () => formatGav(props.tree.artifactInfo)
+  const unresolved = () => props.tree.artifactInfo.unresolved === true
   const isLeaf = () => {
+    if (unresolved()) return true
     const effective = props.tree.artifactInfo.effectiveValues
     return effective !== undefined
       && effective.requiredDependencies + effective.optionalDependencies + effective.unresolvedDependencies === 0
@@ -59,16 +63,22 @@ export function DependencyNode(props: DependencyNodeProps) {
             <Show when={props.tree.artifactInfo.classifier}>{classifier => <>:{classifier()}</>}</Show>
           </span>
           <Show when={props.optional}>
-            <span class="shrink-0 rounded-(--radius-pill) border border-(--hairline-strong) px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.05em] text-(--ink-4)">Optional</span>
+            <span class={[PILL_CLASS, 'border-(--hairline-strong) text-(--ink-4)']}>Optional</span>
+          </Show>
+          <Show when={unresolved()}>
+            <span title={props.tree.artifactInfo.unresolvedReason}
+                  class={[PILL_CLASS, 'border-(--bad-wash-border) bg-(--bad-wash) text-(--bad-wash-ink)']}>Failed</span>
           </Show>
         </div>
-        <div class={['text-right font-(family-name:--font-data) text-(length:--text-meta)', props.optional ? 'text-(--ink-5)' : 'text-(--ink-3)']}>
-          {formatSizeText(props.tree.artifactInfo.packageSize ?? 0)}
-        </div>
-        <div class={['text-right font-(family-name:--font-data) text-(length:--text-meta)', props.optional ? 'text-(--ink-5)' : 'text-(--ink-3)']}>
-          {bytecode()}
-        </div>
-        <div class={['truncate text-right text-[12px]', props.optional ? 'text-(--ink-5)' : 'text-(--ink-3)']} title={licenseTitle()}>{license()}</div>
+        <Show when={!unresolved()}>
+          <div class={['text-right font-(family-name:--font-data) text-(length:--text-meta)', props.optional ? 'text-(--ink-5)' : 'text-(--ink-3)']}>
+            {formatSizeText(props.tree.artifactInfo.packageSize ?? 0)}
+          </div>
+          <div class={['text-right font-(family-name:--font-data) text-(length:--text-meta)', props.optional ? 'text-(--ink-5)' : 'text-(--ink-3)']}>
+            {bytecode()}
+          </div>
+          <div class={['truncate text-right text-[12px]', props.optional ? 'text-(--ink-5)' : 'text-(--ink-3)']} title={licenseTitle()}>{license()}</div>
+        </Show>
       </div>
       <Show when={opened()}>
         <Loading fallback={<LoadingRow depth={props.depth + 1}/>}>
