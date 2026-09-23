@@ -10,9 +10,7 @@ import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.repo.ArtifactRepository;
 import io.avaje.http.api.Controller;
 import io.avaje.http.api.Get;
-import io.javalin.http.Context;
-import io.javalin.http.Header;
-import io.javalin.http.HttpStatus;
+import io.avaje.jex.http.Context;
 
 import java.io.InputStream;
 import java.time.Duration;
@@ -82,11 +80,19 @@ class BadgesController {
     }
 
     private void toBadge(Context ctx, String name, String value, Color color, Duration cache, boolean includeQueryString) {
-        String queryString = buildQueryString(includeQueryString ? ctx.queryParamMap() : Map.of());
+        String queryString = buildQueryString(includeQueryString ? toQueryParamMap(ctx) : Map.of());
 
         String uri = "https://shields.io/badge/%s-%s-%s%s".formatted(escape(name), escape(value), color, queryString);
-        ctx.header(Header.CACHE_CONTROL, "max-age=" + cache.toSeconds())
-                .redirect(uri, HttpStatus.SEE_OTHER);
+        ctx.header("Cache-Control", "max-age=" + cache.toSeconds())
+                .redirect(uri, 303);
+    }
+
+    private static Map<String, List<String>> toQueryParamMap(Context ctx) {
+        Map<String, List<String>> res = new LinkedHashMap<>();
+        for (String key : ctx.queryParamMap().keySet()) {
+            res.put(key, ctx.queryParams(key));
+        }
+        return res;
     }
 
     private String buildQueryString(Map<String, List<String>> params) {

@@ -17,11 +17,13 @@ import io.avaje.http.api.AvajeJavalinPlugin;
 import io.avaje.http.api.InvalidTypeArgumentException;
 import io.avaje.inject.Bean;
 import io.avaje.inject.Factory;
-import io.javalin.Javalin;
-import io.javalin.http.HttpStatus;
-import io.javalin.http.UnauthorizedResponse;
-import io.javalin.json.JavalinJackson;
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import io.avaje.jex.Jex;
+import io.avaje.jex.Routing;
+import io.avaje.jex.core.json.JacksonJsonService;
+import io.avaje.jex.http.HttpResponseException;
+import io.avaje.jex.http.HttpStatus;
+import io.avaje.jex.spi.JexPlugin;
+import io.avaje.jex.staticcontent.StaticContent;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -33,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -78,54 +81,94 @@ public class Configuration {
     }
 
     @Bean
-    Javalin javalinServer(ObjectMapper objectMapper, List<AvajeJavalinPlugin> avajePlugins) {
+    Jex javalinServer(ObjectMapper objectMapper, List<Routing.HttpService> routes) {
+        StaticContent webBundle =
+                StaticContent.ofClassPath("/web")
+                        .route("/*")
+                        .spaRoot("index.html")
+                        .putResponseHeader("Cache-Control", "max-age=86400")
+                        .preCompress()
+                        .build();
+
         final String apiToken = Config.get("API_TOKEN");
-        return Javalin.create(config -> {
-                    config.jsonMapper(new JavalinJackson(objectMapper, true));
-                    config.spaRoot.addFile("/", "/web/index.html");
-                    config.staticFiles.add(staticFiles -> {
-                        staticFiles.directory = "/web/assets";
-                        staticFiles.hostedPath = "/assets";
-                        staticFiles.precompress = true;
-                        staticFiles.headers = Map.of("Cache-Control", "max-age=86400");
-                    });
-                    avajePlugins.forEach(config::registerPlugin);
-                })
-                .beforeMatched("/technical/*", ctx -> {
-                    String token = Optional.ofNullable(ctx.header("Authorization"))
-                            .map(header -> header.split(" "))
-                            .filter(values -> values.length == 2 && "Bearer".equals(values[0]))
-                            .map(values -> values[1])
-                            .orElse(null);
-                    if (!apiToken.equals(token)) {
-                        Thread.sleep(2000);
-                        throw new UnauthorizedResponse("Invalid token");
+        return Jex.create()
+                .plugin(webBundle)
+                .jsonService(new JacksonJsonService(objectMapper))
+                .routing(routes)
+                .before(ctx -> {
+                    if (ctx.path().startsWith("/technical/")) {
+                        String token = Optional.ofNullable(ctx.header("Authorization"))
+                                .map(header -> header.split(" "))
+                                .filter(values -> values.length == 2 && "Bearer".equals(values[0]))
+                                .map(values -> values[1])
+                                .orElse(null);
+                        if (!apiToken.equals(token)) {
+                            try {
+                                Thread.sleep(2000);
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                throw new HttpResponseException(HttpStatus.UNAUTHORIZED_401, "Invalid token");
+                            }
+                            throw new HttpResponseException(HttpStatus.UNAUTHORIZED_401, "Invalid token");
+                        }
                     }
                 })
-                .exception(UnauthorizedResponse.class, (e, ctx) -> {
+                .error(HttpResponseException.class, (ctx, e) -> {
                     ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
-                    ctx.status(HttpStatus.UNAUTHORIZED);
+                    ctx.status(e.status());
                 })
-                .exception(ResourceNotFoundException.class, (e, ctx) -> {
-                    ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
-                    ctx.status(HttpStatus.NOT_FOUND);
-                })
-                .exception(ValueInstantiationException.class, (e, ctx) -> {
-                    ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), ExceptionUtils.getRootCause(e).getMessage()));
-                    ctx.status(HttpStatus.BAD_REQUEST);
-                })
-                .exception(BadRequestException.class, (e, ctx) -> {
-                    ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
-                    ctx.status(HttpStatus.BAD_REQUEST);
-                })
-                .exception(InvalidTypeArgumentException.class, (e, ctx) -> {
-                    ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
-                    ctx.status(HttpStatus.BAD_REQUEST);
-                })
-                .exception(Exception.class, (e, ctx) -> {
+                .error(Exception.class, (ctx, e) -> {
                     logger.error("Unhandled exception occurred", e);
                     ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
-                    ctx.status(HttpStatus.INTERNAL_SERVER_ERROR);
+                    ctx.status(HttpStatus.INTERNAL_SERVER_ERROR_500);
                 });
+
+//        return Javalin.create(config -> {
+//                    config.jsonMapper(new JavalinJackson(objectMapper, true));
+//                    config.spaRoot.addFile("/", "/web/index.html");
+//                    config.staticFiles.add(staticFiles -> {
+//                        staticFiles.directory = "/web/assets";
+//                        staticFiles.hostedPath = "/assets";
+//                        staticFiles.precompress = true;
+//                        staticFiles.headers = Map.of("Cache-Control", "max-age=86400");
+//                    });
+//                    avajePlugins.forEach(config::registerPlugin);
+//                })
+//                .beforeMatched("/technical/*", ctx -> {
+//                    String token = Optional.ofNullable(ctx.header("Authorization"))
+//                            .map(header -> header.split(" "))
+//                            .filter(values -> values.length == 2 && "Bearer".equals(values[0]))
+//                            .map(values -> values[1])
+//                            .orElse(null);
+//                    if (!apiToken.equals(token)) {
+//                        Thread.sleep(2000);
+//                        throw new UnauthorizedResponse("Invalid token");
+//                    }
+//                })
+//                .exception(UnauthorizedResponse.class, (e, ctx) -> {
+//                    ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
+//                    ctx.status(HttpStatus.UNAUTHORIZED);
+//                })
+//                .exception(ResourceNotFoundException.class, (e, ctx) -> {
+//                    ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
+//                    ctx.status(HttpStatus.NOT_FOUND);
+//                })
+//                .exception(ValueInstantiationException.class, (e, ctx) -> {
+//                    ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), ExceptionUtils.getRootCause(e).getMessage()));
+//                    ctx.status(HttpStatus.BAD_REQUEST);
+//                })
+//                .exception(BadRequestException.class, (e, ctx) -> {
+//                    ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
+//                    ctx.status(HttpStatus.BAD_REQUEST);
+//                })
+//                .exception(InvalidTypeArgumentException.class, (e, ctx) -> {
+//                    ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
+//                    ctx.status(HttpStatus.BAD_REQUEST);
+//                })
+//                .exception(Exception.class, (e, ctx) -> {
+//                    logger.error("Unhandled exception occurred", e);
+//                    ctx.json(new ErrorResponse(ctx.fullUrl(), ctx.method(), e.getMessage()));
+//                    ctx.status(HttpStatus.INTERNAL_SERVER_ERROR);
+//                });
     }
 }
