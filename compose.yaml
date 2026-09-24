@@ -1,4 +1,4 @@
-# Local development dependencies. Tests don't use this — they spin their own
+# Local development dependencies. Tests don't use this - they spin their own
 # containers through Testcontainers (see EnvironmentExtension).
 #
 #   docker compose up -d

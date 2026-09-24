@@ -131,7 +131,7 @@ export default function Autocomplete(props: AutocompleteProps) {
           onBlur={() => setOpened(false)}
           onClick={() => setOpened(true)}
           onKeyDown={onKeyDown}
-          placeholder={hero() ? 'group:artifact — try json-schema' : 'group:artifact'}
+          placeholder={hero() ? 'group:artifact - try json-schema' : 'group:artifact'}
           aria-label="Search packages"
           role="combobox"
           aria-expanded={open() ? 'true' : 'false'}
@@ -180,7 +180,7 @@ export default function Autocomplete(props: AutocompleteProps) {
               )}
             </For>
             <Show when={results().length === 0}>
-              {message('Nothing analysed under that name yet — type the full group:artifact and press Enter to queue it.')}
+              {message('Nothing analysed under that name yet - type the full group:artifact and press Enter to queue it.')}
             </Show>
           </Errored>
         </div>

@@ -36,7 +36,7 @@ function Row(props: { pkg: PackageRow }) {
       <div class="truncate font-(family-name:--font-data) text-[12px] text-(--ink-4)" title={versionLabel()}>{versionLabel()}</div>
       <MiniSizeRail selfBytes={props.pkg.packageSize} totalBytes={props.pkg.effectiveSize}/>
       <div class="text-right font-(family-name:--font-data) text-(length:--text-meta)" style={{ color: band().color }}
-           title={`${band().label} — effective size incl. dependencies`}>
+           title={`${band().label} - effective size incl. dependencies`}>
         {formatSizeText(props.pkg.effectiveSize)}
       </div>
     </a>

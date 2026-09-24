@@ -33,7 +33,7 @@ const RESOURCE_KINDS: Record<string, { label: string, hint: string }> = {
   JSON: { label: 'JSON', hint: 'Entries ending .json and its variants, .avsc or .geojson.' },
   CONFIG: { label: 'Config', hint: 'Entries ending .properties, .yml, .yaml, .toml, .conf, .ini or .kdl.' },
   WEB: { label: 'Web assets', hint: 'Entries ending .js, .ts, .css, .html and other front-end extensions.' },
-  MEDIA: { label: 'Media', hint: 'Images, fonts, audio and video by extension — .png, .svg, .ttf, .woff2, .mp3, .mp4 and alike.' },
+  MEDIA: { label: 'Media', hint: 'Images, fonts, audio and video by extension - .png, .svg, .ttf, .woff2, .mp3, .mp4 and alike.' },
   SCRIPT: { label: 'Scripts', hint: 'Entries ending .sh, .bash, .bat, .cmd or .ps1.' },
   TEXT: { label: 'Text', hint: 'Entries ending .txt or .md, plus files named like LICENSE, NOTICE, README or CHANGELOG.' },
   SOURCE: { label: 'Source files', hint: 'Source code of any JVM language shipped in the jar, e.g. .java or .kt.' },
@@ -139,7 +139,7 @@ export function JarContents(props: { jar: JarInfo }) {
         {row => (
           <>
             <div class={[COLUMNS, 'items-center border-t border-(--track) py-2 font-(family-name:--font-data) text-(length:--text-meta) text-(--ink-2)']}>
-              <div class="flex min-w-0 items-center gap-2" title={row.sub.length > 0 ? `${row.label} — grouped by file kind below` : undefined}>
+              <div class="flex min-w-0 items-center gap-2" title={row.sub.length > 0 ? `${row.label} - grouped by file kind below` : undefined}>
                 <span class="size-2.5 shrink-0 rounded-[3px]" style={{ background: row.color }}/>
                 <span class="truncate text-(--ink)">{row.label}</span>
               </div>

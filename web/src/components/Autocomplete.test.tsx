@@ -16,7 +16,7 @@ const items = [
   { g: 'org.c', a: 'three' },
 ]
 
-/* Only for real time passing — the debounce timer and the stubbed response.
+/* Only for real time passing - the debounce timer and the stubbed response.
    Reactive settling is handled synchronously by flush(). */
 const wait = (ms: number) => new Promise(r => setTimeout(r, ms))
 

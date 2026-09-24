@@ -52,10 +52,10 @@ export function PackageMainSkeleton(props: PackageMainSkeletonProps) {
       </div>
       <Show when={props.analyzing}>
         <p class="mt-3.5 max-w-[560px] text-(length:--text-lead) text-(--ink-2)">
-          This version has not been analysed before. The jar is being unpacked and measured now — the page fills in when the run finishes.
+          This version has not been analysed before. The jar is being unpacked and measured now - the page will reload upon completion.
         </p>
         <div class="mt-5 text-(length:--text-meta) text-(--ink-4)">
-          Usually under a minute. You can leave and come back — the run continues.
+          Usually matter of seconds, but can take up to several minutes. The process now runs in the backend - feel free to come back later.
         </div>
       </Show>
 

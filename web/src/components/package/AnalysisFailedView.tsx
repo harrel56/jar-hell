@@ -47,7 +47,7 @@ export function AnalysisFailedView(props: AnalysisFailedViewProps) {
           <div class={cellClass}>
             <div class={cellLabelClass}>Last attempt</div>
             <div class={`mt-1.5 ${cellValueClass}`}>
-              <Show when={props.info.analyzed} fallback="—">
+              <Show when={props.info.analyzed} fallback="-">
                 {analyzed => <span title={formatDateTime(analyzed())}>{formatDate(analyzed())}</span>}
               </Show>
             </div>
