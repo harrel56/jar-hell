@@ -1,5 +1,5 @@
 import { Show } from 'solid-js'
-import { ArtifactTree } from '../../api'
+import { ArtifactTree, ArtifactVersion } from '../../api'
 import { PackageHeader } from './PackageHeader'
 import { InstallSnippet } from './InstallSnippet'
 import { ClassifierVariants } from './ClassifierVariants'
@@ -10,13 +10,14 @@ import { DependencyExplorer } from './explorer/DependencyExplorer'
 
 interface PackageViewProps {
   tree: ArtifactTree
+  versions: readonly ArtifactVersion[]
 }
 
 export function PackageView(props: PackageViewProps) {
   return (
-    <main class="min-w-0 flex-1 px-10 pt-(--space-10) pb-24">
+    <main class="min-w-0 flex-1 px-10 pt-(--space-10) pb-24 max-md:px-4">
       <div class="flex flex-wrap items-start gap-9">
-        <PackageHeader info={props.tree.artifactInfo}/>
+        <PackageHeader info={props.tree.artifactInfo} versions={props.versions}/>
         <InstallSnippet gav={props.tree.artifactInfo}/>
       </div>
       <ClassifierVariants info={props.tree.artifactInfo}/>

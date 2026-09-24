@@ -4,7 +4,8 @@ import { formatGav } from '../../../utils/gav'
 import { formatBytecodeVersion, formatLicenseType, formatSizeText } from '../../../utils/utils'
 import { Icon } from '../../../icons'
 
-export const EXPLORER_COLUMNS = 'grid grid-cols-[minmax(0,1fr)_90px_64px_104px] gap-x-5'
+/** mobile drops the metric columns and folds version/size/license under the coordinate */
+export const EXPLORER_COLUMNS = 'grid gap-x-5 max-md:grid-cols-1 md:grid-cols-[minmax(0,1fr)_90px_64px_104px]'
 
 const PILL_CLASS = 'shrink-0 rounded-(--radius-pill) border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.05em]'
 
@@ -43,8 +44,9 @@ export function DependencyNode(props: DependencyNodeProps) {
 
   return (
     <>
-      <div class={[EXPLORER_COLUMNS, 'items-center border-b border-(--track) px-[18px] hover:bg-(--surface)', { 'bg-(--surface-row)': props.depth === 0 }]}>
-        <div class="flex min-w-0 items-center gap-[9px] py-2.5" style={{ 'padding-left': `${props.depth * 22}px` }}>
+      <div class={[EXPLORER_COLUMNS, 'items-center border-b border-(--track) px-[18px] max-md:px-3 hover:bg-(--surface)', { 'bg-(--surface-row)': props.depth === 0 }]}>
+        <div class="flex min-w-0 items-center gap-[9px] py-2.5 pl-[calc(var(--depth)*22px)] max-md:items-start max-md:pl-[calc(var(--depth)*14px)]"
+             style={{ '--depth': props.depth }}>
           <Show when={!isLeaf()} fallback={<Icon.Circle class="size-[17px] shrink-0 text-(--hairline-tick)"/>}>
             <button type="button" aria-expanded={opened() ? 'true' : 'false'} aria-label={opened() ? 'Collapse' : 'Expand'}
                     class="flex shrink-0 cursor-pointer text-(--ink-2) hover:text-(--accent)"
@@ -54,30 +56,44 @@ export function DependencyNode(props: DependencyNodeProps) {
               </Show>
             </button>
           </Show>
-          <a href={`/packages/${coordinate()}`} title={coordinate()}
-             class={['min-w-0 truncate font-(family-name:--font-data) text-[13.5px] hover:text-(--accent) hover:underline', props.optional ? 'text-(--ink-2)' : 'text-(--ink)']}>
-            {props.tree.artifactInfo.groupId}:{props.tree.artifactInfo.artifactId}
-          </a>
-          <span class="shrink-0 whitespace-nowrap font-(family-name:--font-data) text-(length:--text-label) text-(--ink-5)">
-            {props.tree.artifactInfo.version}
-            <Show when={props.tree.artifactInfo.classifier}>{classifier => <>:{classifier()}</>}</Show>
-          </span>
-          <Show when={props.optional}>
-            <span class={[PILL_CLASS, 'border-(--hairline-strong) text-(--ink-4)']}>Optional</span>
-          </Show>
-          <Show when={unresolved()}>
-            <span title={props.tree.artifactInfo.unresolvedReason}
-                  class={[PILL_CLASS, 'border-(--bad-wash-border) bg-(--bad-wash) text-(--bad-wash-ink)']}>Failed</span>
-          </Show>
+          <div class="flex min-w-0 flex-1 items-center gap-[9px] max-md:flex-col max-md:items-stretch max-md:gap-0.5">
+            <div class="flex min-w-0 items-center gap-[9px]">
+              <a href={`/packages/${coordinate()}`} title={coordinate()}
+                 class={['min-w-0 truncate font-(family-name:--font-data) text-[13.5px] hover:text-(--accent) hover:underline max-md:text-[12.5px]', props.optional ? 'text-(--ink-2)' : 'text-(--ink)']}>
+                {props.tree.artifactInfo.groupId}:{props.tree.artifactInfo.artifactId}
+              </a>
+              <span class="shrink-0 whitespace-nowrap font-(family-name:--font-data) text-(length:--text-label) text-(--ink-5) max-md:hidden">
+                {props.tree.artifactInfo.version}
+                <Show when={props.tree.artifactInfo.classifier}>{classifier => <>:{classifier()}</>}</Show>
+              </span>
+              <Show when={props.optional}>
+                <span class={[PILL_CLASS, 'border-(--hairline-strong) text-(--ink-4)']}>Optional</span>
+              </Show>
+              <Show when={unresolved()}>
+                <span title={props.tree.artifactInfo.unresolvedReason}
+                      class={[PILL_CLASS, 'border-(--bad-wash-border) bg-(--bad-wash) text-(--bad-wash-ink)']}>Failed</span>
+              </Show>
+            </div>
+            <div class="hidden gap-2 font-(family-name:--font-data) text-(length:--text-label) text-(--ink-5) max-md:flex">
+              <span class="truncate">
+                {props.tree.artifactInfo.version}
+                <Show when={props.tree.artifactInfo.classifier}>{classifier => <>:{classifier()}</>}</Show>
+              </span>
+              <Show when={!unresolved()}>
+                <span>{formatSizeText(props.tree.artifactInfo.packageSize ?? 0)}</span>
+                <span class="truncate" title={licenseTitle()}>{license()}</span>
+              </Show>
+            </div>
+          </div>
         </div>
         <Show when={!unresolved()}>
-          <div class={['text-right font-(family-name:--font-data) text-(length:--text-meta)', props.optional ? 'text-(--ink-5)' : 'text-(--ink-3)']}>
+          <div class={['text-right font-(family-name:--font-data) text-(length:--text-meta) max-md:hidden', props.optional ? 'text-(--ink-5)' : 'text-(--ink-3)']}>
             {formatSizeText(props.tree.artifactInfo.packageSize ?? 0)}
           </div>
-          <div class={['text-right font-(family-name:--font-data) text-(length:--text-meta)', props.optional ? 'text-(--ink-5)' : 'text-(--ink-3)']}>
+          <div class={['text-right font-(family-name:--font-data) text-(length:--text-meta) max-md:hidden', props.optional ? 'text-(--ink-5)' : 'text-(--ink-3)']}>
             {bytecode()}
           </div>
-          <div class={['truncate text-right text-[12px]', props.optional ? 'text-(--ink-5)' : 'text-(--ink-3)']} title={licenseTitle()}>{license()}</div>
+          <div class={['truncate text-right text-[12px] max-md:hidden', props.optional ? 'text-(--ink-5)' : 'text-(--ink-3)']} title={licenseTitle()}>{license()}</div>
         </Show>
       </div>
       <Show when={opened()}>
@@ -93,7 +109,8 @@ export function DependencyNode(props: DependencyNodeProps) {
 
 function LoadingRow(props: { depth: number }) {
   return (
-    <div class="border-b border-(--track) px-[18px] py-2.5" style={{ 'padding-left': `${18 + props.depth * 22}px` }}>
+    <div class="border-b border-(--track) py-2.5 pl-[calc(18px+var(--depth)*22px)] pr-[18px] max-md:pl-[calc(12px+var(--depth)*14px)] max-md:pr-3"
+         style={{ '--depth': props.depth }}>
       <div class="h-3.5 w-48 animate-pulse rounded-(--radius-bar) bg-(--track)"/>
     </div>
   )

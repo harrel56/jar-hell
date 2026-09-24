@@ -1,11 +1,13 @@
 import { createMemo, For, Show } from 'solid-js'
-import { ArtifactInfo } from '../../api'
+import { ArtifactInfo, ArtifactVersion } from '../../api'
 import { Icon } from '../../icons'
 import { formatDate, formatDateTime } from '../../utils/utils'
+import { VersionsPicker } from '../VersionsPicker'
 import { BadgesDialog } from './BadgesDialog'
 
 interface PackageHeaderProps {
   info: ArtifactInfo
+  versions: readonly ArtifactVersion[]
 }
 
 interface ProjectLink {
@@ -39,8 +41,11 @@ export function PackageHeader(props: PackageHeaderProps) {
         <h1 class="font-(family-name:--font-data) text-[36px] font-bold leading-[1.1] tracking-(--tracking-tighter) text-(--ink)">
           {props.info.artifactId}
         </h1>
-        <span class="rounded-[6px] border border-(--accent-wash-border) bg-(--accent-wash) px-[9px] py-[3px] font-(family-name:--font-data) text-[14px] text-(--accent)">
+        <span class="rounded-[6px] border border-(--accent-wash-border) bg-(--accent-wash) px-[9px] py-[3px] font-(family-name:--font-data) text-[14px] text-(--accent) max-md:hidden">
           {props.info.version}
+        </span>
+        <span class="md:hidden">
+          <VersionsPicker gav={props.info} versions={props.versions}/>
         </span>
         <Show when={props.info.classifier}>
           {classifier => (

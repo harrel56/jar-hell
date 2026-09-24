@@ -70,7 +70,7 @@ export function PackagePage() {
               {pkg =>
                 <Show when={!isNotFound(pkg())} fallback={<NotFoundView/>}>
                   <Show when={!isFailed(pkg())} fallback={<AnalysisFailedView info={pkg().artifactInfo} onRetry={retry}/>}>
-                    <PackageView tree={pkg()}/>
+                    <PackageView tree={pkg()} versions={versions()}/>
                   </Show>
                 </Show>}
             </Show>

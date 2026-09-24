@@ -15,7 +15,7 @@ export function DependencyExplorer(props: { tree: ArtifactTree }) {
       </MessageBlock>
 
       <div class="mt-3.5 overflow-hidden rounded-(--radius-card) border border-(--hairline)">
-        <div class={[EXPLORER_COLUMNS, 'border-b border-(--hairline) bg-(--surface) px-[18px] py-[11px] text-(length:--text-label) font-semibold uppercase tracking-[0.07em] text-(--ink-4)']}>
+        <div class={[EXPLORER_COLUMNS, 'border-b border-(--hairline) bg-(--surface) px-[18px] py-[11px] text-(length:--text-label) font-semibold uppercase tracking-[0.07em] text-(--ink-4) max-md:hidden']}>
           <div>Package</div>
           <div class="text-right">Size</div>
           <div class="text-right" title="Minimum Java version the jar's class files require">Java</div>

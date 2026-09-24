@@ -1,7 +1,9 @@
-import {createMemo, createSignal, For, Match, Repeat, Switch} from 'solid-js'
+import {createMemo, createSignal, For, Repeat} from 'solid-js'
 import {useLinkState} from '@solidjs/router'
 import {Gav} from '../utils/gav'
 import {ArtifactVersion} from '../api'
+import {calculateVersionNodes, versionHref} from '../utils/versions'
+import { VersionStatePill } from './VersionStatePill'
 import { Icon } from '../icons'
 
 interface VersionsSidebarProps {
@@ -9,11 +11,10 @@ interface VersionsSidebarProps {
   versions: readonly ArtifactVersion[]
 }
 
-const asideClass = 'sticky top-(--header-height) max-h-[calc(100vh-var(--header-height))] w-(--sidebar-width) shrink-0 self-start overflow-y-auto border-r border-(--hairline) px-5 pt-(--space-9) pb-10'
+// below md the rail is replaced by VersionsPicker, rendered next to the package name
+const asideClass = 'max-md:hidden sticky top-(--header-height) max-h-[calc(100vh-var(--header-height))] w-(--sidebar-width) shrink-0 self-start overflow-y-auto border-r border-(--hairline) px-5 pt-(--space-9) pb-10'
 const rowClass = 'flex items-center gap-2 rounded-r-(--radius-nav) border-l-2 px-2.5 py-[7px] font-(family-name:--font-data) text-(length:--text-sm)'
 const groupClass = 'border-t border-(--hairline-soft)'
-const pillClass = 'ml-auto rounded-(--radius-pill) border px-1.5 py-0.5 font-semibold uppercase tracking-[0.04em] text-(length:--text-micro)'
-
 function RailHeader(props: { count?: number }) {
   return (
     <div class="flex items-baseline justify-between px-1.5 pb-3">
@@ -35,11 +36,7 @@ interface VersionLinkProps {
 }
 
 function VersionLink(props: VersionLinkProps) {
-  const href = createMemo(() => {
-    const gav = props.gav
-    const classifierPart = gav.classifier ? `:${gav.classifier}` : ''
-    return `/packages/${gav.groupId}:${gav.artifactId}:${props.version.version}${classifierPart}`
-  })
+  const href = createMemo(() => versionHref(props.gav, props.version.version))
 
   const link = useLinkState(() => href())
 
@@ -57,14 +54,7 @@ function VersionLink(props: VersionLinkProps) {
       ]}
     >
       {props.version.version}
-      <Switch>
-        <Match when={props.version.state === 'ANALYZED'}>
-          <span class={`${pillClass} border-(--good-wash-border) bg-(--good-wash) text-(--good-wash-ink)`}>Analyzed</span>
-        </Match>
-        <Match when={props.version.state === 'FAILED'}>
-          <span class={`${pillClass} border-(--bad-wash-border) bg-(--bad-wash) text-(--bad-wash-ink)`}>Failed</span>
-        </Match>
-      </Switch>
+      <VersionStatePill state={props.version.state} class="ml-auto"/>
     </a>
   )
 }
@@ -162,37 +152,4 @@ export function VersionsSidebarSkeleton() {
       </div>
     </aside>
   )
-}
-
-/**
- * Group by minor version if:
- * - there is only 1 major
- * - in scope of 1 major there is a minor that got >= 10 patch versions
- * otherwise group by major
- * */
-const calculateVersionNodes = (versions: ArtifactVersion[]) => {
-  const byMajor = new Map<string, Map<string, ArtifactVersion[]>>()
-  versions.forEach(av => {
-    const [major, minor] = av.version.split('.', 2)
-    const byMinor = byMajor.get(major!) ?? new Map<string, ArtifactVersion[]>()
-    const patches = byMinor.get(minor!) ?? []
-    patches.push(av)
-    byMinor.set(minor!, patches)
-    byMajor.set(major!, byMinor)
-  })
-
-  const nodes = new Map<string, ArtifactVersion[]>()
-  Array.from(byMajor.entries()).forEach(([major, byMinor]) => {
-    const expandMinor = byMajor.size === 1 || Array.from(byMinor.values()).some(patches => patches.length >= 10)
-    if (expandMinor) {
-      Array.from(byMinor.entries()).forEach(([minor, patches]) => {
-        nodes.set(`${major}.${minor}`, patches)
-      })
-    } else {
-      const newVersions: ArtifactVersion[] = []
-      Array.from(byMinor.values()).forEach(patches => newVersions.push(...patches))
-      nodes.set(major, newVersions)
-    }
-  })
-  return nodes
 }

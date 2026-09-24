@@ -13,7 +13,7 @@ function AnalyzedCount() {
 
 export function HomePage() {
   return (
-    <main class="mx-auto w-full max-w-(--measure-index) px-10 pb-[110px]">
+    <main class="mx-auto w-full max-w-(--measure-index) px-10 pb-[110px] max-md:px-5">
       <section class="pt-[78px] text-center">
         <h1 class="mx-auto max-w-[700px] text-(length:--text-h1) font-semibold leading-[1.08] tracking-[-0.035em] text-(--ink)">
           What does that dependency <span class="whitespace-nowrap text-(--accent)">really cost?</span>

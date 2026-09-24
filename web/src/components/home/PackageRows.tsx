@@ -4,7 +4,8 @@ import { formatSizeText } from '../../utils/utils'
 import { PackageRow } from '../../utils/packageRow'
 import { railPosition, sizeBand } from '../package/effective/sizeRail'
 
-const COLUMNS = 'grid grid-cols-[minmax(0,1fr)_96px_120px_82px] items-center gap-x-3.5'
+/** mobile folds the row in two: coordinate on its own line, then version / rail / size */
+const COLUMNS = 'grid items-center gap-x-3.5 max-md:grid-cols-[88px_minmax(0,1fr)_72px] max-md:gap-y-[7px] md:grid-cols-[minmax(0,1fr)_96px_120px_82px]'
 
 /** shrunken effective-size rail: same log scale and verdict colouring, minus the ticks */
 function MiniSizeRail(props: { selfBytes: number, totalBytes: number }) {
@@ -28,10 +29,10 @@ function Row(props: { pkg: PackageRow }) {
   return (
     <a href={`/packages/${formatGav(props.pkg)}`}
        class={[COLUMNS, 'border-b border-(--track) px-1.5 py-2.5 text-(--ink) hover:bg-(--surface)']}>
-      <div class="min-w-0 truncate font-(family-name:--font-data) text-[13.5px]">
-        <span class="text-(--ink-5)">{props.pkg.groupId}</span>
-        <span class="text-(--ink-mute)">:</span>
-        <span class="font-medium">{props.pkg.artifactId}</span>
+      <div class="min-w-0 truncate font-(family-name:--font-data) text-[13.5px] max-md:col-span-3 max-md:flex max-md:flex-col">
+        <span class="truncate text-(--ink-5) max-md:text-(length:--text-label)">{props.pkg.groupId}</span>
+        <span class="text-(--ink-mute) max-md:hidden">:</span>
+        <span class="truncate font-medium max-md:text-[14.5px]">{props.pkg.artifactId}</span>
       </div>
       <div class="truncate font-(family-name:--font-data) text-[12px] text-(--ink-4)" title={versionLabel()}>{versionLabel()}</div>
       <MiniSizeRail selfBytes={props.pkg.packageSize} totalBytes={props.pkg.effectiveSize}/>
@@ -77,7 +78,7 @@ export function PackageRowsSkeleton(props: { title: string, meta: string, count:
         <For each={Array.from({ length: props.count })}>
           {() => (
             <div class={[COLUMNS, 'border-b border-(--track) px-1.5 py-2.5']}>
-              <div class="h-3.5 w-56 animate-pulse rounded-(--radius-bar) bg-(--track)"/>
+              <div class="h-3.5 w-56 max-w-full animate-pulse rounded-(--radius-bar) bg-(--track) max-md:col-span-3"/>
               <div class="h-3 w-12 animate-pulse rounded-(--radius-bar) bg-(--track)"/>
               <div class="h-[5px] animate-pulse rounded-(--radius-bar) bg-(--track)"/>
               <div class="ml-auto h-3 w-14 animate-pulse rounded-(--radius-bar) bg-(--track)"/>
