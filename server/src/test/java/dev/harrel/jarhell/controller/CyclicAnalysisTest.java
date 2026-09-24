@@ -11,8 +11,8 @@ import dev.harrel.jarhell.model.LicenseCount;
 import dev.harrel.jarhell.model.LicenseType;
 import dev.harrel.jarhell.util.TestUtil;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.junit.jupiter.api.Test;
 

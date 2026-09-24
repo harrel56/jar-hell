@@ -5,7 +5,7 @@ import dev.harrel.jarhell.analyze.FilesInfo;
 import dev.harrel.jarhell.analyze.MavenIndexService;
 import dev.harrel.jarhell.model.Gav;
 import io.avaje.config.Config;
-import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.ContentResponse;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 

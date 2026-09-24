@@ -87,9 +87,13 @@ class MavenResolverConfiguration {
         return Map.of(
                 NameMappers.STATIC_NAME, NameMappers.staticNameMapper(),
                 NameMappers.GAV_NAME, NameMappers.gavNameMapper(),
+                NameMappers.GAECV_NAME, NameMappers.gaecvNameMapper(),
                 NameMappers.DISCRIMINATING_NAME, NameMappers.discriminatingNameMapper(),
                 NameMappers.FILE_GAV_NAME, NameMappers.fileGavNameMapper(),
-                NameMappers.FILE_HGAV_NAME, NameMappers.fileHashingGavNameMapper()
+                NameMappers.FILE_GAECV_NAME, NameMappers.fileGaecvNameMapper(),
+                NameMappers.FILE_STATIC_NAME, NameMappers.fileStaticNameMapper(),
+                NameMappers.FILE_HGAV_NAME, NameMappers.fileHashingGavNameMapper(),
+                NameMappers.FILE_HGAECV_NAME, NameMappers.fileHashingGaecvNameMapper()
         );
     }
 

@@ -2,8 +2,8 @@ package dev.harrel.jarhell;
 
 import dev.harrel.jarhell.analyze.FilesInfo;
 import dev.harrel.jarhell.model.Gav;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,7 +12,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -188,11 +188,6 @@ public class MavenApiClientTest {
         }
 
         @Override
-        public <T extends ResponseListener> List<T> getListeners(Class<T> listenerClass) {
-            return List.of();
-        }
-
-        @Override
         public HttpVersion getVersion() {
             return null;
         }
@@ -208,8 +203,13 @@ public class MavenApiClientTest {
         }
 
         @Override
-        public boolean abort(Throwable cause) {
-            return false;
+        public HttpFields getTrailers() {
+            return null;
+        }
+
+        @Override
+        public CompletableFuture<Boolean> abort(Throwable cause) {
+            return CompletableFuture.completedFuture(false);
         }
     }
 }
