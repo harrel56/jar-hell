@@ -27,4 +27,8 @@ final class JsonUtil {
     static <K extends Enum<?>, V> Map<K, V> readEnumMap(String content, Class<K> keyType, Class<V> valueType) {
         return (Map<K, V>) Jsonb.instance().type(Types.newParameterizedType(Map.class, keyType, valueType)).fromJson(content);
     }
+
+    static <K extends Enum<?>, V> String writeEnumMap(Map<K, V> obj, Class<K> keyType, Class<V> valueType) {
+        return Jsonb.instance().type(Types.newParameterizedType(Map.class, keyType, valueType)).toJson(obj);
+    }
 }

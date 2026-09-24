@@ -10,6 +10,7 @@ import dev.harrel.jarhell.repo.ArtifactRepository;
 import io.avaje.http.api.Controller;
 import io.avaje.http.api.Get;
 import io.avaje.http.api.QueryParam;
+import io.avaje.jsonb.Json;
 
 import java.util.List;
 import java.util.Optional;
@@ -72,5 +73,6 @@ class PackagesController {
 
     }
 
+    @Json
     record SearchResult(String g, String a) {}
 }

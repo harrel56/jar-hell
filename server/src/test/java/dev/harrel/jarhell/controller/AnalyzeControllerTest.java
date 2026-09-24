@@ -176,7 +176,7 @@ class AnalyzeControllerTest {
                 30629L,
                 new BytecodeVersion(52, 0),
                 LicenseType.MIT,
-                List.of(Map.entry(LicenseType.MIT, 1L)));
+                List.of(new LicenseCount(LicenseType.MIT, 1L)));
 
         ArtifactInfo ai = new ArtifactInfo(
                 "com.sanctionco.jmail",
@@ -226,7 +226,7 @@ class AnalyzeControllerTest {
                 32734L,
                 new BytecodeVersion(65, 0),
                 LicenseType.NO_LICENSE,
-                List.of(Map.entry(LicenseType.NO_LICENSE, 1L), Map.entry(LicenseType.MIT, 1L)));
+                List.of(new LicenseCount(LicenseType.NO_LICENSE, 1L), new LicenseCount(LicenseType.MIT, 1L)));
 
         ArtifactInfo ai = new ArtifactInfo(
                 "org.test",

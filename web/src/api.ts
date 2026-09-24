@@ -68,7 +68,12 @@ export interface EffectiveValues {
   size: number
   bytecodeVersion?: BytecodeVersion
   licenseType: string
-  licenseTypes: Record<string, number>[]
+  licenseTypes: LicenseCount[]
+}
+
+export interface LicenseCount {
+  licenseType: string
+  count: number
 }
 
 export interface ArtifactTree {

@@ -15,7 +15,7 @@ const LICENSE_VERDICTS: Record<LicenseKind, Verdict> = {
 export function EffectiveLicense(props: { effective: EffectiveValues }) {
   const effective = createMemo(() => formatLicenseType(props.effective.licenseType))
   const others = createMemo(() => props.effective.licenseTypes
-    .flatMap(entry => Object.keys(entry))
+    .map(entry => entry.licenseType)
     .filter(type => type !== props.effective.licenseType)
     .map(lic => formatLicenseType(lic)[0]))
   const distinct = () => props.effective.licenseTypes.length

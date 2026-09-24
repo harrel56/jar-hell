@@ -1,6 +1,5 @@
 package dev.harrel.jarhell.controller;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import dev.harrel.jarhell.error.ErrorResponse;
 import dev.harrel.jarhell.extension.EnvironmentTest;
 import dev.harrel.jarhell.extension.Host;
@@ -311,7 +310,7 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(host + "/api/v1/packages/org.test:lib/versions");
 
         assertThat(res.getStatus()).isEqualTo(200);
-        List<ArtifactVersion> body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        List<ArtifactVersion> body = TestUtil.readList(res.getContentAsString(), ArtifactVersion.class);
         assertThat(body).containsExactly(
                 new ArtifactVersion("1.0.0", ANALYZED),
                 new ArtifactVersion("1.2.0", ANALYZED)
@@ -333,13 +332,13 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(host + "/api/v1/packages/org.test:lib/versions");
 
         assertThat(res.getStatus()).isEqualTo(200);
-        List<ArtifactVersion> body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        List<ArtifactVersion> body = TestUtil.readList(res.getContentAsString(), ArtifactVersion.class);
         assertThat(body).isEmpty();
 
         res = httpClient.GET(host + "/api/v1/packages/org.test:lib/versions?classifier=doc");
 
         assertThat(res.getStatus()).isEqualTo(200);
-        body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        body = TestUtil.readList(res.getContentAsString(), ArtifactVersion.class);
         assertThat(body).containsExactly(
                 new ArtifactVersion("1.0.0", ANALYZED),
                 new ArtifactVersion("1.2.0", ANALYZED)
@@ -362,7 +361,7 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(host + "/api/v1/packages/org.test:lib/versions");
 
         assertThat(res.getStatus()).isEqualTo(200);
-        List<ArtifactVersion> body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        List<ArtifactVersion> body = TestUtil.readList(res.getContentAsString(), ArtifactVersion.class);
         assertThat(body).containsExactly(
                 new ArtifactVersion("1.2.0", ANALYZED),
                 new ArtifactVersion("1.10.0", ANALYZED),
@@ -388,7 +387,7 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(host + "/api/v1/packages/org.test:lib/versions");
 
         assertThat(res.getStatus()).isEqualTo(200);
-        List<ArtifactVersion> body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        List<ArtifactVersion> body = TestUtil.readList(res.getContentAsString(), ArtifactVersion.class);
         assertThat(body).containsExactly(
                 new ArtifactVersion("1.0.0", ANALYZED),
                 new ArtifactVersion("2.0.0", NOT_ANALYZED),
@@ -412,7 +411,7 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(host + "/api/v1/packages/org.test:lib/versions");
 
         assertThat(res.getStatus()).isEqualTo(200);
-        List<ArtifactVersion> body = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        List<ArtifactVersion> body = TestUtil.readList(res.getContentAsString(), ArtifactVersion.class);
         assertThat(body).isEmpty();
     }
 
@@ -461,7 +460,7 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(uri);
 
         assertThat(res.getStatus()).isEqualTo(200);
-        List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        List<SearchResult> found = TestUtil.readList(res.getContentAsString(), SearchResult.class);
         assertThat(found).containsExactlyInAnyOrder(
                 new SearchResult("org.test", "lib1"),
                 new SearchResult("org.test", "lib2")
@@ -480,7 +479,7 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(uri);
 
         assertThat(res.getStatus()).isEqualTo(200);
-        List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        List<SearchResult> found = TestUtil.readList(res.getContentAsString(), SearchResult.class);
         assertThat(found).containsExactlyInAnyOrder(
                 new SearchResult("org.test", "lib1"),
                 new SearchResult("org.hello", "lib1")
@@ -500,7 +499,7 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(uri);
 
         assertThat(res.getStatus()).isEqualTo(200);
-        List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        List<SearchResult> found = TestUtil.readList(res.getContentAsString(), SearchResult.class);
         assertThat(found).containsExactlyInAnyOrder(
                 new SearchResult("org.hello", "lib1"),
                 new SearchResult("org.hello", "lib2"),
@@ -521,7 +520,7 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(uri);
 
         assertThat(res.getStatus()).isEqualTo(200);
-        List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        List<SearchResult> found = TestUtil.readList(res.getContentAsString(), SearchResult.class);
         assertThat(found).containsExactlyInAnyOrder(
                 new SearchResult("org.hello", "lib1"),
                 new SearchResult("org.hello", "lib2")
@@ -541,7 +540,7 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(uri);
 
         assertThat(res.getStatus()).isEqualTo(200);
-        List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        List<SearchResult> found = TestUtil.readList(res.getContentAsString(), SearchResult.class);
         assertThat(found).containsExactlyInAnyOrder(
                 new SearchResult("org.test", "lib1"),
                 new SearchResult("org.test", "lib2")
@@ -558,7 +557,7 @@ class PackagesControllerTest {
         ContentResponse res = httpClient.GET(uri);
 
         assertThat(res.getStatus()).isEqualTo(200);
-        List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+        List<SearchResult> found = TestUtil.readList(res.getContentAsString(), SearchResult.class);
         assertThat(found).hasSize(40);
     }
 
@@ -581,7 +580,7 @@ class PackagesControllerTest {
             ContentResponse res = httpClient.GET(host + "/api/v1/packages/search?query=" + query);
 
             assertThat(res.getStatus()).isEqualTo(200);
-            List<SearchResult> found = TestUtil.readJson(res.getContentAsString(), new TypeReference<>() {});
+            List<SearchResult> found = TestUtil.readList(res.getContentAsString(), SearchResult.class);
             assertThat(found).containsExactlyInAnyOrder(
                     new SearchResult("org.test", "lib1"),
                     new SearchResult("org.test", "lib4")

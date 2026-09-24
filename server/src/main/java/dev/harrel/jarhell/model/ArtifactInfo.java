@@ -5,7 +5,6 @@ import dev.harrel.jarhell.model.descriptor.License;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 public record ArtifactInfo(String groupId,
@@ -56,7 +55,7 @@ public record ArtifactInfo(String groupId,
                                   Long size,
                                   BytecodeVersion bytecodeVersion,
                                   LicenseType licenseType,
-                                  List<Map.Entry<LicenseType, Long>> licenseTypes) {
+                                  List<LicenseCount> licenseTypes) {
         public EffectiveValues {
             Objects.requireNonNull(licenseType);
             Objects.requireNonNull(licenseTypes);

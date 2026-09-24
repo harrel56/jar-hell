@@ -386,9 +386,8 @@ public class ArtifactRepository {
         ArtifactInfo.EffectiveValues effectiveValues = null;
         if (artifactProps.effectiveLicenseType() != null && artifactProps.effectiveLicenseTypes() != null) {
             LicenseType effectiveLicenseType = LicenseType.valueOf(artifactProps.effectiveLicenseType());
-            List<Map.Entry<LicenseType, Long>> effectiveLicenseTypes = artifactProps.effectiveLicenseTypes().stream()
-                    .map(entry -> entry.split(";"))
-                    .map(entry -> Map.entry(LicenseType.valueOf(entry[0]), Long.valueOf(entry[1])))
+            List<LicenseCount> effectiveLicenseTypes = artifactProps.effectiveLicenseTypes().stream()
+                    .map(LicenseCount::fromString)
                     .toList();
             effectiveValues = new ArtifactInfo.EffectiveValues(
                     artifactProps.effectiveRequiredDependencies(),
@@ -433,8 +432,8 @@ public class ArtifactRepository {
         String jarModuleName = null;
         if (artifactInfo.jarInfo() != null) {
             JarAnalyzer.JarInfo jarInfo = artifactInfo.jarInfo();
-            jarContents = Jsonb.instance().toJson(jarInfo.contents());
-            jarPublicClasses = Jsonb.instance().toJson(jarInfo.publicClasses());
+            jarContents = JsonUtil.writeEnumMap(jarInfo.contents(), JarAnalyzer.ContentType.class, JarAnalyzer.Content.class);
+            jarPublicClasses = JsonUtil.writeEnumMap(jarInfo.publicClasses(), JarAnalyzer.ClassType.class, Integer.class);
             jarNonPublicClasses = jarInfo.nonPublicClasses();
             jarBytecodeVersion = jarInfo.bytecodeVersion() == null ? null : jarInfo.bytecodeVersion().toString();
             jarBuildJdk = jarInfo.buildJdk();
@@ -460,7 +459,7 @@ public class ArtifactRepository {
             effectiveBytecodeVersion = Objects.toString(artifactInfo.effectiveValues().bytecodeVersion(), null);
             effectiveLicenseType = artifactInfo.effectiveValues().licenseType().name();
             effectiveLicenseTypes = artifactInfo.effectiveValues().licenseTypes().stream()
-                    .map(entry -> "%s;%s".formatted(entry.getKey().name(), entry.getValue()))
+                    .map(LicenseCount::asString)
                     .toList();
         }
         return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(),
@@ -553,5 +552,6 @@ public class ArtifactRepository {
         }
     }
 
-    private record RelationProps(Boolean optional, String scope) {}
+    @Json
+    record RelationProps(Boolean optional, String scope) {}
 }

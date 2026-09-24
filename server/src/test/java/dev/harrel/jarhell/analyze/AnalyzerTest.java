@@ -59,20 +59,20 @@ class AnalyzerTest {
                 argumentSet("Standalone package",
                         resolved(1000L, "52.0"), List.of(),
                         new EffectiveValues(0, 0, 0, 1000L, new BytecodeVersion(52, 0),
-                                LicenseType.NO_LICENSE, List.of(Map.entry(LicenseType.NO_LICENSE, 1L)))
+                                LicenseType.NO_LICENSE, List.of(new LicenseCount(LicenseType.NO_LICENSE, 1L)))
                 ),
                 argumentSet("Standalone package, single license",
                         resolved(1000L, "52.0", List.of(LicenseType.APACHE_2)), List.of(),
                         new EffectiveValues(0, 0, 0, 1000L, new BytecodeVersion(52, 0),
-                                LicenseType.APACHE_2, List.of(Map.entry(LicenseType.APACHE_2, 1L)))
+                                LicenseType.APACHE_2, List.of(new LicenseCount(LicenseType.APACHE_2, 1L)))
                 ),
                 argumentSet("Standalone package, multiple licenses",
                         resolved(1000L, "52.0", List.of(LicenseType.APACHE_2, LicenseType.CPL_1, LicenseType.GPL_3)), List.of(),
                         new EffectiveValues(0, 0, 0, 1000L, new BytecodeVersion(52, 0),
                                 LicenseType.GPL_3, List.of(
-                                Map.entry(LicenseType.GPL_3, 1L),
-                                Map.entry(LicenseType.CPL_1, 1L),
-                                Map.entry(LicenseType.APACHE_2, 1L)
+                                new LicenseCount(LicenseType.GPL_3, 1L),
+                                new LicenseCount(LicenseType.CPL_1, 1L),
+                                new LicenseCount(LicenseType.APACHE_2, 1L)
                         ))
                 ),
                 argumentSet("Unresolved standalone package",
@@ -82,12 +82,12 @@ class AnalyzerTest {
                 argumentSet("3 required unresolved deps",
                         resolved(1000L, "52.0"), List.of(unresolvedDep(false), unresolvedDep(false), unresolvedDep(false)),
                         new EffectiveValues(3, 3, 0, 1000L, new BytecodeVersion(52, 0),
-                                LicenseType.NO_LICENSE, List.of(Map.entry(LicenseType.NO_LICENSE, 1L)))
+                                LicenseType.NO_LICENSE, List.of(new LicenseCount(LicenseType.NO_LICENSE, 1L)))
                 ),
                 argumentSet("1 required unresolved, 2 optional unresolved deps",
                         resolved(1000L, "52.0"), List.of(unresolvedDep(true), unresolvedDep(false), unresolvedDep(true)),
                         new EffectiveValues(1, 1, 2, 1000L, new BytecodeVersion(52, 0),
-                                LicenseType.NO_LICENSE, List.of(Map.entry(LicenseType.NO_LICENSE, 1L)))
+                                LicenseType.NO_LICENSE, List.of(new LicenseCount(LicenseType.NO_LICENSE, 1L)))
                 ),
                 argumentSet("3 required resolved deps - size is calculated properly",
                         resolved(1000L, "52.0"), List.of(
@@ -96,7 +96,7 @@ class AnalyzerTest {
                                 resolvedDep(100L, "52.0", false)
                         ),
                         new EffectiveValues(3, 0, 0, 1111L, new BytecodeVersion(52, 0),
-                                LicenseType.NO_LICENSE, List.of(Map.entry(LicenseType.NO_LICENSE, 4L)))
+                                LicenseType.NO_LICENSE, List.of(new LicenseCount(LicenseType.NO_LICENSE, 4L)))
                 ),
                 argumentSet("3 required resolved deps - licenses are calculated properly",
                         resolved(1000L, "52.0", List.of(LicenseType.APACHE_2)), List.of(
@@ -106,8 +106,8 @@ class AnalyzerTest {
                         ),
                         new EffectiveValues(3, 0, 0, 1111L, new BytecodeVersion(52, 0),
                                 LicenseType.APACHE_2, List.of(
-                                        Map.entry(LicenseType.APACHE_2, 3L),
-                                        Map.entry(LicenseType.MIT, 1L)
+                                        new LicenseCount(LicenseType.APACHE_2, 3L),
+                                        new LicenseCount(LicenseType.MIT, 1L)
                         ))
                 ),
                 argumentSet("3 required, 1 optional resolved deps - size is calculated properly",
@@ -118,7 +118,7 @@ class AnalyzerTest {
                                 resolvedDep(100L, "52.0", false)
                         ),
                         new EffectiveValues(3, 0, 1, 1111L, new BytecodeVersion(52, 0),
-                                LicenseType.NO_LICENSE, List.of(Map.entry(LicenseType.NO_LICENSE, 4L)))
+                                LicenseType.NO_LICENSE, List.of(new LicenseCount(LicenseType.NO_LICENSE, 4L)))
                 ),
                 argumentSet("3 required, 1 optional resolved deps - bytecode version is calculated properly",
                         resolved(1000L, "52.0"), List.of(
@@ -128,7 +128,7 @@ class AnalyzerTest {
                                 resolvedDep(100L, "52.0", false)
                         ),
                         new EffectiveValues(3, 0, 1, 1111L, new BytecodeVersion(61, 65536),
-                                LicenseType.NO_LICENSE, List.of(Map.entry(LicenseType.NO_LICENSE, 4L)))
+                                LicenseType.NO_LICENSE, List.of(new LicenseCount(LicenseType.NO_LICENSE, 4L)))
                 ),
                 argumentSet("3 required, 1 optional resolved deps - licenses are calculated properly",
                         resolved(1000L, "52.0", List.of(LicenseType.LGPL_3)), List.of(
@@ -139,10 +139,10 @@ class AnalyzerTest {
                         ),
                         new EffectiveValues(3, 0, 1, 1111L, new BytecodeVersion(52, 0),
                                 LicenseType.LGPL_3, List.of(
-                                Map.entry(LicenseType.LGPL_3, 1L),
-                                Map.entry(LicenseType.MPL_2, 1L),
-                                Map.entry(LicenseType.MIT, 1L),
-                                Map.entry(LicenseType.MIT0, 1L)
+                                new LicenseCount(LicenseType.LGPL_3, 1L),
+                                new LicenseCount(LicenseType.MPL_2, 1L),
+                                new LicenseCount(LicenseType.MIT, 1L),
+                                new LicenseCount(LicenseType.MIT0, 1L)
                         ))
                 ),
                 argumentSet("All cases combined",
@@ -156,8 +156,8 @@ class AnalyzerTest {
                         ),
                         new EffectiveValues(4, 1, 2, 1111L, new BytecodeVersion(68, 0),
                                 LicenseType.NO_LICENSE, List.of(
-                                        Map.entry(LicenseType.NO_LICENSE, 1L),
-                                        Map.entry(LicenseType.MIT, 3L)
+                                        new LicenseCount(LicenseType.NO_LICENSE, 1L),
+                                        new LicenseCount(LicenseType.MIT, 3L)
                         ))
                 )
         );
