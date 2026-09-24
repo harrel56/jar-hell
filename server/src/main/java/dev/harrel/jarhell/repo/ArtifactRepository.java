@@ -1,15 +1,14 @@
 package dev.harrel.jarhell.repo;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.harrel.jarhell.analyze.JarAnalyzer;
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.model.descriptor.License;
 import io.avaje.inject.PostConstruct;
+import io.avaje.jsonb.Json;
+import io.avaje.jsonb.Jsonb;
 import org.apache.maven.artifact.versioning.ComparableVersion;
-import org.neo4j.driver.Record;
 import org.neo4j.driver.*;
+import org.neo4j.driver.Record;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.types.Entity;
 import org.neo4j.driver.types.MapAccessor;
@@ -19,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
-import java.io.UncheckedIOException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -32,12 +30,10 @@ public class ArtifactRepository {
     private static final Logger logger = LoggerFactory.getLogger(ArtifactRepository.class);
 
     private final Driver driver;
-    private final ObjectMapper objectMapper;
     private final ArtifactStatsHolder artifactStatsHolder = new ArtifactStatsHolder();
 
-    public ArtifactRepository(Driver driver, ObjectMapper objectMapper) {
+    public ArtifactRepository(Driver driver) {
         this.driver = driver;
-        this.objectMapper = objectMapper;
     }
 
     @PostConstruct
@@ -187,7 +183,7 @@ public class ArtifactRepository {
     }
 
     public Optional<ArtifactTree> find(Gav gav, int depth) {
-        Map<String, Object> gavData = objectMapper.convertValue(gav, new TypeReference<>() {});
+        Map<String, Object> gavData = JsonUtil.convertToMap(gav);
         gavData.computeIfAbsent("classifier", k -> "");
         try (var session = session()) {
             SummarizedResult result = session.executeRead(tx -> {
@@ -233,7 +229,7 @@ public class ArtifactRepository {
                 AggregateTree start = nodes.get(relation.startNodeElementId());
                 AggregateTree end = nodes.get(relation.endNodeElementId());
 
-                end.relationProps = objectMapper.convertValue(relation.asMap(), RelationProps.class);
+                end.relationProps = JsonUtil.convert(relation.asMap(), RelationProps.class);
 
                 Gav endGav = toGav(end.artifactProps);
                 start.deps.put(endGav, end);
@@ -245,7 +241,7 @@ public class ArtifactRepository {
 
     public void saveArtifact(ArtifactInfo artifactInfo) {
         ArtifactProps artifactProps = toArtifactProps(artifactInfo);
-        Map<String, Object> propsMap = objectMapper.convertValue(artifactProps, new TypeReference<>() {});
+        Map<String, Object> propsMap = JsonUtil.convertToMap(artifactProps);
         propsMap.computeIfAbsent("classifier", _ -> "");
         try (var session = session()) {
             session.executeWriteWithoutResult(tx ->
@@ -268,7 +264,7 @@ public class ArtifactRepository {
         List<Map<String, Object>> batch = gavs.stream()
                 .map(gav -> {
                     ArtifactProps artifactProps = toArtifactProps(ArtifactInfo.fromMavenIndex(gav));
-                    Map<String, Object> propsMap = objectMapper.convertValue(artifactProps, new TypeReference<Map<String, Object>>() {});
+                    Map<String, Object> propsMap = JsonUtil.convertToMap(artifactProps);
                     propsMap.computeIfAbsent("classifier", _ -> "");
                     return propsMap;
                 })
@@ -276,10 +272,10 @@ public class ArtifactRepository {
         try (var session = session()) {
             return session.executeWrite(tx ->
                     tx.run(new Query("""
-                                    UNWIND $batch AS props
-                                    MERGE (a:Artifact {groupId: props.groupId, artifactId: props.artifactId, version: props.version, classifier: props.classifier})
-                                    ON CREATE SET a = props, a.analyzed = localdatetime()
-                                    ON MATCH SET a.fromMavenIndex = true""",
+                            UNWIND $batch AS props
+                            MERGE (a:Artifact {groupId: props.groupId, artifactId: props.artifactId, version: props.version, classifier: props.classifier})
+                            ON CREATE SET a = props, a.analyzed = localdatetime()
+                            ON MATCH SET a.fromMavenIndex = true""",
                             parameters("batch", batch))
                     ).consume().counters().nodesCreated()
             );
@@ -354,183 +350,176 @@ public class ArtifactRepository {
     }
 
     private Map<String, Object> toGavMap(Gav gav) {
-        Map<String, Object> gavMap = objectMapper.convertValue(gav, new TypeReference<>() {});
+        Map<String, Object> gavMap = JsonUtil.convertToMap(gav);
         gavMap.computeIfAbsent("classifier", k -> "");
         return gavMap;
     }
 
     private ArtifactInfo toArtifactInfo(ArtifactProps artifactProps) {
-        try {
-            List<License> licenses = List.of();
-            if (artifactProps.licenses() != null) {
-                licenses = objectMapper.readValue(artifactProps.licenses(), new TypeReference<>() {});
-            }
-            List<LicenseType> licenseTypes = List.of();
-            if (artifactProps.licenseTypes() != null) {
-                licenseTypes = artifactProps.licenseTypes().stream().map(LicenseType::valueOf).toList();
-            }
-
-            JarAnalyzer.JarInfo jarInfo = null;
-            if (artifactProps.jarContents() != null && artifactProps.jarPublicClasses() != null) {
-                Map<JarAnalyzer.ContentType, JarAnalyzer.Content> jarContents = objectMapper.readValue(artifactProps.jarContents(), new TypeReference<>() {});
-                Map<JarAnalyzer.ClassType, Integer> jarPublicClasses = objectMapper.readValue(artifactProps.jarPublicClasses(), new TypeReference<>() {});
-                jarInfo = new JarAnalyzer.JarInfo(
-                        jarContents,
-                        jarPublicClasses,
-                        artifactProps.jarNonPublicClasses(),
-                        artifactProps.jarBytecodeVersion() == null ? null : BytecodeVersion.from(artifactProps.jarBytecodeVersion()),
-                        artifactProps.jarBuildJdk(),
-                        artifactProps.jarMultiRelease(),
-                        artifactProps.jarExecutable(),
-                        artifactProps.jarServices(),
-                        JarAnalyzer.ModuleType.valueOf(artifactProps.jarModuleType()),
-                        artifactProps.jarModuleName()
-                );
-            }
-
-            ArtifactInfo.EffectiveValues effectiveValues = null;
-            if (artifactProps.effectiveLicenseType() != null && artifactProps.effectiveLicenseTypes() != null) {
-                LicenseType effectiveLicenseType = LicenseType.valueOf(artifactProps.effectiveLicenseType());
-                List<Map.Entry<LicenseType, Long>> effectiveLicenseTypes = artifactProps.effectiveLicenseTypes().stream()
-                        .map(entry -> entry.split(";"))
-                        .map(entry -> Map.entry(LicenseType.valueOf(entry[0]), Long.valueOf(entry[1])))
-                        .toList();
-                effectiveValues = new ArtifactInfo.EffectiveValues(
-                        artifactProps.effectiveRequiredDependencies(),
-                        artifactProps.effectiveUnresolvedDependencies(),
-                        artifactProps.effectiveOptionalDependencies(),
-                        artifactProps.effectiveSize(),
-                        artifactProps.effectiveBytecodeVersion() == null ? null : BytecodeVersion.from(artifactProps.effectiveBytecodeVersion()),
-                        effectiveLicenseType,
-                        effectiveLicenseTypes);
-            }
-
-            return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier(),
-                    artifactProps.fromMavenIndex(), artifactProps.unresolved(), artifactProps.unresolvedCount(), artifactProps.unresolvedReason(), artifactProps.created(),
-                    artifactProps.packageSize(), artifactProps.packaging(), artifactProps.name(),
-                    artifactProps.description(), artifactProps.url(), artifactProps.scmUrl(), artifactProps.issuesUrl(), artifactProps.inceptionYear(),
-                    licenses, licenseTypes, artifactProps.classifiers(), artifactProps.extensions(), jarInfo, effectiveValues, artifactProps.analyzed());
-        } catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
+        List<License> licenses = List.of();
+        if (artifactProps.licenses() != null) {
+            licenses = JsonUtil.readList(artifactProps.licenses(), License.class);
         }
+        List<LicenseType> licenseTypes = List.of();
+        if (artifactProps.licenseTypes() != null) {
+            licenseTypes = artifactProps.licenseTypes().stream().map(LicenseType::valueOf).toList();
+        }
+
+        JarAnalyzer.JarInfo jarInfo = null;
+        if (artifactProps.jarContents() != null && artifactProps.jarPublicClasses() != null) {
+            Map<JarAnalyzer.ContentType, JarAnalyzer.Content> jarContents = JsonUtil.readEnumMap(artifactProps.jarContents(), JarAnalyzer.ContentType.class, JarAnalyzer.Content.class);
+            Map<JarAnalyzer.ClassType, Integer> jarPublicClasses = JsonUtil.readEnumMap(artifactProps.jarPublicClasses(), JarAnalyzer.ClassType.class, Integer.class);
+            jarInfo = new JarAnalyzer.JarInfo(
+                    jarContents,
+                    jarPublicClasses,
+                    artifactProps.jarNonPublicClasses(),
+                    artifactProps.jarBytecodeVersion() == null ? null : BytecodeVersion.from(artifactProps.jarBytecodeVersion()),
+                    artifactProps.jarBuildJdk(),
+                    artifactProps.jarMultiRelease(),
+                    artifactProps.jarExecutable(),
+                    artifactProps.jarServices(),
+                    JarAnalyzer.ModuleType.valueOf(artifactProps.jarModuleType()),
+                    artifactProps.jarModuleName()
+            );
+        }
+
+        ArtifactInfo.EffectiveValues effectiveValues = null;
+        if (artifactProps.effectiveLicenseType() != null && artifactProps.effectiveLicenseTypes() != null) {
+            LicenseType effectiveLicenseType = LicenseType.valueOf(artifactProps.effectiveLicenseType());
+            List<Map.Entry<LicenseType, Long>> effectiveLicenseTypes = artifactProps.effectiveLicenseTypes().stream()
+                    .map(entry -> entry.split(";"))
+                    .map(entry -> Map.entry(LicenseType.valueOf(entry[0]), Long.valueOf(entry[1])))
+                    .toList();
+            effectiveValues = new ArtifactInfo.EffectiveValues(
+                    artifactProps.effectiveRequiredDependencies(),
+                    artifactProps.effectiveUnresolvedDependencies(),
+                    artifactProps.effectiveOptionalDependencies(),
+                    artifactProps.effectiveSize(),
+                    artifactProps.effectiveBytecodeVersion() == null ? null : BytecodeVersion.from(artifactProps.effectiveBytecodeVersion()),
+                    effectiveLicenseType,
+                    effectiveLicenseTypes);
+        }
+
+        return new ArtifactInfo(artifactProps.groupId(), artifactProps.artifactId(), artifactProps.version(), artifactProps.classifier(),
+                artifactProps.fromMavenIndex(), artifactProps.unresolved(), artifactProps.unresolvedCount(), artifactProps.unresolvedReason(), artifactProps.created(),
+                artifactProps.packageSize(), artifactProps.packaging(), artifactProps.name(),
+                artifactProps.description(), artifactProps.url(), artifactProps.scmUrl(), artifactProps.issuesUrl(), artifactProps.inceptionYear(),
+                licenses, licenseTypes, artifactProps.classifiers(), artifactProps.extensions(), jarInfo, effectiveValues, artifactProps.analyzed());
     }
 
     private ArtifactProps toArtifactProps(MapAccessor node) {
-        return objectMapper.convertValue(node.asMap(), ArtifactProps.class);
+        return JsonUtil.convert(node.asMap(), ArtifactProps.class);
     }
 
     private ArtifactProps toArtifactProps(ArtifactInfo artifactInfo) {
-        try {
-            String licenses = null;
-            if (artifactInfo.licenses() != null && !artifactInfo.licenses().isEmpty()) {
-                licenses = objectMapper.writeValueAsString(artifactInfo.licenses());
-            }
-            List<String> licenseTypes = null;
-            if (artifactInfo.licenseTypes() != null && !artifactInfo.licenseTypes().isEmpty()) {
-                licenseTypes = artifactInfo.licenseTypes().stream().map(Enum::name).toList();
-            }
-
-            String jarContents = null;
-            String jarPublicClasses = null;
-            Integer jarNonPublicClasses = null;
-            String jarBytecodeVersion = null;
-            String jarBuildJdk = null;
-            Boolean jarMultiRelease = null;
-            Boolean jarExecutable = null;
-            Set<String> jarServices = null;
-            String jarModuleType = null;
-            String jarModuleName = null;
-            if (artifactInfo.jarInfo() != null) {
-                JarAnalyzer.JarInfo jarInfo = artifactInfo.jarInfo();
-                jarContents = objectMapper.writeValueAsString(jarInfo.contents());
-                jarPublicClasses = objectMapper.writeValueAsString(jarInfo.publicClasses());
-                jarNonPublicClasses = jarInfo.nonPublicClasses();
-                jarBytecodeVersion = jarInfo.bytecodeVersion() == null ? null : jarInfo.bytecodeVersion().toString();
-                jarBuildJdk = jarInfo.buildJdk();
-                jarMultiRelease = jarInfo.multiReleaseJar();
-                jarExecutable = jarInfo.executable();
-                jarServices = jarInfo.services();
-                jarModuleType = jarInfo.moduleType().name();
-                jarModuleName = jarInfo.moduleName();
-            }
-
-            Integer effectiveDependencies = null;
-            Integer effectiveUnresolvedDependencies = null;
-            Integer effectiveOptionalDependencies = null;
-            Long effectiveSize = null;
-            String effectiveBytecodeVersion = null;
-            String effectiveLicenseType = null;
-            List<String> effectiveLicenseTypes = null;
-            if (artifactInfo.effectiveValues() != null) {
-                effectiveDependencies = artifactInfo.effectiveValues().requiredDependencies();
-                effectiveUnresolvedDependencies = artifactInfo.effectiveValues().unresolvedDependencies();
-                effectiveOptionalDependencies = artifactInfo.effectiveValues().optionalDependencies();
-                effectiveSize = artifactInfo.effectiveValues().size();
-                effectiveBytecodeVersion = Objects.toString(artifactInfo.effectiveValues().bytecodeVersion(), null);
-                effectiveLicenseType = artifactInfo.effectiveValues().licenseType().name();
-                effectiveLicenseTypes = artifactInfo.effectiveValues().licenseTypes().stream()
-                        .map(entry -> "%s;%s".formatted(entry.getKey().name(), entry.getValue()))
-                        .toList();
-            }
-            return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(),
-                    artifactInfo.fromMavenIndex(), artifactInfo.unresolved(), artifactInfo.unresolvedCount(), artifactInfo.unresolvedReason(), artifactInfo.created(),
-                    artifactInfo.packageSize(), artifactInfo.packaging(), artifactInfo.name(),
-                    artifactInfo.description(), artifactInfo.url(), artifactInfo.scmUrl(), artifactInfo.issuesUrl(),
-                    artifactInfo.inceptionYear(), licenses, licenseTypes, artifactInfo.classifiers(), artifactInfo.extensions(),
-                    jarContents, jarPublicClasses, jarNonPublicClasses, jarBytecodeVersion, jarBuildJdk, jarMultiRelease,
-                    jarExecutable, jarServices, jarModuleType, jarModuleName,
-                    effectiveDependencies, effectiveUnresolvedDependencies, effectiveOptionalDependencies, effectiveSize,
-                    effectiveBytecodeVersion, effectiveLicenseType, effectiveLicenseTypes, null);
-        } catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
+        String licenses = null;
+        if (artifactInfo.licenses() != null && !artifactInfo.licenses().isEmpty()) {
+            licenses = Jsonb.instance().toJson(artifactInfo.licenses());
         }
+        List<String> licenseTypes = null;
+        if (artifactInfo.licenseTypes() != null && !artifactInfo.licenseTypes().isEmpty()) {
+            licenseTypes = artifactInfo.licenseTypes().stream().map(Enum::name).toList();
+        }
+
+        String jarContents = null;
+        String jarPublicClasses = null;
+        Integer jarNonPublicClasses = null;
+        String jarBytecodeVersion = null;
+        String jarBuildJdk = null;
+        Boolean jarMultiRelease = null;
+        Boolean jarExecutable = null;
+        Set<String> jarServices = null;
+        String jarModuleType = null;
+        String jarModuleName = null;
+        if (artifactInfo.jarInfo() != null) {
+            JarAnalyzer.JarInfo jarInfo = artifactInfo.jarInfo();
+            jarContents = Jsonb.instance().toJson(jarInfo.contents());
+            jarPublicClasses = Jsonb.instance().toJson(jarInfo.publicClasses());
+            jarNonPublicClasses = jarInfo.nonPublicClasses();
+            jarBytecodeVersion = jarInfo.bytecodeVersion() == null ? null : jarInfo.bytecodeVersion().toString();
+            jarBuildJdk = jarInfo.buildJdk();
+            jarMultiRelease = jarInfo.multiReleaseJar();
+            jarExecutable = jarInfo.executable();
+            jarServices = jarInfo.services();
+            jarModuleType = jarInfo.moduleType().name();
+            jarModuleName = jarInfo.moduleName();
+        }
+
+        Integer effectiveDependencies = null;
+        Integer effectiveUnresolvedDependencies = null;
+        Integer effectiveOptionalDependencies = null;
+        Long effectiveSize = null;
+        String effectiveBytecodeVersion = null;
+        String effectiveLicenseType = null;
+        List<String> effectiveLicenseTypes = null;
+        if (artifactInfo.effectiveValues() != null) {
+            effectiveDependencies = artifactInfo.effectiveValues().requiredDependencies();
+            effectiveUnresolvedDependencies = artifactInfo.effectiveValues().unresolvedDependencies();
+            effectiveOptionalDependencies = artifactInfo.effectiveValues().optionalDependencies();
+            effectiveSize = artifactInfo.effectiveValues().size();
+            effectiveBytecodeVersion = Objects.toString(artifactInfo.effectiveValues().bytecodeVersion(), null);
+            effectiveLicenseType = artifactInfo.effectiveValues().licenseType().name();
+            effectiveLicenseTypes = artifactInfo.effectiveValues().licenseTypes().stream()
+                    .map(entry -> "%s;%s".formatted(entry.getKey().name(), entry.getValue()))
+                    .toList();
+        }
+        return new ArtifactProps(artifactInfo.groupId(), artifactInfo.artifactId(), artifactInfo.version(), artifactInfo.classifier(),
+                artifactInfo.fromMavenIndex(), artifactInfo.unresolved(), artifactInfo.unresolvedCount(), artifactInfo.unresolvedReason(), artifactInfo.created(),
+                artifactInfo.packageSize(), artifactInfo.packaging(), artifactInfo.name(),
+                artifactInfo.description(), artifactInfo.url(), artifactInfo.scmUrl(), artifactInfo.issuesUrl(),
+                artifactInfo.inceptionYear(), licenses, licenseTypes, artifactInfo.classifiers(), artifactInfo.extensions(),
+                jarContents, jarPublicClasses, jarNonPublicClasses, jarBytecodeVersion, jarBuildJdk, jarMultiRelease,
+                jarExecutable, jarServices, jarModuleType, jarModuleName,
+                effectiveDependencies, effectiveUnresolvedDependencies, effectiveOptionalDependencies, effectiveSize,
+                effectiveBytecodeVersion, effectiveLicenseType, effectiveLicenseTypes, null);
     }
 
     private record SummarizedResult(List<Record> records, ResultSummary summary) {}
 
-    private record ArtifactProps(String groupId,
-                                 String artifactId,
-                                 String version,
-                                 String classifier,
-                                 Boolean fromMavenIndex,
-                                 Boolean unresolved,
-                                 Integer unresolvedCount,
-                                 String unresolvedReason,
-                                 LocalDateTime created,
-                                 Long packageSize,
-                                 String packaging,
-                                 String name,
-                                 String description,
-                                 String url,
-                                 String scmUrl,
-                                 String issuesUrl,
-                                 String inceptionYear,
-                                 String licenses,
-                                 List<String> licenseTypes,
-                                 List<String> classifiers,
-                                 List<String> extensions,
+    @Json
+    record ArtifactProps(String groupId,
+                         String artifactId,
+                         String version,
+                         String classifier,
+                         Boolean fromMavenIndex,
+                         Boolean unresolved,
+                         Integer unresolvedCount,
+                         String unresolvedReason,
+                         LocalDateTime created,
+                         Long packageSize,
+                         String packaging,
+                         String name,
+                         String description,
+                         String url,
+                         String scmUrl,
+                         String issuesUrl,
+                         String inceptionYear,
+                         String licenses,
+                         List<String> licenseTypes,
+                         List<String> classifiers,
+                         List<String> extensions,
 
-                                 // JarInfo
-                                 String jarContents,
-                                 String jarPublicClasses,
-                                 Integer jarNonPublicClasses,
-                                 String jarBytecodeVersion,
-                                 String jarBuildJdk,
-                                 Boolean jarMultiRelease,
-                                 Boolean jarExecutable,
-                                 Set<String> jarServices,
-                                 String jarModuleType,
-                                 String jarModuleName,
+                         // JarInfo
+                         String jarContents,
+                         String jarPublicClasses,
+                         Integer jarNonPublicClasses,
+                         String jarBytecodeVersion,
+                         String jarBuildJdk,
+                         Boolean jarMultiRelease,
+                         Boolean jarExecutable,
+                         Set<String> jarServices,
+                         String jarModuleType,
+                         String jarModuleName,
 
-                                 // EffectiveValues
-                                 Integer effectiveRequiredDependencies,
-                                 Integer effectiveUnresolvedDependencies,
-                                 Integer effectiveOptionalDependencies,
-                                 Long effectiveSize,
-                                 String effectiveBytecodeVersion,
-                                 String effectiveLicenseType,
-                                 List<String> effectiveLicenseTypes,
-                                 LocalDateTime analyzed) {}
+                         // EffectiveValues
+                         Integer effectiveRequiredDependencies,
+                         Integer effectiveUnresolvedDependencies,
+                         Integer effectiveOptionalDependencies,
+                         Long effectiveSize,
+                         String effectiveBytecodeVersion,
+                         String effectiveLicenseType,
+                         List<String> effectiveLicenseTypes,
+                         LocalDateTime analyzed) {}
 
     private class AggregateTree {
         private final ArtifactProps artifactProps;

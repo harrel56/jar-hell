@@ -10,7 +10,6 @@ import dev.harrel.jarhell.model.ArtifactVersion;
 import dev.harrel.jarhell.model.DependencyInfo;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.util.TestUtil;
-import io.javalin.http.HandlerType;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.junit.jupiter.api.Test;
@@ -62,7 +61,7 @@ class PackagesControllerTest {
         ErrorResponse err = TestUtil.readJson(res.getContentAsString(), ErrorResponse.class);
         assertThat(err).isEqualTo(
                 new ErrorResponse(uri,
-                        HandlerType.GET,
+                        "GET",
                         "Invalid artifact coordinate format [%s]".formatted(coordinate))
         );
     }
@@ -76,7 +75,7 @@ class PackagesControllerTest {
         ErrorResponse err = TestUtil.readJson(res.getContentAsString(), ErrorResponse.class);
         assertThat(err).isEqualTo(
                 new ErrorResponse(uri,
-                        HandlerType.GET,
+                        "GET",
                         "Package with coordinates [org.test:lib:1.0.0] not found")
         );
     }
@@ -128,7 +127,7 @@ class PackagesControllerTest {
         ErrorResponse err = TestUtil.readJson(res.getContentAsString(), ErrorResponse.class);
         assertThat(err).isEqualTo(
                 new ErrorResponse(uri,
-                        HandlerType.GET,
+                        "GET",
                         "Package with coordinates [org.test:lib:1.0.0] not found")
         );
     }
@@ -292,7 +291,7 @@ class PackagesControllerTest {
         ErrorResponse err = TestUtil.readJson(res.getContentAsString(), ErrorResponse.class);
         assertThat(err).isEqualTo(
                 new ErrorResponse(uri,
-                        HandlerType.GET,
+                        "GET",
                         "java.lang.NumberFormatException: For input string: \"hello\"")
         );
     }
@@ -431,7 +430,7 @@ class PackagesControllerTest {
         ErrorResponse err = TestUtil.readJson(res.getContentAsString(), ErrorResponse.class);
         assertThat(err).isEqualTo(
                 new ErrorResponse(uri,
-                        HandlerType.GET,
+                        "GET",
                         "Invalid g:a format " + coordinate)
         );
     }
@@ -445,7 +444,7 @@ class PackagesControllerTest {
         ErrorResponse err = TestUtil.readJson(res.getContentAsString(), ErrorResponse.class);
         assertThat(err).isEqualTo(
                 new ErrorResponse(uri,
-                        HandlerType.GET,
+                        "GET",
                         "query parameter is required")
         );
     }

@@ -11,6 +11,7 @@ import dev.harrel.jarhell.repo.ArtifactRepository;
 import io.avaje.http.api.Controller;
 import io.avaje.http.api.Get;
 import io.avaje.jex.http.Context;
+import io.avaje.jex.http.HttpStatus;
 
 import java.io.InputStream;
 import java.time.Duration;
@@ -84,7 +85,7 @@ class BadgesController {
 
         String uri = "https://shields.io/badge/%s-%s-%s%s".formatted(escape(name), escape(value), color, queryString);
         ctx.header("Cache-Control", "max-age=" + cache.toSeconds())
-                .redirect(uri, 303);
+                .redirect(uri, HttpStatus.SEE_OTHER_303.status());
     }
 
     private static Map<String, List<String>> toQueryParamMap(Context ctx) {

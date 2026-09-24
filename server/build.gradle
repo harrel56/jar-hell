@@ -28,6 +28,8 @@ dependencies {
     implementation 'org.jspecify:jspecify:1.0.1'
     implementation 'org.apache.commons:commons-lang3:3.17.0' // can be possibly removed
 
+    implementation 'io.avaje:avaje-jsonb:3.16'
+    annotationProcessor 'io.avaje:avaje-jsonb-generator:3.16'
     implementation 'io.avaje:avaje-inject:12.7-javax'
     annotationProcessor 'io.avaje:avaje-inject-generator:12.7-javax'
     implementation 'io.avaje:avaje-config:5.2'
@@ -39,8 +41,6 @@ dependencies {
 
     implementation 'org.tinylog:slf4j-tinylog:2.7.0'
     implementation 'org.tinylog:tinylog-impl:2.7.0'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.0'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.0'
     implementation 'org.jsoup:jsoup:1.18.1'
 
     implementation 'org.eclipse.jetty:jetty-client:11.0.23'

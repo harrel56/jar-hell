@@ -6,6 +6,7 @@ import dev.harrel.jarhell.extension.Host;
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.model.descriptor.License;
 import dev.harrel.jarhell.util.TestUtil;
+import io.avaje.jex.http.HttpStatus;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.StringRequestContent;
@@ -47,7 +48,7 @@ class AnalyzeControllerTest {
                 .method(HttpMethod.POST)
                 .send();
 
-        assertThat(res.getStatus()).isEqualTo(202);
+        assertThat(res.getStatus()).isEqualTo(204);
         assertThat(res.getContentAsString()).isEmpty();
 
         await().atMost(Duration.ofSeconds(5)).until(() -> !fetchByArtifactId("jmail").records().isEmpty());
@@ -74,8 +75,7 @@ class AnalyzeControllerTest {
                 )))
                 .method(HttpMethod.POST)
                 .send();
-
-        assertThat(res.getStatus()).isEqualTo(202);
+        assertThat(res.getStatus()).isEqualTo(204);
         assertThat(res.getContentAsString()).isEmpty();
 
         await().atMost(Duration.ofSeconds(5)).until(() -> !fetchByArtifactId("jmail").records().isEmpty());
@@ -98,7 +98,7 @@ class AnalyzeControllerTest {
                 .method(HttpMethod.POST)
                 .send();
 
-        assertThat(res.getStatus()).isEqualTo(202);
+        assertThat(res.getStatus()).isEqualTo(204);
         assertThat(res.getContentAsString()).isEmpty();
 
         await().atMost(Duration.ofSeconds(5)).until(() -> !fetchByArtifactId("jmail").records().isEmpty());

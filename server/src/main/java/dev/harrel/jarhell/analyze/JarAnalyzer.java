@@ -1,6 +1,7 @@
 package dev.harrel.jarhell.analyze;
 
 import dev.harrel.jarhell.model.BytecodeVersion;
+import io.avaje.jsonb.Json;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -321,6 +322,7 @@ public final class JarAnalyzer {
         }
     }
 
+    @Json
     public record Content(int count, long size, long compressedSize) {}
 
     public enum ModuleType { NAMED, AUTOMATIC, UNNAMED }

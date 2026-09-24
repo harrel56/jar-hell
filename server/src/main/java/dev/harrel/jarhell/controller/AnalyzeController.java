@@ -17,7 +17,6 @@ class AnalyzeController {
     @Post("/analyze")
     void analyze(Gav gav, Context ctx) {
         analyzeEngine.analyze(gav);
-        ctx.status(202);
     }
 
     @Post("/analyze-and-wait")
