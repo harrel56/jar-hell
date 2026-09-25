@@ -17,7 +17,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @PlaywrightTest
 class PackagesAutocompleteTest {
-    private Page.WaitForSelectorOptions shortWaitOptions;
+    /** dropdown is capped at `max-h-96` (384px), which fits this many options of the hero variant */
+    private static final int VISIBLE_OPTIONS = 8;
+
     private Locator ac;
     private final Driver driver;
 
@@ -28,9 +30,7 @@ class PackagesAutocompleteTest {
     @BeforeEach
     void setUp(Page page) {
         page.navigate("/");
-        ac = page.locator("#packages-autocomplete");
-        shortWaitOptions = new Page.WaitForSelectorOptions();
-        shortWaitOptions.setTimeout(2000);
+        ac = page.getByRole(AriaRole.COMBOBOX);
     }
 
     @Test
@@ -45,23 +45,28 @@ class PackagesAutocompleteTest {
     }
 
     @Test
-    void displays8PackagesInViewport(Page page) {
+    void slashShortcutRedirectsFocus(Page page) {
+        ac.blur();
+        assertThat(ac).not().isFocused();
+        page.keyboard().press("/");
+        assertThat(ac).isFocused();
+        assertThat(ac).hasValue("");
+    }
+
+    @Test
+    void displaysCappedNumberOfPackagesInViewport(Page page) {
         insertGavs(IntStream.range(0, 60)
                 .mapToObj(i -> new Gav("org.test", "artifact" + i, "1.0.0"))
                 .toList()
         );
         ac.fill("org.test");
-        // todo: this changes too fast- idk how to test this
-//        page.waitForSelector(".lucide-loader-circle", shortWaitOptions).isVisible();
-//        assertThat(page.locator(".lucide-search")).not().isAttached();
-//        page.waitForSelector(".lucide-search", shortWaitOptions).isVisible();
-//        assertThat(page.locator(".lucide-loader-circle")).not().isAttached();
 
         page.getByRole(AriaRole.OPTION).nth(0).waitFor();
         List<Locator> options = page.getByRole(AriaRole.OPTION).all();
+        // the search endpoint caps its result set at 40
         assertThat(options).hasSize(40);
-        List<Locator> visibleOptions = options.subList(0, 8);
-        List<Locator> hiddenOptions = options.subList(8, options.size());
+        List<Locator> visibleOptions = options.subList(0, VISIBLE_OPTIONS);
+        List<Locator> hiddenOptions = options.subList(VISIBLE_OPTIONS, options.size());
 
         for (Locator visibleOption : visibleOptions) {
             assertThat(visibleOption).isInViewport();
@@ -75,15 +80,15 @@ class PackagesAutocompleteTest {
     @Test
     void displaysNotFound(Page page) {
         ac.fill("ui-test2");
-        assertThat(page.getByText("No results found")).isVisible();
+        assertThat(page.getByText("Nothing analysed under that name yet")).isVisible();
     }
 
     @Test
     void closesOptionsOnEscape(Page page) {
         ac.fill("ui-test2");
-        assertThat(page.getByText("No results found")).isVisible();
+        assertThat(page.getByText("Nothing analysed under that name yet")).isVisible();
         page.keyboard().press("Escape");
-        assertThat(page.getByText("No results found")).not().isVisible();
+        assertThat(page.getByText("Nothing analysed under that name yet")).not().isVisible();
         assertThat(ac).isFocused();
     }
 
@@ -97,7 +102,8 @@ class PackagesAutocompleteTest {
         ));
         ac.fill("org.test");
         page.getByRole(AriaRole.OPTION).nth(2).click();
-        assertThat(page).hasURL("/packages/org.test:artifact:3.2.1");
+        // the option links to the versionless coordinate, which redirects to the newest known version
+        assertThat(page).hasURL("/packages/org.test:artifact:1.0.0");
     }
 
     @Test
@@ -126,9 +132,11 @@ class PackagesAutocompleteTest {
         ));
         ac.fill("org.test");
         page.getByRole(AriaRole.OPTION).nth(19).waitFor();
+        // no option is active yet, so the first ArrowUp wraps to the last one
         page.keyboard().press("ArrowUp");
         page.keyboard().press("ArrowUp");
-        page.keyboard().press("Enter");assertThat(page).hasURL("/packages/org.test:artifact:3.2.1");
+        page.keyboard().press("Enter");
+        assertThat(page).hasURL("/packages/org.test:artifact:1.0.0");
     }
 
     @Test
@@ -140,16 +148,20 @@ class PackagesAutocompleteTest {
                 new Gav("org.test", "long-artifact-name-long-artifact-name-long-artifact-name-long-artifact-name-long-artifact-name-long-artifact-name-long-artifact-name-long-artifact-name-long-artifact-name-long-artifact-name", "1.0.0")
         ));
         ac.fill("org.test");
-        double acWidth = ac.boundingBox().width;
-        double optionWidth = page.getByRole(AriaRole.OPTION).nth(3).boundingBox().width;
-        assertThat(acWidth).isGreaterThan(optionWidth);
+        page.getByRole(AriaRole.OPTION).nth(3).waitFor();
+        // the field is wrapped in a label, which spans the whole width of the autocomplete
+        double fieldWidth = ac.locator("xpath=..").boundingBox().width;
+        double shortOptionWidth = page.getByRole(AriaRole.OPTION).nth(2).boundingBox().width;
+        double longOptionWidth = page.getByRole(AriaRole.OPTION).nth(3).boundingBox().width;
+        assertThat(longOptionWidth).isEqualTo(shortOptionWidth);
+        assertThat(longOptionWidth).isLessThanOrEqualTo(fieldWidth);
     }
 
     @Test
     void clickingEnterWhenEmptyDoesNothing(Page page) {
-        page.navigate("/packages/test:test");
+        assertThat(ac).hasValue("");
         page.keyboard().press("Enter");
-        assertThat(page).hasURL("/packages/test:test");
+        assertThat(page).hasURL("/");
     }
 
     @Test
@@ -160,10 +172,10 @@ class PackagesAutocompleteTest {
     }
 
     @Test
-    void canFreeSoloSingleToken(Page page) {
+    void cannotFreeSoloSingleToken(Page page) {
         ac.fill("test");
         page.keyboard().press("Enter");
-        assertThat(page).hasURL("/packages/test:test");
+        assertThat(page).hasURL("/");
     }
 
     @Test
@@ -174,15 +186,16 @@ class PackagesAutocompleteTest {
     }
 
     @Test
-    void cannotFreeSoloGroupWithArtifactIdWithVersion(Page page) {
+    void canFreeSoloGroupWithArtifactIdWithVersion(Page page) {
         ac.fill("test-group:test-id:1.0.0");
         page.keyboard().press("Enter");
-        assertThat(page).hasURL("/packages/test-group:test-id");
+        assertThat(page).hasURL("/packages/test-group:test-id:1.0.0");
     }
 
     void insertGavs(List<Gav> gavs) {
         String statement = gavs.stream()
-                .map(gav -> "(:Artifact {groupId: '%s', artifactId: '%s', version: '%s'})"
+                // only artifacts known to the maven index are searchable, and `findAllVersions` matches on a non-null classifier
+                .map(gav -> "(:Artifact {groupId: '%s', artifactId: '%s', version: '%s', classifier: '', fromMavenIndex: true})"
                         .formatted(gav.groupId(), gav.artifactId(), gav.version()))
                 .collect(Collectors.joining(",", "CREATE", ""));
         try (var session = driver.session()) {

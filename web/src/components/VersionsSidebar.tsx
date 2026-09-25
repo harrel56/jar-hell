@@ -44,6 +44,7 @@ function VersionLink(props: VersionLinkProps) {
     <a
       href={href()}
       onClick={() => props.onSelect(props.version.version)}
+      aria-current={props.selected ? 'true' : undefined}
       data-pending={link.pending() || undefined}
       class={[
         rowClass,

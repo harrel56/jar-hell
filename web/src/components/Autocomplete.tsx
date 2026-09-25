@@ -122,6 +122,7 @@ export default function Autocomplete(props: AutocompleteProps) {
         <Icon.Search class={`shrink-0 text-(--ink-5) ${hero() ? 'size-[17px]' : 'size-4'}`}/>
         <input
           ref={input}
+          autofocus
           value={query()}
           onInput={e => {
             setQuery(e.currentTarget.value)
