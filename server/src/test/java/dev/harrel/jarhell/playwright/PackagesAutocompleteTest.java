@@ -101,7 +101,8 @@ class PackagesAutocompleteTest {
                 new Gav("org.test", "cycle3", "1.0.0")
         ));
         ac.fill("org.test");
-        page.getByRole(AriaRole.OPTION).nth(2).click();
+        // picked by name rather than by index - neo4j does not promise any order for the search results
+        page.getByRole(AriaRole.OPTION).filter(new Locator.FilterOptions().setHasText("artifact")).click();
         // the option links to the versionless coordinate, which redirects to the newest known version
         assertThat(page).hasURL("/packages/org.test:artifact:1.0.0");
     }
@@ -132,11 +133,18 @@ class PackagesAutocompleteTest {
         ));
         ac.fill("org.test");
         page.getByRole(AriaRole.OPTION).nth(19).waitFor();
+        // the search result order is up to neo4j, so the expected target is read off the rendered list
+        Locator target = page.getByRole(AriaRole.OPTION).nth(18);
+        String href = target.getAttribute("href");
+
         // no option is active yet, so the first ArrowUp wraps to the last one
         page.keyboard().press("ArrowUp");
         page.keyboard().press("ArrowUp");
+        assertThat(target).hasAttribute("aria-selected", "true");
+
         page.keyboard().press("Enter");
-        assertThat(page).hasURL("/packages/org.test:artifact:1.0.0");
+        // the option links to the versionless coordinate, which redirects to the newest known version
+        assertThat(page).hasURL(href + ":1.0.0");
     }
 
     @Test
