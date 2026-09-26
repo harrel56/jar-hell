@@ -1,4 +1,5 @@
 import { Errored, Loading } from 'solid-js'
+import { Title } from '@solidjs/meta'
 import { TopBar } from './components/TopBar'
 import { ThrownErrorView } from './components/ErrorView'
 import './App.css'
@@ -10,6 +11,7 @@ export default function App() {
       {props => {
         return (
           <>
+            <Title>Jar Hell</Title>
             <TopBar/>
             <Errored fallback={err => <ThrownErrorView error={err()}/>}>
               <Loading fallback={<main class="px-4 py-12">Loading…</main>}>

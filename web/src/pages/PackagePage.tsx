@@ -1,5 +1,6 @@
 import {createEffect, createMemo, createSignal, Errored, latest, Loading, Show} from 'solid-js'
 import {useParams} from '@solidjs/router'
+import { Title } from '@solidjs/meta'
 import { VersionsSidebar, VersionsSidebarSkeleton } from '../components/VersionsSidebar'
 import { NotFoundView, ThrownErrorView } from '../components/ErrorView'
 import { PackageView } from '../components/package/PackageView'
@@ -59,6 +60,7 @@ export function PackagePage() {
 
   return (
     <div class="mx-auto flex w-full max-w-(--measure-app) items-start">
+      <Title>Jar Hell | {formatGav(gav())}</Title>
       <Loading fallback={<VersionsSidebarSkeleton/>}>
         <VersionsSidebar gav={gav()} versions={versions()}/>
       </Loading>
