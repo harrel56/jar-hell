@@ -5,8 +5,7 @@ import dev.harrel.jarhell.analyze.MavenIndexService;
 import io.avaje.http.api.Controller;
 import io.avaje.http.api.Post;
 import io.avaje.http.api.QueryParam;
-import io.javalin.http.Context;
-import io.javalin.http.HttpStatus;
+import io.avaje.jex.http.Context;
 
 @Controller("/technical/v1")
 class TechnicalController {
@@ -20,7 +19,7 @@ class TechnicalController {
 
     @Post("/refresh-index")
     void refreshIndex(Context ctx) {
-        ctx.status(HttpStatus.ACCEPTED);
+        ctx.status(202);
         Thread.ofVirtual().start(indexService::scanIndex);
     }
 

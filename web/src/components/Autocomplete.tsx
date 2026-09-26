@@ -1,168 +1,191 @@
-import {useAutocomplete, UseAutocompleteReturnValue} from '@mui/base/useAutocomplete/useAutocomplete'
-import React, {useLayoutEffect, useState} from 'react'
-import {useDebounce} from 'use-debounce'
-import {useFetch} from '../hooks/useFetch.ts'
-import {Input} from '@/shadcn/components/ui/Input.tsx'
-import {clsx} from 'clsx'
-import {SearchIcon} from 'lucide-react'
-import {LoadingSpinner} from '@/components/LoadingSpinner.tsx'
-import {Link, useNavigate, useParams} from 'react-router-dom'
-import {stringToGav} from '@/util.ts'
+import {createMemo, createSignal, createUniqueId, Errored, For, latest, onCleanup, Show} from 'solid-js'
+import {useNavigate, useParams} from '@solidjs/router'
+import { createDebouncedSignal } from '../utils/createDebouncedSignal'
+import { Icon } from '../icons'
+import {parseGav} from '../utils/gav'
 
-interface Artifact {
+interface SearchResult {
   g: string
   a: string
-  latestVersion?: string
 }
 
-interface ListboxProps {
-  ac: UseAutocompleteReturnValue<Artifact, false, false, true>
+const DEBOUNCE_MS = 300
+
+interface AutocompleteProps {
+  debounceMs?: number
+  variant?: 'header' | 'hero'
+  class?: string
 }
 
-const toArtifactString = (artifact: Artifact | string) => {
-  if (typeof artifact === 'string') {
-    return artifact
-  }
-  return `${artifact.g}:${artifact.a}`
-}
-const toShortArtifactString = (artifact: Artifact) => {
-  const idx = artifact.a.indexOf(artifact.g)
-  if (idx === 0) {
-    return toArtifactString({...artifact, a: `[...]${artifact.a.slice(artifact.g.length)}`})
-  }
-  return toArtifactString(artifact)
-}
+const message = (text: string) => (
+  <div class="px-3.5 py-3 text-(length:--text-sm) text-(--ink-4)">{text}</div>
+)
 
-const isInputTheSameAsSelection = (input: string, selection: Artifact | null) =>
-  input !== '' && input !== (selection && toArtifactString(selection))
-
-
-const ListboxOption = ({children, selectable = true, ...props}: React.PropsWithChildren<any>) => {
-  return (
-    <li className={clsx('truncate', 'flex-shrink-0', 'p-4', 'rounded-md', 'mui-focused:bg-input', 'transition-colors',
-      selectable && ['hover:bg-input', 'cursor-pointer'])} {...props}>
-      {children}
-    </li>
-  )
-}
-
-const Listbox = ({ac}: ListboxProps) => {
-  return (
-    <div className='relative'>
-      <ul
-        className='absolute flex flex-col w-full max-h-[452px] z-10 overflow-y-auto mt-1.5 p-1 border rounded-md bg-background'
-        {...ac.getListboxProps()}>
-        {ac.groupedOptions.length === 0 && <ListboxOption selectable={false}>No results found</ListboxOption>}
-        {(ac.groupedOptions as Artifact[]).map((option, index) => {
-          const artifactString = toArtifactString(option)
-          const location = '/packages/' + artifactString + (option.latestVersion ? `:${option.latestVersion}` : '')
-          const {key, ...optionProps} = ac.getOptionProps({option, index})
-          return (
-            <Link key={artifactString} to={location} title={artifactString}>
-              <ListboxOption {...optionProps}>{toShortArtifactString(option)}</ListboxOption>
-            </Link>
-          )
-        })}
-      </ul>
-    </div>
-  )
-}
-
-export const Autocomplete = () => {
-  const [inputValue, setInputValue] = useState('')
-  const [selectedValue, setSelectedValue] = useState<Artifact | null>(null)
-  const [debouncedInput] = useDebounce(inputValue, 500)
-  const [options, setOptions] = useState<Artifact[]>([])
-  const { gav } = useParams()
+export default function Autocomplete(props: AutocompleteProps) {
   const navigate = useNavigate()
+  const params = useParams()
+  const gav = () => parseGav(params['coordinate'])
+  const [query, debouncedQuery, setQuery] = createDebouncedSignal(() => gav() ? params['coordinate']! : '', props.debounceMs ?? DEBOUNCE_MS)
+  const [opened, setOpened] = createSignal(false)
+  const [activeIndex, setActiveIndex] = createSignal<number | null>(() => (opened(), null))
+  const hero = () => props.variant === 'hero'
+  let input!: HTMLInputElement
 
-  const {
-    data,
-    loading,
-    error,
-    get
-  } = useFetch<Artifact[]>('/api/v1/packages/search')
-
-  useLayoutEffect(() => setOptions(data ?? []), [data])
-  useLayoutEffect(() => {
-    if (error || debouncedInput === '') {
-      setOptions([])
+  // `/` focuses the field from anywhere on the page, as the kbd hint promises
+  const onSlash = (e: KeyboardEvent) => {
+    const target = e.target as HTMLElement | null
+    const typing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target?.isContentEditable
+    if (e.key === '/' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault()
+      input.focus()
     }
-  }, [error, debouncedInput])
+  }
+  document.addEventListener('keydown', onSlash)
+  onCleanup(() => document.removeEventListener('keydown', onSlash))
 
-  useLayoutEffect(() => {
-    const gavObject = gav && stringToGav(gav)
-    if (gavObject && gavObject.artifactId) {
-      setInputValue(`${gavObject.groupId}:${gavObject.artifactId}`)
-      const option = {g: gavObject.groupId, a: gavObject.artifactId}
-      setSelectedValue(option)
-      setOptions([])
-    } else {
-      setInputValue('')
-      setSelectedValue(null)
+  const listId = createUniqueId()
+  const optionId = (i: number | null) => i === null ? undefined : `${listId}-opt-${i}`
+
+  const results = createMemo(async (prev): Promise<SearchResult[]> => {
+    const q = debouncedQuery().trim()
+    if (!opened() || !q) {
+      return prev
     }
-  }, [gav])
-
-  useLayoutEffect(() => {
-    if (isInputTheSameAsSelection(debouncedInput, selectedValue)) {
-      get('?query=' + inputValue)
+    const res = await fetch(`/api/v1/packages/search?query=${encodeURIComponent(q)}`)
+    if (!res.ok) {
+      throw new Error('Searching for packages failed')
     }
-  }, [debouncedInput])
+    return res.json()
+  }, {loadingValue: []})
 
-  const ac = useAutocomplete({
-    id: 'packages-autocomplete',
-    options: options,
-    filterOptions: options => options,
-    getOptionLabel: toArtifactString,
-    getOptionKey: toArtifactString,
-    isOptionEqualToValue: (a1, a2) => toArtifactString(a1) === toArtifactString(a2),
-    inputValue,
-    onInputChange: (_event, newInputValue) => setInputValue(newInputValue),
-    value: selectedValue,
-    onChange: (event, option) => {
-      let artifact: Artifact | null
-      if (typeof option === 'string') {
-        const [group, artifactId] = option.split(':', 2)
-        artifact = {g: group, a: artifactId ?? group}
-      } else {
-        artifact = option
+  const packagePath = (r: SearchResult) => `/packages/${r.g}:${r.a}`
+
+  const select = (r: SearchResult) => {
+    setQuery(`${r.g}:${r.a}`)
+    setOpened(false)
+  }
+
+  const hasQuery = () => query().trim().length > 0 && debouncedQuery().trim().length > 0
+  const open = () => opened() && hasQuery()
+  const settledResults = () => (open() ? latest(results) : [])
+
+  const moveActiveIndex = (delta: number) => {
+    const count = settledResults().length
+    if (count === 0 || delta === 0) {
+      return
+    }
+    const idx = setActiveIndex(prev => {
+      if (prev === null) {
+        return delta > 0 ? 0 : count - 1
       }
+      const idx = (prev + delta) % count
+      return idx >= 0 ? idx : count + idx
+    })
+    document.getElementById(optionId(idx)!)?.scrollIntoView?.({ block: 'nearest', behavior: 'auto'})
+  }
 
-      if (artifact) {
-        setOptions([])
-        setSelectedValue(artifact)
-        if (event.nativeEvent.type === 'keydown') {
-          if (artifact.latestVersion) {
-            navigate(`/packages/${toArtifactString(artifact)}:${artifact.latestVersion}`)
-          } else {
-            navigate(`/packages/${toArtifactString(artifact)}`)
-
-          }
+  const onKeyDown = (e: KeyboardEvent) => {
+    switch (e.key) {
+      case 'ArrowDown':
+      case 'ArrowUp':
+        e.preventDefault()
+        if (open()) {
+          moveActiveIndex(e.key === 'ArrowDown' ? 1 : -1)
+        } else {
+          setOpened(true)
         }
-      } else {
-        setOptions([])
-        setSelectedValue(null)
+        break
+      case 'Enter': {
+        e.preventDefault()
+        if (activeIndex() !== null) {
+          document.getElementById(optionId(activeIndex())!)?.click()
+        } else if (settledResults().length) {
+          document.getElementById(optionId(0)!)?.click()
+        } else if (parseGav(query().trim())) {
+          setOpened(false)
+          navigate('/packages/' + query().trim())
+        }
+        break
       }
-    },
-    clearOnBlur: false,
-    clearOnEscape: true,
-    autoComplete: false,
-    freeSolo: true,
-  })
-
-  /* Well, hopefully this is right */
-  const listboxVisible = ac.popupOpen && (ac.groupedOptions.length !== 0 ||
-    (isInputTheSameAsSelection(debouncedInput, selectedValue) && inputValue === debouncedInput && !loading))
+      case 'Escape':
+        setOpened(false)
+        break
+    }
+  }
 
   return (
-    <div className='lg:w-[1000px] md:w-full m-auto pt-8 w-full flex flex-col font-mono' {...ac.getRootProps()}>
-      <Input className='h-16 pl-6 text-2xl'
-             {...ac.getInputProps()}
-             value={inputValue}
-             placeholder='Search for a dependency...'
-             autoFocus
-             EndIcon={loading ? LoadingSpinner : SearchIcon}/>
-      {listboxVisible && <Listbox ac={ac}/>}
+    <div class={['relative', props.class]}>
+      <label class={['flex cursor-text items-center border', {
+        'h-9 gap-2.5 rounded-(--radius-field) border-(--hairline-strong) bg-(--surface-sunken) px-[13px] focus-within:border-(--accent)': !hero(),
+        'h-[58px] gap-3 rounded-[13px] border-(--hairline-strong) bg-(--ground) px-[18px] focus-within:border-(--ink-mute) focus-within:shadow-(--shadow-field)': hero(),
+      }]}>
+        <Icon.Search class={`shrink-0 text-(--ink-5) ${hero() ? 'size-[17px]' : 'size-4'}`}/>
+        <input
+          ref={input}
+          autofocus
+          value={query()}
+          onInput={e => {
+            setQuery(e.currentTarget.value)
+            setOpened(true)
+            setActiveIndex(null)
+          }}
+          onBlur={() => setOpened(false)}
+          onClick={() => setOpened(true)}
+          onKeyDown={onKeyDown}
+          placeholder={hero() ? 'group:artifact - try json-schema' : 'group:artifact'}
+          aria-label="Search packages"
+          role="combobox"
+          aria-expanded={open() ? 'true' : 'false'}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={optionId(activeIndex())}
+          class={['min-w-0 flex-1 border-none bg-transparent font-(family-name:--font-data) text-(--ink) outline-none placeholder:text-(--ink-4)',
+            hero() ? 'text-(length:--text-body) tracking-[-0.01em]' : 'text-(length:--text-sm)']}
+        />
+        <kbd class={['shrink-0 rounded-(--radius-chip) border border-(--hairline) font-(family-name:--font-data) text-(--ink-4)',
+          hero() ? 'px-1.5 py-[3px] text-[11px]' : 'px-[5px] py-px text-[10.5px]']}>/</kbd>
+      </label>
+
+      <Show when={open()}>
+        <div
+          id={listId}
+          role="listbox"
+          onMouseDown={e => e.preventDefault()}
+          class={['absolute inset-x-0 z-40 max-h-96 overflow-y-auto border border-(--hairline) bg-(--ground) shadow-(--shadow-menu)',
+            hero() ? 'top-[66px] rounded-[13px]' : 'top-11 rounded-(--radius-panel)']}
+        >
+          <Errored fallback={() => message('Search is unavailable right now.')}>
+            <For each={results()}>
+              {(r, i) => (
+                <a
+                  id={optionId(i())}
+                  href={packagePath(r)}
+                  role="option"
+                  tabindex={-1}
+                  aria-selected={activeIndex() === i() ? 'true' : 'false'}
+                  onClick={e => {
+                    if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+                      select(r)
+                    }
+                  }}
+                  onMouseMove={() => setActiveIndex(i())}
+                  class={[
+                    'flex cursor-pointer items-baseline gap-[9px] border-b border-(--track) font-(family-name:--font-data)',
+                    hero() ? 'px-4 py-[11px]' : 'px-3.5 py-[9px]',
+                    activeIndex() === i() ? 'bg-(--surface)' : '',
+                  ]}
+                >
+                  <span class={['shrink-0 text-(--ink-5)', hero() ? 'text-[12px]' : 'text-(length:--text-label)']}>{r.g}</span>
+                  <span class={['truncate text-(--ink)', hero() ? 'text-[13.5px]' : 'text-(length:--text-sm)']}>{r.a}</span>
+                </a>
+              )}
+            </For>
+            <Show when={results().length === 0}>
+              {message('Nothing analysed under that name yet - type the full group:artifact and press Enter to queue it.')}
+            </Show>
+          </Errored>
+        </div>
+      </Show>
     </div>
   )
 }

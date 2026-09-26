@@ -1,10 +1,13 @@
 package dev.harrel.jarhell.model;
 
+import io.avaje.jsonb.Json;
+
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
 
+@Json
 public record Gav(String groupId, String artifactId, String version, String classifier) implements Comparable<Gav> {
     public Gav {
         Objects.requireNonNull(groupId, "Field 'groupId' is required");

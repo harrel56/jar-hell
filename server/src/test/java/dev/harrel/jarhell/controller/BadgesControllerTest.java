@@ -3,14 +3,10 @@ package dev.harrel.jarhell.controller;
 import dev.harrel.jarhell.MavenApiClient;
 import dev.harrel.jarhell.analyze.AnalyzeEngine;
 import dev.harrel.jarhell.error.BadRequestException;
-import dev.harrel.jarhell.model.ArtifactInfo;
-import dev.harrel.jarhell.model.ArtifactTree;
-import dev.harrel.jarhell.model.BytecodeVersion;
-import dev.harrel.jarhell.model.Gav;
+import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.repo.ArtifactRepository;
-import io.javalin.http.Context;
-import io.javalin.http.Header;
-import io.javalin.http.HttpStatus;
+import io.avaje.jex.http.Context;
+import io.avaje.jex.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -35,8 +31,9 @@ class BadgesControllerTest {
     private final ArtifactInfo artifactInfo = mock(ArtifactInfo.class);
 
     BadgesControllerTest() {
-        when(ctx.header(any(), any())).thenReturn(ctx);
-        when(ctx.queryParamMap()).thenReturn(Map.of("color", List.of("pink")));
+        when(ctx.header(any(), anyString())).thenReturn(ctx);
+        when(ctx.queryParamMap()).thenReturn(Map.of("color", "pink"));
+        when(ctx.queryParams("color")).thenReturn(List.of("pink"));
         when(artifactTree.artifactInfo()).thenReturn(artifactInfo);
     }
 
@@ -53,10 +50,10 @@ class BadgesControllerTest {
     void failsForInvalidVersion(BadgesController.Metric metric) {
         badgesController.getMetricBadge(ctx, metric, "org.test:lib:0.0.1");
 
-        verify(ctx).header(Header.CACHE_CONTROL, "max-age=604800");
+        verify(ctx).header("Cache-Control", "max-age=604800");
         verify(ctx).redirect(
                 startsWith("https://shields.io/badge/%s-not_found-red?logo=data:image/png;base64,".formatted(escapedName(metric))),
-                eq(HttpStatus.SEE_OTHER));
+                eq(HttpStatus.SEE_OTHER_303.status()));
     }
 
     @ParameterizedTest
@@ -65,10 +62,10 @@ class BadgesControllerTest {
         when(mavenApiClient.checkIfArtifactExists(any())).thenReturn(true);
         badgesController.getMetricBadge(ctx, metric, "org.test:lib:0.0.1");
 
-        verify(ctx).header(Header.CACHE_CONTROL, "max-age=300");
+        verify(ctx).header("Cache-Control", "max-age=300");
         verify(ctx).redirect(
                 startsWith("https://shields.io/badge/%s-not_analyzed-yellow?logo=data:image/png;base64,".formatted(escapedName(metric))),
-                eq(HttpStatus.SEE_OTHER));
+                eq(HttpStatus.SEE_OTHER_303.status()));
     }
 
     @ParameterizedTest
@@ -78,10 +75,10 @@ class BadgesControllerTest {
         when(repo.find(any(), anyInt())).thenReturn(Optional.of(artifactTree));
         badgesController.getMetricBadge(ctx, metric, "org.test:lib:0.0.1");
 
-        verify(ctx).header(Header.CACHE_CONTROL, "max-age=86400");
+        verify(ctx).header("Cache-Control", "max-age=86400");
         verify(ctx).redirect(
                 startsWith("https://shields.io/badge/%s-analysis_failed-red?logo=data:image/png;base64,".formatted(escapedName(metric))),
-                eq(HttpStatus.SEE_OTHER));
+                eq(HttpStatus.SEE_OTHER_303.status()));
     }
 
     @ParameterizedTest
@@ -89,89 +86,94 @@ class BadgesControllerTest {
     void failsForUnknownArtifact(BadgesController.Metric metric) {
         badgesController.getMetricBadge(ctx, metric, "org.test:lib");
 
-        verify(ctx).header(Header.CACHE_CONTROL, "max-age=604800");
+        verify(ctx).header("Cache-Control", "max-age=604800");
         verify(ctx).redirect(
                 startsWith("https://shields.io/badge/%s-not_found-red?logo=data:image/png;base64,".formatted(escapedName(metric))),
-                eq(HttpStatus.SEE_OTHER));
+                eq(HttpStatus.SEE_OTHER_303.status()));
     }
 
     @Test
     void findsLatestArtifactVersionForTotalSize() {
         ArtifactInfo.EffectiveValues effectiveValues = mock(ArtifactInfo.EffectiveValues.class);
-        when(repo.findAllVersions("org.test", "lib", null)).thenReturn(List.of(at("1.0.0"), at("2.0.0"), at("2.1.0")));
+        when(repo.findAllVersions("org.test", "lib", null)).thenReturn(List.of(av("1.0.0"), av("2.0.0"), av("2.1.0")));
         when(effectiveValues.size()).thenReturn(123_321L);
         when(artifactInfo.effectiveValues()).thenReturn(effectiveValues);
         when(repo.find(new Gav("org.test", "lib", "2.1.0"), 0)).thenReturn(Optional.of(artifactTree));
         badgesController.getMetricBadge(ctx, BadgesController.Metric.total_size, "org.test:lib");
 
-        verify(ctx).header(Header.CACHE_CONTROL, "max-age=604800");
+        verify(ctx).header("Cache-Control", "max-age=604800");
         verify(ctx).redirect(
                 startsWith("https://shields.io/badge/total_size-123.32KB-brightgreen?color=pink&logo=data:image/png;base64,"),
-                eq(HttpStatus.SEE_OTHER));
+                eq(HttpStatus.SEE_OTHER_303.status()));
     }
 
     @Test
     void findsLatestArtifactVersionForEffectiveBytecode() {
         ArtifactInfo.EffectiveValues effectiveValues = mock(ArtifactInfo.EffectiveValues.class);
-        when(repo.findAllVersions("org.test", "lib", null)).thenReturn(List.of(at("1.0.0"), at("2.0.0"), at("2.1.0")));
+        when(repo.findAllVersions("org.test", "lib", null)).thenReturn(List.of(av("1.0.0"), av("2.0.0"), av("2.1.0")));
         when(effectiveValues.bytecodeVersion()).thenReturn(new BytecodeVersion(52, 0));
         when(artifactInfo.effectiveValues()).thenReturn(effectiveValues);
         when(repo.find(new Gav("org.test", "lib", "2.1.0"), 0)).thenReturn(Optional.of(artifactTree));
         badgesController.getMetricBadge(ctx, BadgesController.Metric.effective_bytecode, "org.test:lib");
 
-        verify(ctx).header(Header.CACHE_CONTROL, "max-age=604800");
+        verify(ctx).header("Cache-Control", "max-age=604800");
         verify(ctx).redirect(
                 startsWith("https://shields.io/badge/effective_bytecode_version-java_8-brightgreen?color=pink&logo=data:image/png;base64,"),
-                eq(HttpStatus.SEE_OTHER));
+                eq(HttpStatus.SEE_OTHER_303.status()));
     }
 
     @Test
     void shouldOverrideLogo() {
-        when(ctx.queryParamMap()).thenReturn(Map.of("logo", List.of("fireship")));
+        when(ctx.queryParamMap()).thenReturn(Map.of("logo", "fireship"));
+        when(ctx.queryParams("logo")).thenReturn(List.of("fireship"));
         when(artifactInfo.packageSize()).thenReturn(1_654_321L);
         when(repo.find(new Gav("org.test", "lib", "0.0.1"), 0)).thenReturn(Optional.of(artifactTree));
 
         badgesController.getMetricBadge(ctx, BadgesController.Metric.size, "org.test:lib:0.0.1");
 
-        verify(ctx).header(Header.CACHE_CONTROL, "max-age=604800");
-        verify(ctx).redirect("https://shields.io/badge/package_size-1.65MB-orange?logo=fireship", HttpStatus.SEE_OTHER);
+        verify(ctx).header("Cache-Control", "max-age=604800");
+        verify(ctx).redirect("https://shields.io/badge/package_size-1.65MB-orange?logo=fireship", HttpStatus.SEE_OTHER_303.status());
     }
 
     @Test
     void shouldEraseLogo() {
-        when(ctx.queryParamMap()).thenReturn(Map.of("logo", List.of("")));
+        when(ctx.queryParamMap()).thenReturn(Map.of("logo", ""));
+        when(ctx.queryParams("logo")).thenReturn(List.of(""));
         when(artifactInfo.packageSize()).thenReturn(1_654_321L);
         when(repo.find(new Gav("org.test", "lib", "0.0.1"), 0)).thenReturn(Optional.of(artifactTree));
 
         badgesController.getMetricBadge(ctx, BadgesController.Metric.size, "org.test:lib:0.0.1");
 
-        verify(ctx).header(Header.CACHE_CONTROL, "max-age=604800");
-        verify(ctx).redirect("https://shields.io/badge/package_size-1.65MB-orange?logo=", HttpStatus.SEE_OTHER);
+        verify(ctx).header("Cache-Control", "max-age=604800");
+        verify(ctx).redirect("https://shields.io/badge/package_size-1.65MB-orange?logo=", HttpStatus.SEE_OTHER_303.status());
     }
 
     @Test
     void shouldPassAlongManyParams() {
-        Map<String, List<String>> map = new LinkedHashMap<>();
-        map.put("style", List.of("plastic"));
-        map.put("label", List.of("hello"));
-        map.put("param", List.of("1", "2", "3"));
+        Map<String, String> map = new LinkedHashMap<>();
+        map.put("style", "plastic");
+        map.put("label", "hello");
+        map.put("param", "1");
         when(ctx.queryParamMap()).thenReturn(map);
+        when(ctx.queryParams("style")).thenReturn(List.of("plastic"));
+        when(ctx.queryParams("label")).thenReturn(List.of("hello"));
+        when(ctx.queryParams("param")).thenReturn(List.of("1", "2", "3"));
         when(artifactInfo.packageSize()).thenReturn(1_654_321L);
         when(repo.find(new Gav("org.test", "lib", "0.0.1"), 0)).thenReturn(Optional.of(artifactTree));
 
         badgesController.getMetricBadge(ctx, BadgesController.Metric.size, "org.test:lib:0.0.1");
 
-        verify(ctx).header(Header.CACHE_CONTROL, "max-age=604800");
+        verify(ctx).header("Cache-Control", "max-age=604800");
         verify(ctx).redirect(
                 startsWith("https://shields.io/badge/package_size-1.65MB-orange?style=plastic&label=hello&param=1,2,3&logo=data:image/png;base64,"),
-                eq(HttpStatus.SEE_OTHER));
+                eq(HttpStatus.SEE_OTHER_303.status()));
     }
 
     private static String escapedName(BadgesController.Metric metric) {
         return metric.getName().replace(' ', '_');
     }
 
-    private static ArtifactTree at(String version) {
-        return new ArtifactTree(ArtifactInfo.unresolved(new Gav("g", "a", version), ""), List.of());
+    private static ArtifactVersion av(String ver) {
+        return new ArtifactVersion(ver, ArtifactVersion.State.ANALYZED);
     }
 }

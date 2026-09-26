@@ -1,7 +1,7 @@
 package dev.harrel.jarhell;
 
 import io.avaje.inject.BeanScope;
-import io.javalin.Javalin;
+import io.avaje.jex.Jex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,7 +10,7 @@ import java.io.Closeable;
 public class App implements Closeable {
     private static final Logger logger = LoggerFactory.getLogger(App.class);
 
-    public static void main(String[] args) {
+    static void main() {
         try {
             App app = new App();
             app.start(8060);
@@ -22,7 +22,7 @@ public class App implements Closeable {
     }
 
     private BeanScope beanScope;
-    private Javalin server;
+    private Jex.Server server;
 
     public void start(int port) {
         if (this.beanScope != null) {
@@ -31,13 +31,12 @@ public class App implements Closeable {
 
         this.beanScope = BeanScope.builder().build();
 
-        this.server = beanScope.get(Javalin.class);
-        server.start(port);
+        this.server = beanScope.get(Jex.class).port(port).start();
     }
 
     @Override
     public void close() {
-        server.stop();
+        server.shutdown();
         beanScope.close();
     }
 

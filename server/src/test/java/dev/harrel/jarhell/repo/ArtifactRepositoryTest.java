@@ -221,7 +221,7 @@ class ArtifactRepositoryTest {
     }
 
     private static ArtifactInfo artifactInfo(Gav gav, Long packageSize) {
-        return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), null, null, null,
+        return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), null, null, null, null,
                 LocalDateTime.MIN, packageSize, "jar", "name", "desc", "url", "scmUrl",
                 "issuesUrl", "1995", List.of(new License("MIT", "https://mit.com")), List.of(LicenseType.MIT), List.of("source"), List.of("pom", "jar", "module "),
                 jarInfo(), new ArtifactInfo.EffectiveValues(0, 0, 0, 10L, new BytecodeVersion(52, 0), LicenseType.MIT, List.of()),
@@ -229,7 +229,7 @@ class ArtifactRepositoryTest {
     }
 
     private static ArtifactInfo effectivelyUnresolved(Gav gav) {
-        return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), null, null, null,
+        return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), null, null, null, null,
                 LocalDateTime.MIN, 10L, "jar", "name", "desc", "url", "scmUrl",
                 "issuesUrl", "1995", List.of(new License("MIT", "https://mit.com")), List.of(LicenseType.MIT), List.of("source"), List.of("pom", "jar", "module "),
                 jarInfo(), new ArtifactInfo.EffectiveValues(0, 1, 0, 10L, new BytecodeVersion(52, 0), LicenseType.MIT, List.of()),

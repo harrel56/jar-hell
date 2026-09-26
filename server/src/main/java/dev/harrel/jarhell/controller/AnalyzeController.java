@@ -4,8 +4,7 @@ import dev.harrel.jarhell.analyze.AnalyzeEngine;
 import dev.harrel.jarhell.model.Gav;
 import io.avaje.http.api.Controller;
 import io.avaje.http.api.Post;
-import io.javalin.http.Context;
-import io.javalin.http.HttpStatus;
+import io.avaje.jex.http.Context;
 
 @Controller("/api/v1")
 class AnalyzeController {
@@ -18,7 +17,6 @@ class AnalyzeController {
     @Post("/analyze")
     void analyze(Gav gav, Context ctx) {
         analyzeEngine.analyze(gav);
-        ctx.status(HttpStatus.ACCEPTED);
     }
 
     @Post("/analyze-and-wait")

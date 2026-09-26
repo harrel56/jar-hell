@@ -7,11 +7,12 @@ import dev.harrel.jarhell.model.ArtifactTree;
 import dev.harrel.jarhell.model.BytecodeVersion;
 import dev.harrel.jarhell.model.DependencyInfo;
 import dev.harrel.jarhell.model.Gav;
+import dev.harrel.jarhell.model.LicenseCount;
 import dev.harrel.jarhell.model.LicenseType;
 import dev.harrel.jarhell.util.TestUtil;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.junit.jupiter.api.Test;
 
@@ -123,6 +124,6 @@ class CyclicAnalysisTest {
                 size,
                 new BytecodeVersion(65, 0),
                 LicenseType.NO_LICENSE,
-                List.of(Map.entry(LicenseType.NO_LICENSE, licenseCount)));
+                List.of(new LicenseCount(LicenseType.NO_LICENSE, licenseCount)));
     }
 }

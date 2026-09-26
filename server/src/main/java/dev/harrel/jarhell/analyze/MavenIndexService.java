@@ -19,16 +19,19 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Singleton
 public class MavenIndexService {
     private static final Logger logger = LoggerFactory.getLogger(MavenIndexService.class);
-    private static final String UNRESOLVED_REASON = "initial-indexing";
     private static final String INDEX_PROPERTIES = "nexus-maven-repository-index.properties";
     private static final int BATCH_SIZE = 1_000;
+    private static final Set<String> IGNORED_CLASSIFIERS = Set.of("sources", "javadoc");
+    public static final Set<String> CHECKSUM_EXTENSIONS = Set.of("asc", "md5", "sha1", "sha256", "sha512");
 
     private final ArtifactRepository repo;
     private final AtomicBoolean running = new AtomicBoolean();
@@ -52,7 +55,7 @@ public class MavenIndexService {
     private void doScanIndex() {
         Instant start = Instant.now();
         Path indexPath = Path.of(Config.get("maven.index.path", "/index/"));
-        int chunks = 0, rows = 0, saved = 0;
+        int chunks = 0, rows = 0, created = 0, updated = 0;
         byte[] propertiesBackup;
         try {
             Files.createDirectories(indexPath);
@@ -77,22 +80,28 @@ public class MavenIndexService {
                         }
                         batch.add(gav);
                         if (batch.size() >= BATCH_SIZE) {
-                            saved += repo.saveUnresolvedBatch(batch, UNRESOLVED_REASON);
+                            int n = batch.size();
+                            int inserted = repo.saveBatchFromMavenIndex(batch);
+                            created += inserted;
+                            updated += n - inserted;
                             batch.clear();
-                            logger.info("Scanned {} rows, saved {}", rows, saved);
+                            logger.info("Scanned {} rows, created={}, updated={}", rows, created, updated);
                         }
                     }
                 }
                 chunks++;
             }
             if (!batch.isEmpty()) {
-                saved += repo.saveUnresolvedBatch(batch, UNRESOLVED_REASON);
+                int n = batch.size();
+                int inserted = repo.saveBatchFromMavenIndex(batch);
+                created += inserted;
+                updated += n - inserted;
             }
             Duration duration = Duration.between(start, Instant.now());
-            logger.info("Scanning finished in {}s. chunks={}, rows={}, saved={}", duration.toSeconds(), chunks, rows, saved);
+            logger.info("Scanning finished in {}s. chunks={}, rows={}, created={}, updated={}", duration.toSeconds(), chunks, rows, created, updated);
         } catch (Exception e) {
             Duration duration = Duration.between(start, Instant.now());
-            logger.warn("Scanning failed in {}s. chunks={}, rows={}, saved={}", duration.toSeconds(), chunks, rows, saved, e);
+            logger.warn("Scanning failed in {}s. chunks={}, rows={}, created={}, updated={}", duration.toSeconds(), chunks, rows, created, updated, e);
             // IndexReader publishes local index properties on close even on failure,
             // which would make the next run skip the increment that was not fully processed
             restorePropertiesBackup(indexPath, propertiesBackup);
@@ -123,11 +132,26 @@ public class MavenIndexService {
             return null;
         }
         String[] split = data.split("\\|");
-        if (split.length > 3 && "NA".equals(split[3])) {
-            return new Gav(split[0], split[1], split[2]);
-        } else {
-            // ignore all classifiers & metadata (hashes, signatures)
+        if (split.length < 4 || isChecksumOrSignature(row)) {
             return null;
         }
+        String classifier = split[3];
+        if ("NA".equals(classifier)) {
+            return new Gav(split[0], split[1], split[2]);
+        } else if (IGNORED_CLASSIFIERS.contains(classifier)) {
+            return null;
+        } else {
+            return new Gav(split[0], split[1], split[2], classifier);
+        }
+    }
+
+    private static boolean isChecksumOrSignature(Map<String, String> row) {
+        String info = row.get("i");
+        if (info == null) {
+            return false;
+        }
+        int separator = info.indexOf('|');
+        String extension = separator < 0 ? info : info.substring(0, separator);
+        return Arrays.stream(extension.split("\\.")).anyMatch(CHECKSUM_EXTENSIONS::contains);
     }
 }

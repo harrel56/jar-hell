@@ -1,7 +1,4 @@
-import ReactDOMClient from 'react-dom/client'
-import {RouterProvider} from 'react-router-dom'
-import {createRouter} from './router.tsx'
+import { render } from '@solidjs/web'
+import App from './App'
 
-const root = ReactDOMClient.createRoot(document.getElementById('root')!)
-root.render(<RouterProvider router={createRouter()}/>
-)
+render(() => <App/>, document.getElementById('root')!)

@@ -1,8 +1,9 @@
 package dev.harrel.jarhell;
 
+import dev.harrel.jarhell.analyze.FilesInfo;
 import dev.harrel.jarhell.model.Gav;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,7 +12,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -45,6 +46,106 @@ public class MavenApiClientTest {
         boolean res = mavenApiClient.checkIfArtifactExists(new Gav("a", "b", "1.0.0"));
 
         assertThat(res).isFalse();
+    }
+
+    @Test
+    void fetchFilesInfoParsesDirectoryListing() throws Exception {
+        String html = """
+                <a href="../">../</a>
+                <a href="lib-1.0.0.jar">lib-1.0.0.jar</a>
+                <a href="lib-1.0.0.jar.sha1">lib-1.0.0.jar.sha1</a>
+                <a href="lib-1.0.0.pom">lib-1.0.0.pom</a>
+                <a href="lib-1.0.0-sources.jar">lib-1.0.0-sources.jar</a>
+                """;
+        when(httpClient.sendGet(any(), anyLong())).thenReturn(new ContentResponseMock(200, html));
+
+        FilesInfo res = mavenApiClient.fetchFilesInfo(new Gav("org.test", "lib", "1.0.0"));
+
+        assertThat(res.extensions()).containsExactlyInAnyOrder("jar", "sha1", "pom");
+        assertThat(res.classifiers()).containsExactly("sources");
+    }
+
+    @Test
+    void fetchFilesInfoIgnoresClassifierFilesForMainArtifact() throws Exception {
+        stubListing("lib-1.0.0.pom", "lib-1.0.0-sources.jar", "lib-1.0.0-dist.zip", "lib-1.0.0-cyclonedx.json");
+
+        FilesInfo res = mavenApiClient.fetchFilesInfo(new Gav("org.test", "lib", "1.0.0"));
+
+        assertThat(res.extensions()).containsExactly("pom");
+    }
+
+    @Test
+    void fetchFilesInfoIgnoresMainArtifactFilesForClassifier() throws Exception {
+        stubListing("lib-1.0.0.jar", "lib-1.0.0.pom", "lib-1.0.0.jar.asc", "lib-1.0.0-dist.zip");
+
+        FilesInfo res = mavenApiClient.fetchFilesInfo(new Gav("org.test", "lib", "1.0.0", "dist"));
+
+        assertThat(res.extensions()).containsExactly("zip");
+    }
+
+    @Test
+    void fetchFilesInfoReportsAllSiblingClassifiers() throws Exception {
+        stubListing("lib-1.0.0.jar", "lib-1.0.0-sources.jar", "lib-1.0.0-javadoc.jar", "lib-1.0.0-dist.zip", "lib-1.0.0-linux-x86_64.jar");
+
+        FilesInfo res = mavenApiClient.fetchFilesInfo(new Gav("org.test", "lib", "1.0.0", "dist"));
+
+        assertThat(res.classifiers()).containsExactlyInAnyOrder("sources", "javadoc", "dist", "linux-x86_64");
+    }
+
+    @Test
+    void fetchFilesInfoKeepsCompoundExtensionsWhole() throws Exception {
+        stubListing("lib-1.0.0.pom", "lib-1.0.0.tar.gz", "lib-1.0.0.tar.gz.sha256");
+
+        FilesInfo res = mavenApiClient.fetchFilesInfo(new Gav("org.test", "lib", "1.0.0"));
+
+        assertThat(res.extensions()).containsExactlyInAnyOrder("pom", "tar.gz", "sha256");
+    }
+
+    @Test
+    void fetchFilesInfoDoesNotInferArtifactFromChecksumOrSignatureAlone() throws Exception {
+        stubListing("lib-1.0.0.pom", "lib-1.0.0.jar.asc", "lib-1.0.0.jar.sha512");
+
+        FilesInfo res = mavenApiClient.fetchFilesInfo(new Gav("org.test", "lib", "1.0.0"));
+
+        assertThat(res.extensions()).containsExactlyInAnyOrder("pom", "asc", "sha512");
+    }
+
+    @Test
+    void fetchFilesInfoHandlesAbsoluteHrefs() throws Exception {
+        stubListing("/maven2/org/test/lib/1.0.0/lib-1.0.0.jar", "https://repo.example.com/org/test/lib/1.0.0/lib-1.0.0-sources.jar");
+
+        FilesInfo res = mavenApiClient.fetchFilesInfo(new Gav("org.test", "lib", "1.0.0"));
+
+        assertThat(res.extensions()).containsExactly("jar");
+        assertThat(res.classifiers()).containsExactly("sources");
+    }
+
+    @Test
+    void fetchFilesInfoIgnoresSubdirectories() throws Exception {
+        stubListing("lib-1.0.0.jar", "lib-1.0.0-extras/");
+
+        FilesInfo res = mavenApiClient.fetchFilesInfo(new Gav("org.test", "lib", "1.0.0"));
+
+        assertThat(res.extensions()).containsExactly("jar");
+        assertThat(res.classifiers()).isEmpty();
+    }
+
+    @Test
+    void fetchFilesInfoDoesNotMatchClassifierByPrefix() throws Exception {
+        stubListing("lib-1.0.0-linux.jar", "lib-1.0.0-linux-x86_64.zip");
+
+        FilesInfo res = mavenApiClient.fetchFilesInfo(new Gav("org.test", "lib", "1.0.0", "linux"));
+
+        assertThat(res.extensions()).containsExactly("jar");
+        assertThat(res.classifiers()).containsExactlyInAnyOrder("linux", "linux-x86_64");
+    }
+
+    private void stubListing(String... fileNames) throws Exception {
+        StringBuilder html = new StringBuilder("<a href=\"../\">../</a>\n");
+        for (String fileName : fileNames) {
+            html.append("<a href=\"%1$s\">%1$s</a>\n".formatted(fileName));
+        }
+        when(httpClient.sendGet(any(), anyLong())).thenReturn(new ContentResponseMock(200, html.toString()));
     }
 
     public static class ContentResponseMock implements ContentResponse {
@@ -87,11 +188,6 @@ public class MavenApiClientTest {
         }
 
         @Override
-        public <T extends ResponseListener> List<T> getListeners(Class<T> listenerClass) {
-            return List.of();
-        }
-
-        @Override
         public HttpVersion getVersion() {
             return null;
         }
@@ -107,8 +203,13 @@ public class MavenApiClientTest {
         }
 
         @Override
-        public boolean abort(Throwable cause) {
-            return false;
+        public HttpFields getTrailers() {
+            return null;
+        }
+
+        @Override
+        public CompletableFuture<Boolean> abort(Throwable cause) {
+            return CompletableFuture.completedFuture(false);
         }
     }
 }

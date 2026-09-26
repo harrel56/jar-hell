@@ -6,9 +6,10 @@ import dev.harrel.jarhell.extension.Host;
 import dev.harrel.jarhell.model.*;
 import dev.harrel.jarhell.model.descriptor.License;
 import dev.harrel.jarhell.util.TestUtil;
+import io.avaje.jex.http.HttpStatus;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Driver;
@@ -47,7 +48,7 @@ class AnalyzeControllerTest {
                 .method(HttpMethod.POST)
                 .send();
 
-        assertThat(res.getStatus()).isEqualTo(202);
+        assertThat(res.getStatus()).isEqualTo(204);
         assertThat(res.getContentAsString()).isEmpty();
 
         await().atMost(Duration.ofSeconds(5)).until(() -> !fetchByArtifactId("jmail").records().isEmpty());
@@ -74,8 +75,7 @@ class AnalyzeControllerTest {
                 )))
                 .method(HttpMethod.POST)
                 .send();
-
-        assertThat(res.getStatus()).isEqualTo(202);
+        assertThat(res.getStatus()).isEqualTo(204);
         assertThat(res.getContentAsString()).isEmpty();
 
         await().atMost(Duration.ofSeconds(5)).until(() -> !fetchByArtifactId("jmail").records().isEmpty());
@@ -98,7 +98,7 @@ class AnalyzeControllerTest {
                 .method(HttpMethod.POST)
                 .send();
 
-        assertThat(res.getStatus()).isEqualTo(202);
+        assertThat(res.getStatus()).isEqualTo(204);
         assertThat(res.getContentAsString()).isEmpty();
 
         await().atMost(Duration.ofSeconds(5)).until(() -> !fetchByArtifactId("jmail").records().isEmpty());
@@ -154,7 +154,7 @@ class AnalyzeControllerTest {
         JarAnalyzer.JarInfo jarInfo = new JarAnalyzer.JarInfo(
                 Map.of(
                         JarAnalyzer.ContentType.JAVA, new JarAnalyzer.Content(16, 49197L, 23678L),
-                        JarAnalyzer.ContentType.RESOURCE, new JarAnalyzer.Content(3, 10988L, 2422L)
+                        JarAnalyzer.ContentType.METADATA, new JarAnalyzer.Content(3, 11069L, 2462L)
                 ),
                 Map.of(
                         JarAnalyzer.ClassType.CLASS, 11,
@@ -176,14 +176,14 @@ class AnalyzeControllerTest {
                 30629L,
                 new BytecodeVersion(52, 0),
                 LicenseType.MIT,
-                List.of(Map.entry(LicenseType.MIT, 1L)));
+                List.of(new LicenseCount(LicenseType.MIT, 1L)));
 
         ArtifactInfo ai = new ArtifactInfo(
                 "com.sanctionco.jmail",
                 "jmail",
                 "1.6.2",
                 "",
-                null, null, null, LocalDateTime.now(),
+                null, null, null, null, LocalDateTime.now(),
                 30629L,
                 "jar",
                 "jmail",
@@ -207,7 +207,7 @@ class AnalyzeControllerTest {
         JarAnalyzer.JarInfo jarInfo = new JarAnalyzer.JarInfo(
                 Map.of(
                         JarAnalyzer.ContentType.JAVA, new JarAnalyzer.Content(1, 540L, 338L),
-                        JarAnalyzer.ContentType.RESOURCE, new JarAnalyzer.Content(3, 920L, 415L)
+                        JarAnalyzer.ContentType.METADATA, new JarAnalyzer.Content(3, 1001L, 455L)
                 ),
                 Map.of(JarAnalyzer.ClassType.CLASS, 1),
                 0,
@@ -226,14 +226,14 @@ class AnalyzeControllerTest {
                 32734L,
                 new BytecodeVersion(65, 0),
                 LicenseType.NO_LICENSE,
-                List.of(Map.entry(LicenseType.NO_LICENSE, 1L), Map.entry(LicenseType.MIT, 1L)));
+                List.of(new LicenseCount(LicenseType.NO_LICENSE, 1L), new LicenseCount(LicenseType.MIT, 1L)));
 
         ArtifactInfo ai = new ArtifactInfo(
                 "org.test",
                 "artifact",
                 "3.0.1",
                 "",
-                null, null, null, LocalDateTime.now(),
+                null, null, null, null, LocalDateTime.now(),
                 2105L,
                 "jar",
                 "artifact",

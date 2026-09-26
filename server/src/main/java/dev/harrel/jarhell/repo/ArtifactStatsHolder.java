@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class ArtifactStatsHolder {
-    private static final int SIZE_LIMIT = 10;
+    static final int SIZE_LIMIT = 6;
 
     private final AutoLock lock = new AutoLock();
     private final ConcurrentLinkedDeque<ArtifactInfo> latest = new ConcurrentLinkedDeque<>();

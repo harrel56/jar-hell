@@ -1,27 +1,26 @@
-import {useLocation, useOutlet} from 'react-router-dom'
-import {ThemeProvider} from '@/shadcn/components/ThemeProvider'
-import {NavBar} from '@/components/NavBar.tsx'
-import {Autocomplete} from '@/components/Autocomplete.tsx'
-import {useEffect} from 'react'
-import {Footer} from '@/components/Footer.tsx'
-import {RecentlyViewedProvider} from '@/context/RecentlyViewedProvider.tsx'
+import { Errored, Loading } from 'solid-js'
+import { Title } from '@solidjs/meta'
+import { TopBar } from './components/TopBar'
+import { ThrownErrorView } from './components/ErrorView'
+import './App.css'
+import {Router} from './router'
 
-export const App = () => {
-  const outlet = useOutlet()
-  const { pathname } = useLocation()
-
-  useEffect(() => window.scrollTo(0, 0), [pathname])
-
+export default function App() {
   return (
-    <ThemeProvider>
-      <RecentlyViewedProvider>
-        <div className='px-4 flex flex-col'>
-          <NavBar/>
-          <Autocomplete/>
-          {outlet}
-        </div>
-        <Footer/>
-      </RecentlyViewedProvider>
-    </ThemeProvider>
+    <Router>
+      {props => {
+        return (
+          <>
+            <Title>Jar Hell</Title>
+            <TopBar/>
+            <Errored fallback={err => <ThrownErrorView error={err()}/>}>
+              <Loading fallback={<main class="px-4 py-12">Loading…</main>}>
+                {props.children}
+              </Loading>
+            </Errored>
+          </>
+        )
+      }}
+    </Router>
   )
 }

@@ -1,76 +1,50 @@
-import {Gav, Package, ResolvedPackage, stringToGav} from './util.ts'
-import {createBrowserRouter, redirect} from 'react-router-dom'
-import {App} from './App.tsx'
-import {ClientError, ErrorBoundary, NotFoundError} from './ErrorBoundary.tsx'
-import {PackagePage} from './components/PackagePage.tsx'
-import {ArtifactInfoContainer} from '@/components/ArtifactInfoContainer.tsx'
+import {createMemo} from 'solid-js'
+import {createRouter, RouteSectionProps, useNavigate} from '@solidjs/router'
+import {PackagePage} from './pages/PackagePage'
+import {HomePage} from './pages/HomePage'
+import {parseGav} from './utils/gav'
+import {getVersions, HttpError} from './api'
+import {ErrorView} from './components/ErrorView'
 
-export interface PackageLoaderData {
-  packages: Package[]
-}
-
-const serverUrl = import.meta.env.VITE_SERVER_URL
-
-const loadPackageData = async (gav: Gav): Promise<PackageLoaderData | Response> => {
-  const queryString = `groupId=${gav.groupId}&artifactId=${gav.artifactId}`
-  const packagesPromise = fetch(`${serverUrl}/api/v1/packages?${queryString}`)
-    .then(async res => {
-      const json = await res.json()
-      if (res.ok) {
-        return json as ResolvedPackage[]
-      } else {
-        throw Error(json.message)
-      }
-    })
-
-  const packages = await packagesPromise
-  if (!gav.version) {
-    return redirect(`/packages/${gav.groupId}:${gav.artifactId}:${packages.at(-1)?.version}`)
-  }
-  return {packages}
-}
-
-export const createRouter = () => createBrowserRouter([
-  {
-    path: '/',
-    Component: App,
-    children: [
-      {
-        index: true,
-        element: null
-      },
-      {
-        id: 'package-page',
-        errorElement: <ErrorBoundary/>,
-        path: '/packages/:gav',
-        element: <PackagePage/>,
-        loader: async ({params}) => {
-          const gav = stringToGav(params.gav!)
-          if (!gav.groupId || !gav.artifactId) {
-            throw new ClientError('Package format is invalid')
-          }
-          return loadPackageData(gav)
-        },
-        shouldRevalidate: ({currentParams, nextParams}) => {
-          const oldGav = stringToGav(currentParams.gav!)
-          const newGav = stringToGav(nextParams.gav!)
-          return oldGav.groupId !== newGav.groupId || oldGav.artifactId !== newGav.artifactId
-        },
-        children: [
-          {
-            errorElement: <ErrorBoundary/>,
-            index: true,
-            element: <ArtifactInfoContainer/>
-          }
-        ]
-      },
-      {
-        path: '*',
-        errorElement: <ErrorBoundary/>,
-        loader: async () => {
-          throw new NotFoundError('Resource not found')
+export const Router = createRouter({
+  preloadLinks: false,
+  routes: [
+    { path: '/', component: HomePage },
+    {
+      path: '/packages/:coordinate',
+      matchFilters: {
+        coordinate: (param) => {
+          const gav = parseGav(param)
+          return gav?.version !== undefined
         }
-      }
-    ]
-  }
-])
+      },
+      component: PackagePage,
+    },
+    {
+      path: '/packages/:coordinate',
+      matchFilters: {
+        coordinate: (param) => {
+          const gav = parseGav(param)
+          return gav ? gav.version === undefined : false
+        }
+      },
+      preload: async (args) => {
+        const navigate = useNavigate()
+        const coordinate = args.params['coordinate']!
+        const gav = parseGav(coordinate)!
+        const versions = await getVersions(gav.groupId, gav.artifactId, gav.classifier)
+        if (versions.length === 0) {
+          throw new HttpError(404, 'No versions found for ' + coordinate)
+        }
+        navigate(`/packages/${coordinate}:${versions.at(-1)?.version}`, {replace: true})
+      },
+      // The router hands the preload promise only to the route component - without one, a rejection is
+      // unobservable. Reading it from a memo turns it into an async computation the App boundaries see.
+      component: (props: RouteSectionProps<Promise<void>>) => {
+        const redirect = createMemo(() => props.data)
+        return <>{redirect()}</>
+      },
+    },
+    { path: '*404', component: () => <ErrorView code={404} title='Page not found' details='How did you end up here?'/> },
+  ],
+})

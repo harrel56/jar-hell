@@ -2,6 +2,7 @@ package dev.harrel.jarhell.playwright;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.AriaRole;
 import org.junit.jupiter.api.Test;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
@@ -11,7 +12,7 @@ class SmokeTest {
     @Test
     void loadsPackagesAutocomplete(Page page) {
         page.navigate("/");
-        Locator acLocator = page.locator("#packages-autocomplete");
+        Locator acLocator = page.getByRole(AriaRole.COMBOBOX);
         assertThat(acLocator).isInViewport();
         assertThat(acLocator).isEditable();
     }

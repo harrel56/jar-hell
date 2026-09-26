@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #ffffff; }
+  * { box-sizing: border-box; }
+  a { color: #d94a22; text-decoration: none; }
+  a:hover { color: #b13a17; }
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #ffffff; color: #14120f; font-family: 'Inter Tight', system-ui, sans-serif; font-size: 15px; line-height: 1.5; text-wrap: pretty;">
+
+  <header style="position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 24px; height: 60px; padding: 0 28px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); border-bottom: 1px solid #eceae6;">
+    <a href="#" style="display: flex; align-items: center; gap: 9px; color: #14120f; font-size: 19px; font-weight: 700; letter-spacing: -0.025em;">
+      <span style="width: 24px; height: 24px; border-radius: 7px; background: #14120f; display: flex; align-items: center; justify-content: center;"><span style="width: 9px; height: 11px; background: #ff5c2b; clip-path: polygon(50% 0%, 100% 62%, 78% 100%, 22% 100%, 0% 62%);"></span></span>
+      <span>Jar<span style="color: #d94a22;">hell</span></span>
+    </a>
+    <div style="position: relative; flex: 1; max-width: 520px;">
+      <div style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 13px; background: #f7f6f4; border: 1px solid {{ searchBorder }}; border-radius: 9px;">
+        <input value="{{ searchQuery }}" onChange="{{ onSearch }}" onFocus="{{ onSearchFocus }}" onBlur="{{ onSearchBlur }}" placeholder="group:artifact" style="flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #14120f;" />
+        <span style="flex-shrink: 0; color: #8d877e; font-size: 12px;">⌕</span>
+      </div>
+      <sc-if value="{{ showSearchSuggest }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; left: 0; right: 0; top: 44px; z-index: 40; background: #ffffff; border: 1px solid #eceae6; border-radius: 11px; box-shadow: 0 18px 44px rgba(20,18,15,0.13); overflow: hidden;">
+          <sc-for list="{{ searchSuggestions }}" as="s" hint-placeholder-count="4">
+            <div style="display: flex; align-items: baseline; gap: 9px; padding: 9px 14px; border-bottom: 1px solid #f4f2ef; cursor: pointer; font-family: 'JetBrains Mono', monospace;" style-hover="background: #faf9f7;">
+              <span style="flex-shrink: 0; font-size: 11.5px; color: #a8a29a;">{{ s.group }}</span>
+              <span style="font-size: 13px; color: #14120f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ s.name }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noSearchResults }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 12px 14px; font-size: 13px; color: #8d877e;">Nothing analysed under that name yet — press Enter to queue it.</div>
+          </sc-if>
+        </div>
+      </sc-if>
+    </div>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6f6a62;">
+      <span style="padding: 6px 10px; border-radius: 7px; cursor: pointer;" style-hover="background: #f4f2ef;">API</span>
+      <span style="padding: 6px 10px; border-radius: 7px; cursor: pointer;" style-hover="background: #f4f2ef;">GitHub</span>
+      <span style="padding: 6px 10px; border-radius: 7px; cursor: pointer;" style-hover="background: #f4f2ef;">☀</span>
+    </div>
+  </header>
+
+  <div style="display: flex; align-items: flex-start; max-width: 1340px; margin: 0 auto;">
+
+    <aside style="width: 268px; flex-shrink: 0; position: sticky; top: 60px; align-self: flex-start; max-height: calc(100vh - 60px); overflow-y: auto; padding: 26px 20px 40px; border-right: 1px solid #eceae6;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; padding: 0 6px 12px;">
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8d877e;">Versions</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #cfcac2;">—</span>
+      </div>
+      <div style="border-top: 1px solid #f1efeb; padding-top: 16px;">
+        <div style="padding: 18px 14px; border: 1px dashed #e0dcd6; border-radius: 10px; font-size: 12.5px; color: #a8a29a;">No versions to list. Once a coordinate resolves, its release history appears here.</div>
+      </div>
+    </aside>
+
+    <main style="flex: 1; min-width: 0; padding: 34px 40px; min-height: calc(100vh - 60px); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+
+      <div style="max-width: 520px; text-align: center; padding-bottom: 8vh;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 92px; font-weight: 700; letter-spacing: -0.05em; line-height: 0.9; color: #d94a22;">404</div>
+        <h1 style="margin: 20px 0 0; font-size: 32px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.15;">Package not found</h1>
+        <p style="margin: 14px 0 0; font-size: 16px; color: #4a453e;">{{ subline }}</p>
+
+        <div style="margin-top: 22px; display: inline-flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid #eceae6; border-radius: 10px; background: #faf9f7; max-width: 100%;">
+          <span style="font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #a8a29a;">Requested</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; color: #14120f; word-break: break-all;">{{ requested }}</span>
+        </div>
+
+        <div style="margin-top: 28px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; font-size: 13px;">
+          <a href="#" style="display: flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 8px; background: #14120f; color: #ffffff;" style-hover="background: #2c2822; color: #ffffff;">Back to home</a>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;requested&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;dev.harell:json-schema&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Content&quot;}}">
+const CATALOG = [
+  { group: 'dev.harrel', name: 'json-schema', hint: '18 versions' },
+  { group: 'com.networknt', name: 'json-schema-validator', hint: '61 versions' },
+  { group: 'com.github.java-json-tools', name: 'json-schema-core', hint: '24 versions' },
+  { group: 'io.vertx', name: 'vertx-json-schema', hint: '39 versions' },
+  { group: 'com.fasterxml.jackson.core', name: 'jackson-databind', hint: '204 versions' }
+];
+
+class Component extends DCLogic {
+  state = {
+    query: 'dev.harell:json-schema',
+    searchFocused: false
+  };
+
+  renderVals() {
+    const requested = this.props.requested || 'dev.harell:json-schema';
+    const q = this.state.query.trim().toLowerCase();
+    const matches = CATALOG.filter(c => (c.group + ':' + c.name).toLowerCase().includes(q)).slice(0, 4);
+
+    return {
+      searchQuery: this.state.query,
+      searchBorder: this.state.searchFocused ? '#d94a22' : '#e6e3de',
+      onSearch: e => this.setState({ query: e.target.value }),
+      onSearchFocus: () => this.setState({ searchFocused: true }),
+      onSearchBlur: () => setTimeout(() => this.setState({ searchFocused: false }), 120),
+      showSearchSuggest: this.state.searchFocused,
+      searchSuggestions: matches,
+      noSearchResults: matches.length === 0,
+
+      requested,
+      subline: 'This coordinate was not found in the Maven Central repository.'
+    };
+  }
+}
+</script>
+</body>
+</html>

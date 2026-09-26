@@ -1,5 +1,6 @@
 package dev.harrel.jarhell.error;
 
-import io.javalin.http.HandlerType;
+import io.avaje.jsonb.Json;
 
-public record ErrorResponse(String url, HandlerType method, String message) {}
+@Json
+public record ErrorResponse(String url, String method, String message) {}

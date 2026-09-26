@@ -4,11 +4,13 @@ import dev.harrel.jarhell.error.BadRequestException;
 import dev.harrel.jarhell.error.ResourceNotFoundException;
 import dev.harrel.jarhell.model.ArtifactInfo;
 import dev.harrel.jarhell.model.ArtifactTree;
+import dev.harrel.jarhell.model.ArtifactVersion;
 import dev.harrel.jarhell.model.Gav;
 import dev.harrel.jarhell.repo.ArtifactRepository;
 import io.avaje.http.api.Controller;
 import io.avaje.http.api.Get;
 import io.avaje.http.api.QueryParam;
+import io.avaje.jsonb.Json;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,17 +23,13 @@ class PackagesController {
         this.artifactRepository = artifactRepository;
     }
 
-    @Get
-    List<ArtifactTree> getAllVersions(@QueryParam String groupId,
-                                      @QueryParam String artifactId,
-                                      @QueryParam String classifier) {
-        if (groupId == null) {
-            throw new BadRequestException("groupId parameter is required");
+    @Get("/{coordinate}/versions")
+    List<ArtifactVersion> getAllVersions(String coordinate, @QueryParam String classifier) {
+        String[] parts = coordinate.split(":");
+        if (parts.length != 2) {
+            throw new BadRequestException("Invalid g:a format " + coordinate);
         }
-        if (artifactId == null) {
-            throw new BadRequestException("artifactId parameter is required");
-        }
-        return artifactRepository.findAllVersions(groupId, artifactId, classifier);
+        return artifactRepository.findAllVersions(parts[0], parts[1], classifier);
     }
 
     @Get("/search")
@@ -69,11 +67,12 @@ class PackagesController {
     ArtifactTree get(String coordinate, @QueryParam Integer depth) {
         Gav gav = Gav.fromCoordinate(coordinate)
                 .orElseThrow(() -> new BadRequestException("Invalid artifact coordinate format [%s]".formatted(coordinate)));
-        Integer depthParam = Optional.ofNullable(depth).orElse(-1);
+        Integer depthParam = Optional.ofNullable(depth).orElse(1);
         return artifactRepository.find(gav, depthParam)
                 .orElseThrow(() -> new ResourceNotFoundException(gav));
 
     }
 
+    @Json
     record SearchResult(String g, String a) {}
 }

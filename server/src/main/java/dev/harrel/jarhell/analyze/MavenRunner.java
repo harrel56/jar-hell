@@ -79,9 +79,9 @@ class MavenRunner {
     }
 
     // todo: this should just use ModelBuilder, then we can remove CustomDescriptorReaderDelegate
-    public DescriptorInfo resolveDescriptor(Gav gavWithClassifier) {
-        Gav gav = gavWithClassifier.stripClassifier();
-        ArtifactDescriptorRequest request = new ArtifactDescriptorRequest(new DefaultArtifact(gav.toString()), remoteRepos, null);
+    public DescriptorInfo resolveDescriptor(Gav gav) {
+        Artifact artifact = new DefaultArtifact(gav.groupId(), gav.artifactId(), gav.classifier(), "pom", gav.version());
+        ArtifactDescriptorRequest request = new ArtifactDescriptorRequest(artifact, remoteRepos, null);
         try {
             ArtifactDescriptorResult result = repoSystem.readArtifactDescriptor(session, request);
             Model model = (Model) result.getProperties().get(CustomDescriptorReaderDelegate.MODEL_KEY);
@@ -99,6 +99,7 @@ class MavenRunner {
                     .toList();
             List<LicenseType> licenseTypes = licenses.stream()
                     .map(LicenseType::categorize)
+                    .sorted(LicenseType.COMPARATOR)
                     .toList();
 
             // todo: url seems to be resolved incorrectly sometimes :(
