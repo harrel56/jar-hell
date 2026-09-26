@@ -10,12 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Git checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # 27 compiles the code, 26 runs Gradle itself (9.7.1 supports no newer jvm);
       # JAVA_HOME ends up on the last listed version
       - name: Setup java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: liberica
           java-version: |
@@ -23,7 +23,7 @@ jobs:
             26
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Gradle build
         run: ./gradlew build -x check
@@ -32,7 +32,7 @@ jobs:
         run: ./gradlew test
 
       - name: Upload build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-output
           path: |
@@ -49,10 +49,10 @@ jobs:
       PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
     steps:
       - name: Git checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: liberica
           java-version: |
@@ -60,7 +60,7 @@ jobs:
             26
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Gradle build
         run: ./gradlew build -x check
@@ -80,7 +80,7 @@ jobs:
       - playwright-tests
     steps:
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Login to GHCR registry
         uses: docker/login-action@v3
@@ -90,7 +90,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN  }}
 
       - name: Download build output
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: build-output
 
@@ -98,7 +98,7 @@ jobs:
         run: echo "BUILD_VERSION=${GITHUB_REF_NAME}-$(date +"%Y%m%d-%H%M%S")" >> "$GITHUB_ENV"
 
       - name: Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
@@ -113,12 +113,12 @@ jobs:
     needs:
       - build-docker
     steps:
-      - name: Deploy
-        uses: appleboy/ssh-action@v1.2.5
+      - uses: harrel56/ssh-action@fc808008acc50b40287e28013e6ac41ee2619301
         with:
           host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
+          user: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS }}
           script: |
             sudo docker compose -f /home/harrel/apps/docker-compose.yml down jarhell
             sudo docker compose -f /home/harrel/apps/docker-compose.yml pull jarhell
