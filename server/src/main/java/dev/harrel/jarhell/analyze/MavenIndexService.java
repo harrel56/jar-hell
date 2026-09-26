@@ -54,7 +54,7 @@ public class MavenIndexService {
 
     private void doScanIndex() {
         Instant start = Instant.now();
-        Path indexPath = Path.of(Config.get("maven.index.path", "/index/"));
+        Path indexPath = Path.of(Config.get("maven.index.path"));
         int chunks = 0, rows = 0, created = 0, updated = 0;
         byte[] propertiesBackup;
         try {
