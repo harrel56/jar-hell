@@ -1,5 +1,5 @@
 import { Errored, Loading } from 'solid-js'
-import TopBar from './components/TopBar'
+import { TopBar } from './components/TopBar'
 import { ThrownErrorView } from './components/ErrorView'
 import './App.css'
 import {Router} from './router'

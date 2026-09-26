@@ -39,8 +39,8 @@ class PackagesAutocompleteTest {
     }
 
     @Test
-    void magnifyingGlassRedirectsFocus(Page page) {
-        page.locator(".lucide-search").click();
+    void magnifyingGlassRedirectsFocus() {
+        ac.locator("xpath=..").locator(".lucide-search").click();
         assertThat(ac).isFocused();
     }
 

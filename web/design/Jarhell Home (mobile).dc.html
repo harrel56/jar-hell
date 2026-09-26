@@ -24,7 +24,7 @@
 <section style="padding: 40px 48px 80px; font-family: 'Inter Tight', system-ui, sans-serif; color: #14120f;">
   <div style="max-width: 760px;">
     <h1 style="margin: 0; font-size: 21px; font-weight: 600; letter-spacing: -0.02em;">Mobile — home</h1>
-    <p style="margin: 8px 0 0; font-size: 14px; color: #6f6a62;">Rows fold to two lines: coordinate on top, version / size bar / size below. The bar keeps the one comparison that matters at a glance. Type in the search to see suggestions.</p>
+    <p style="margin: 8px 0 0; font-size: 14px; color: #6f6a62;">Rows fold to two lines: coordinate on top, version / size bar / size below. The bar keeps the one comparison that matters at a glance. Tapping the search opens a full-screen search: the field docks under the status bar and results fill the space above the keyboard. With an empty field it shows recently viewed packages.</p>
   </div>
 
   <div style="margin-top: 30px; width: 402px; height: 874px; border-radius: 44px; overflow: hidden; background: #ffffff; box-shadow: 0 30px 70px rgba(0,0,0,0.16), 0 0 0 1px rgba(0,0,0,0.1);">
@@ -33,6 +33,44 @@
         <span>9:41</span>
         <span style="margin-left: auto; letter-spacing: 0.12em; font-size: 11px; color: #4a453e;">▮▮▮ ᯤ ▰</span>
       </div>
+      <sc-if value="{{ searching }}" hint-placeholder-val="{{ false }}">
+        <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; font-family: 'Inter Tight', system-ui, sans-serif; color: #14120f;">
+          <div style="flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 6px 16px 10px; border-bottom: 1px solid #eceae6;">
+            <div style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px; height: 44px; padding: 0 12px; border: 1px solid #cfcac2; border-radius: 11px;">
+              <span style="display: flex; color: #a8a29a;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="display: block;"><circle cx="10.5" cy="10.5" r="6.5"></circle><line x1="15.5" y1="15.5" x2="20.5" y2="20.5"></line></svg></span>
+              <input autoFocus="{{ true }}" value="{{ query }}" onChange="{{ onQuery }}" placeholder="group:artifact" style="flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'JetBrains Mono', monospace; font-size: 16px;" />
+              <sc-if value="{{ hasQuery }}" hint-placeholder-val="{{ false }}">
+                <span onClick="{{ clearQuery }}" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 14px; background: #eceae6; font-size: 11px; color: #6f6a62; cursor: pointer;">✕</span>
+              </sc-if>
+            </div>
+            <span onClick="{{ closeSearch }}" style="min-height: 44px; display: flex; align-items: center; font-size: 15px; color: #d94a22; cursor: pointer;">Cancel</span>
+          </div>
+
+          <div style="flex: 1; min-height: 0; overflow-y: auto;">
+            <sc-if value="{{ showRecent }}" hint-placeholder-val="{{ true }}">
+              <div style="padding: 14px 20px 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8d877e;">Recently viewed</div>
+            </sc-if>
+            <sc-for list="{{ acRows }}" as="s" hint-placeholder-count="4">
+              <div onClick="{{ s.pick }}" style="display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 20px; border-bottom: 1px solid #f4f2ef; cursor: pointer;" style-active="background: #faf9f7;">
+                <div style="flex: 1; min-width: 0; font-family: 'JetBrains Mono', monospace;">
+                  <div style="font-size: 11.5px; color: #a8a29a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ s.group }}</div>
+                  <div style="font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><span style="font-weight: 600;">{{ s.hit }}</span><span>{{ s.rest }}</span></div>
+                </div>
+                <span style="flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{ s.sizeColor }};">{{ s.size }}</span>
+              </div>
+            </sc-for>
+            <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: 22px 20px; font-size: 14px; color: #6f6a62;">Nothing analysed as <span style="font-family: 'JetBrains Mono', monospace; color: #14120f;">{{ query }}</span> yet.
+                <div onClick="{{ closeSearch }}" style="margin-top: 14px; display: flex; align-items: center; justify-content: center; height: 46px; border-radius: 11px; background: #14120f; color: #ffffff; font-size: 14.5px; font-weight: 500; cursor: pointer;">Analyse it now</div>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="flex-shrink: 0; height: 291px; background: #d4d2cf; display: flex; align-items: center; justify-content: center; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #8d877e;">Keyboard</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ notSearching }}" hint-placeholder-val="{{ true }}">
       <div style="flex: 1; min-height: 0; overflow-y: auto; font-family: 'Inter Tight', system-ui, sans-serif; font-size: 15px; line-height: 1.5; color: #14120f; text-wrap: pretty;">
 
         <div style="position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 10px; padding: 6px 16px 10px; background: rgba(255,255,255,0.94); backdrop-filter: blur(10px); border-bottom: 1px solid #eceae6;">
@@ -40,31 +78,34 @@
             <img src="uploads/jarhell.png" alt="Jarhell" style="width: 16px; height: 24px; display: block; image-rendering: pixelated;" />
             <span>Jar<span style="color: #d94a22;">hell</span></span>
           </span>
-          <span style="margin-left: auto; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 18px; color: #4a453e;">☰</span>
+          <span onClick="{{ toggleMenu }}" style="margin-left: auto; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 18px; color: #4a453e; cursor: pointer; background: {{ menuBtnBg }};">{{ menuGlyph }}</span>
         </div>
+        <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="position: sticky; top: 61px; z-index: 9; background: #ffffff; border-bottom: 1px solid #eceae6; box-shadow: 0 14px 30px rgba(20,18,15,0.08); padding: 6px 8px 10px;">
+            <div style="display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 12px; border-radius: 10px; font-size: 15px;" style-active="background: #f4f2ef;">
+              <span style="width: 24px; flex-shrink: 0; white-space: nowrap; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #8d877e;">{ }</span>API<span style="margin-left: auto; color: #b3ada4;">↗</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 12px; border-radius: 10px; font-size: 15px;" style-active="background: #f4f2ef;">
+              <span style="width: 24px; flex-shrink: 0; white-space: nowrap; text-align: center; font-size: 14px; color: #8d877e;">⌥</span>GitHub<span style="margin-left: auto; color: #b3ada4;">↗</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 12px; border-top: 1px solid #f4f2ef; margin-top: 4px;">
+              <span style="width: 24px; flex-shrink: 0; white-space: nowrap; text-align: center; font-size: 14px; color: #8d877e;">☀</span>Theme
+              <div style="margin-left: auto; display: flex; gap: 2px; padding: 2px; background: #f1efeb; border-radius: 8px;">
+                <sc-for list="{{ themes }}" as="t" hint-placeholder-count="3">
+                  <span onClick="{{ t.set }}" style="padding: 6px 11px; border-radius: 6px; font-size: 13px; cursor: pointer; color: {{ t.color }}; background: {{ t.bg }}; box-shadow: {{ t.shadow }};">{{ t.label }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
 
         <div style="padding: 38px 20px 0;">
           <h2 style="margin: 0; font-size: 34px; font-weight: 600; letter-spacing: -0.035em; line-height: 1.08;">What does that dependency <span style="color: #d94a22; white-space: nowrap;">really cost?</span></h2>
           <p style="margin: 12px 0 0; font-size: 15px; color: #6f6a62;">Jarhell resolves a Maven artifact's full transitive graph and reports its weight, bytecode floor and effective license.</p>
 
-          <div style="position: relative; margin-top: 24px;">
-            <div style="display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 16px; background: #ffffff; border: 1px solid {{ fieldBorder }}; border-radius: 13px; box-shadow: {{ fieldShadow }};">
-              <span style="font-size: 17px; color: #a8a29a;">⌕</span>
-              <input value="{{ query }}" onChange="{{ onQuery }}" onFocus="{{ onFocus }}" onBlur="{{ onBlur }}" placeholder="group:artifact" style="flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: 'JetBrains Mono', monospace; font-size: 16px; letter-spacing: -0.01em;" />
-            </div>
-            <sc-if value="{{ showSuggest }}" hint-placeholder-val="{{ false }}">
-              <div style="position: absolute; left: 0; right: 0; top: 62px; z-index: 20; background: #ffffff; border: 1px solid #eceae6; border-radius: 13px; box-shadow: 0 18px 44px rgba(20,18,15,0.13); overflow: hidden;">
-                <sc-for list="{{ suggestions }}" as="s" hint-placeholder-count="4">
-                  <div style="padding: 10px 16px; min-height: 52px; border-bottom: 1px solid #f4f2ef; font-family: 'JetBrains Mono', monospace;">
-                    <div style="font-size: 11.5px; color: #a8a29a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ s.group }}</div>
-                    <div style="font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ s.name }}</div>
-                  </div>
-                </sc-for>
-                <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
-                  <div style="padding: 14px 16px; font-size: 13.5px; color: #8d877e;">Nothing analysed under that name yet — tap Go to queue it.</div>
-                </sc-if>
-              </div>
-            </sc-if>
+          <div onClick="{{ openSearch }}" style="margin-top: 24px; display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 16px; background: #ffffff; border: 1px solid #e6e3de; border-radius: 13px; cursor: text;">
+            <span style="display: flex; color: #a8a29a;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="display: block;"><circle cx="10.5" cy="10.5" r="6.5"></circle><line x1="15.5" y1="15.5" x2="20.5" y2="20.5"></line></svg></span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 16px; color: #b3ada4;">group:artifact</span>
           </div>
 
           <div style="margin-top: 16px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #a8a29a;">3,995 packages analysed · updated 23/08/2026</div>
@@ -96,6 +137,7 @@
 
         <div style="height: 40px;"></div>
       </div>
+      </sc-if>
     </div>
   </div>
 </section>
@@ -121,7 +163,7 @@ const fmt = kb => kb >= 1024 ? (kb / 1024).toFixed(2) + ' MB' : kb.toFixed(2) + 
 const sizeColor = kb => kb >= 2048 ? '#a82914' : kb >= 512 ? '#c08a1e' : '#4a453e';
 
 class Component extends DCLogic {
-  state = { query: '', focused: false };
+  state = { query: 'json', searching: true, menuOpen: false, theme: 'Auto' };
 
   section(title, meta, data) {
     const peak = Math.max.apply(null, data.map(p => p.kb));
@@ -137,18 +179,44 @@ class Component extends DCLogic {
 
   renderVals() {
     const q = this.state.query.trim().toLowerCase();
-    const matches = q ? VIEWED.concat(ANALYZED).filter(p => (p.group + ':' + p.name).toLowerCase().includes(q)).slice(0, 5) : [];
-    const showSuggest = this.state.focused && q.length > 0;
+    const pool = VIEWED.concat(ANALYZED);
+    const matches = q ? pool.filter(p => (p.group + ':' + p.name).toLowerCase().includes(q)).slice(0, 6) : VIEWED.slice(0, 4);
+    const acRows = matches.map(p => {
+      const i = q ? p.name.toLowerCase().indexOf(q) : -1;
+      return {
+        group: p.group,
+        hit: i === 0 ? p.name.slice(0, q.length) : '',
+        rest: i === 0 ? p.name.slice(q.length) : p.name,
+        size: fmt(p.kb), sizeColor: sizeColor(p.kb),
+        pick: () => this.setState({ searching: false, query: '' })
+      };
+    });
     return {
+      searching: this.state.searching,
+      notSearching: !this.state.searching,
+      openSearch: () => this.setState({ searching: true, menuOpen: false }),
+      closeSearch: () => this.setState({ searching: false, query: '' }),
+      clearQuery: () => this.setState({ query: '' }),
+      hasQuery: q.length > 0,
+      showRecent: q.length === 0,
+      acRows,
+      menuOpen: this.state.menuOpen,
+      toggleMenu: () => this.setState(s => ({ menuOpen: !s.menuOpen })),
+      menuGlyph: this.state.menuOpen ? '✕' : '☰',
+      menuBtnBg: this.state.menuOpen ? '#f4f2ef' : 'transparent',
+      themes: ['Light', 'Dark', 'Auto'].map(label => {
+        const on = this.state.theme === label;
+        return {
+          label,
+          set: () => this.setState({ theme: label }),
+          color: on ? '#14120f' : '#8d877e',
+          bg: on ? '#ffffff' : 'transparent',
+          shadow: on ? '0 1px 2px rgba(20,18,15,0.12)' : 'none'
+        };
+      }),
       query: this.state.query,
       onQuery: e => this.setState({ query: e.target.value }),
-      onFocus: () => this.setState({ focused: true }),
-      onBlur: () => setTimeout(() => this.setState({ focused: false }), 120),
-      fieldBorder: this.state.focused ? '#cfcac2' : '#e6e3de',
-      fieldShadow: this.state.focused ? '0 6px 22px rgba(20,18,15,0.07)' : 'none',
-      showSuggest,
-      noResults: showSuggest && matches.length === 0,
-      suggestions: matches.map(p => ({ group: p.group, name: p.name })),
+      noResults: q.length > 0 && matches.length === 0,
       sections: [
         this.section('Recently viewed', 'on this device', VIEWED),
         this.section('Recently analyzed', 'across all users', ANALYZED)
