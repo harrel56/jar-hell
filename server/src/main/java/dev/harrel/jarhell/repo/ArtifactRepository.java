@@ -83,6 +83,38 @@ public class ArtifactRepository {
         }
     }
 
+    public List<Gav> findUnanalyzedCandidates(int limit) {
+        try (var session = session()) {
+            return session.executeRead(tx -> {
+                Result res = tx.run("""
+                                MATCH (root:Artifact)
+                                WHERE
+                                    root.unresolvedReason = 'initial-indexing'
+                                    AND NOT EXISTS {
+                                        MATCH (sibling:Artifact {groupId: root.groupId, artifactId: root.artifactId})
+                                        WHERE sibling.classifier = root.classifier
+                                          AND sibling.unresolvedReason IS NULL
+                                    }
+                                    AND NOT EXISTS {
+                                        MATCH (newer:Artifact {groupId: root.groupId, artifactId: root.artifactId})
+                                        WHERE newer.classifier = root.classifier
+                                          AND newer.unresolvedReason = 'initial-indexing'
+                                          AND newer.version > root.version
+                                    }
+                                RETURN root.groupId, root.artifactId, root.version, root.classifier
+                                LIMIT $limit""",
+                        parameters("limit", limit)
+                );
+                return res.list(rec -> new Gav(
+                        rec.get("root.groupId").asString(),
+                        rec.get("root.artifactId").asString(),
+                        rec.get("root.version").asString(),
+                        rec.get("root.classifier").asString()
+                ));
+            });
+        }
+    }
+
     public List<Gav> findAllUnresolved(int limit, int unresolvedCountLimit) {
         try (var session = session()) {
             return session.executeRead(tx -> {

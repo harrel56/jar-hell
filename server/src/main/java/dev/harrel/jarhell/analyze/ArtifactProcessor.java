@@ -68,6 +68,8 @@ public class ArtifactProcessor implements Closeable {
         while (running.get()) {
             Instant startTime = Instant.now();
             try {
+                logger.info("Waiting for cooldown... (2min)");
+                Thread.sleep(Duration.ofMinutes(2));
                 int processed = doRun();
                 if (processed == 0) {
                     logger.info("No work to be done. Sleeping for 30 minutes...");
@@ -86,27 +88,32 @@ public class ArtifactProcessor implements Closeable {
     }
 
     private int doRun() {
-        List<Gav> unresolvedGavs = repo.findAllUnresolved(concurrency.get(), UNRESOLVED_LIMIT);
+        List<Gav> unresolvedGavs = repo.findUnanalyzedCandidates(concurrency.get());
+        logger.info("Fetched {} gavs for reanalysis [unanalyzed]", unresolvedGavs.size());
         if (!unresolvedGavs.isEmpty()) {
-            logger.info("Fetched {} gavs for reanalysis [unresolved]", unresolvedGavs.size());
-            try (var scope = open(StructuredTaskScope.Joiner.awaitAllSuccessfulOrThrow())) {
-                unresolvedGavs.forEach(gav -> scope.fork(() -> analyzeEngine.doFullAnalysis(gav)));
-                ConcurrentUtil.joinScope(scope);
-            }
-            counter.addAndGet(unresolvedGavs.size());
-            return unresolvedGavs.size();
+            return doAnalyze(unresolvedGavs);
+        }
+
+        unresolvedGavs = repo.findAllUnresolved(concurrency.get(), UNRESOLVED_LIMIT);
+        logger.info("Fetched {} gavs for reanalysis [unresolved]", unresolvedGavs.size());
+        if (!unresolvedGavs.isEmpty()) {
+            return doAnalyze(unresolvedGavs);
         }
 
         unresolvedGavs = repo.findAllEffectivelyUnresolved(concurrency.get(), UNRESOLVED_LIMIT);
+        logger.info("Fetched {} gavs for reanalysis [effectively-unresolved]", unresolvedGavs.size());
         if (!unresolvedGavs.isEmpty()) {
-            logger.info("Fetched {} gavs for reanalysis [effectively-unresolved]", unresolvedGavs.size());
-            try (var scope = open(StructuredTaskScope.Joiner.awaitAllSuccessfulOrThrow())) {
-                unresolvedGavs.forEach(gav -> scope.fork(() -> analyzeEngine.doFullAnalysis(gav)));
-                ConcurrentUtil.joinScope(scope);
-            }
-            counter.addAndGet(unresolvedGavs.size());
-            return unresolvedGavs.size();
+            return doAnalyze(unresolvedGavs);
         }
         return 0;
+    }
+
+    private int doAnalyze(List<Gav> gavs) {
+        try (var scope = open(StructuredTaskScope.Joiner.awaitAllSuccessfulOrThrow())) {
+            gavs.forEach(gav -> scope.fork(() -> analyzeEngine.doFullAnalysis(gav)));
+            ConcurrentUtil.joinScope(scope);
+        }
+        counter.addAndGet(gavs.size());
+        return gavs.size();
     }
 }
