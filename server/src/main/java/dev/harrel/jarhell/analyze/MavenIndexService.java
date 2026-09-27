@@ -67,7 +67,7 @@ public class MavenIndexService {
         }
 
         WritableResourceHandler local = new PathWritableResourceHandler(indexPath);
-        ResourceHandler remote = new UriResourceHandler(indexUri());
+        ResourceHandler remote = new UriResourceHandler(Config.getURI("maven.repo-url").resolve("/maven2/.index/"));
         try (IndexReader indexReader = new IndexReader(local, remote)) {
             logger.info("Starting index scanning... indexId={}, incremental={}", indexReader.getIndexId(), indexReader.isIncremental());
             List<Gav> batch = new ArrayList<>(BATCH_SIZE);
@@ -107,11 +107,6 @@ public class MavenIndexService {
             // which would make the next run skip the increment that was not fully processed
             restorePropertiesBackup(indexPath, propertiesBackup);
         }
-    }
-
-    private static URI indexUri() {
-        return Config.getAsOptional("maven.index.url", URI::create)
-                .orElseGet(() -> Config.getURI("maven.repo-url").resolve("/maven2/.index/"));
     }
 
     private static byte[] readPropertiesBackup(Path indexPath) throws IOException {
