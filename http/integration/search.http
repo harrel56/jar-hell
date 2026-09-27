@@ -1,31 +1,62 @@
 ### dev.harrel
-GET {{url}}/api/v1/maven/search?query=dev.harrel
+GET {{url}}/api/v1/packages/search?query=dev.harrel
 
 > {%
   client.test("Response is 200", () => {
     client.assert(response.status === 200);
   });
-  client.test("Contains entries", function() {
-    client.assert(response.body[0].g === 'dev.harrel');
-    client.assert(response.body[0].a === 'json-schema');
+  client.test("Contains entries", () => {
+    client.assert(response.body.some(r => r.g === 'dev.harrel' && r.a === 'json-schema'));
   });
 %}
 
 ### dev.harrel:json-schema
-GET {{url}}/api/v1/maven/search?query=dev.harrel:json-schema
+GET {{url}}/api/v1/packages/search?query=dev.harrel:json-schema
 
 > {%
   client.test("Response is 200", () => {
     client.assert(response.status === 200);
   });
-  client.test("Contains entries", function() {
-    client.assert(response.body[0].g === 'dev.harrel');
-    client.assert(response.body[0].a === 'json-schema');
+  client.test("Contains entries", () => {
+    client.assert(response.body.some(r => r.g === 'dev.harrel' && r.a === 'json-schema'));
+  });
+%}
+
+### json-schema
+GET {{url}}/api/v1/packages/search?query=json-schema
+
+> {%
+  client.test("Response is 200", () => {
+    client.assert(response.status === 200);
+  });
+  client.test("Contains entries", () => {
+    client.assert(response.body.some(r => r.g === 'dev.harrel' && r.a === 'json-schema'));
+  });
+%}
+
+### empty query
+GET {{url}}/api/v1/packages/search?query=
+
+> {%
+  client.test("Response is 200", () => {
+    client.assert(response.status === 200);
+  });
+  client.test("No entries", () => {
+    client.assert(response.body.length === 0);
+  });
+%}
+
+### no query
+GET {{url}}/api/v1/packages/search
+
+> {%
+  client.test("Response is 400", () => {
+    client.assert(response.status === 400);
   });
 %}
 
 ### sanitization 1
-GET {{url}}/api/v1/maven/search?query=json schema
+GET {{url}}/api/v1/packages/search?query=json schema
 
 > {%
   client.test("Response is 200", () => {
@@ -34,7 +65,7 @@ GET {{url}}/api/v1/maven/search?query=json schema
 %}
 
 ### sanitization 2
-GET {{url}}/api/v1/maven/search?query=:
+GET {{url}}/api/v1/packages/search?query=:
 
 > {%
   client.test("Response is 200", () => {
@@ -43,7 +74,7 @@ GET {{url}}/api/v1/maven/search?query=:
 %}
 
 ### sanitization 3
-GET {{url}}/api/v1/maven/search?query=1:2:3:4
+GET {{url}}/api/v1/packages/search?query=1:2:3:4
 
 > {%
   client.test("Response is 200", () => {
@@ -52,12 +83,10 @@ GET {{url}}/api/v1/maven/search?query=1:2:3:4
 %}
 
 ### sanitization 4
-GET {{url}}/api/v1/maven/search?query=$$*!
+GET {{url}}/api/v1/packages/search?query=$$*!
 
 > {%
   client.test("Response is 200", () => {
     client.assert(response.status === 200);
   });
 %}
-
-

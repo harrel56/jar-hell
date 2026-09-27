@@ -1,17 +1,29 @@
 ### get all versions: dev.harrel:json-schema
-GET {{url}}/api/v1/packages?groupId=dev.harrel&artifactId=json-schema
+GET {{url}}/api/v1/packages/dev.harrel:json-schema/versions
 
 > {%
   client.test("Response is 200", () => {
     client.assert(response.status === 200);
   });
-  client.test("Should be gzipped", function() {
+  client.test("Should be gzipped", () => {
     client.assert(response.headers.valueOf('Content-Encoding') === 'gzip');
   });
 %}
 
+### get all versions: unknown classifier
+GET {{url}}/api/v1/packages/dev.harrel:json-schema/versions?classifier=natives-linux
+
+> {%
+  client.test("Response is 200", () => {
+    client.assert(response.status === 200);
+  });
+  client.test("No entries", () => {
+    client.assert(response.body.length === 0);
+  });
+%}
+
 ### get all versions: no artifactId
-GET {{url}}/api/v1/packages?groupId=dev.harrel
+GET {{url}}/api/v1/packages/dev.harrel/versions
 
 > {%
   client.test("Response is 400", () => {
@@ -19,8 +31,8 @@ GET {{url}}/api/v1/packages?groupId=dev.harrel
   });
 %}
 
-### get all versions: no groupId
-GET {{url}}/api/v1/packages
+### get all versions: full coordinate
+GET {{url}}/api/v1/packages/dev.harrel:json-schema:1.5.1/versions
 
 > {%
   client.test("Response is 400", () => {
@@ -35,7 +47,7 @@ GET {{url}}/api/v1/packages/dev.harrel:json-schema:1.5.1
   client.test("Response is 200", () => {
     client.assert(response.status === 200);
   });
-  client.test("Should be gzipped", function() {
+  client.test("Should be gzipped", () => {
     client.assert(response.headers.valueOf('Content-Encoding') === 'gzip');
   });
 %}
@@ -46,5 +58,47 @@ GET {{url}}/api/v1/packages/dev.harrel:json-schema:1.5.1?depth=0
 > {%
   client.test("Response is 200", () => {
     client.assert(response.status === 200);
+  });
+%}
+
+### unknown version
+GET {{url}}/api/v1/packages/dev.harrel:json-schema:0.0.0
+
+> {%
+  client.test("Response is 404", () => {
+    client.assert(response.status === 404);
+  });
+%}
+
+### no version
+GET {{url}}/api/v1/packages/dev.harrel:json-schema
+
+> {%
+  client.test("Response is 400", () => {
+    client.assert(response.status === 400);
+  });
+%}
+
+### analyzed count
+GET {{url}}/api/v1/packages/count
+
+> {%
+  client.test("Response is 200", () => {
+    client.assert(response.status === 200);
+  });
+  client.test("Returns a number", () => {
+    client.assert(typeof response.body === 'number');
+  });
+%}
+
+### latest analyzed
+GET {{url}}/api/v1/packages/latest
+
+> {%
+  client.test("Response is 200", () => {
+    client.assert(response.status === 200);
+  });
+  client.test("Returns an array", () => {
+    client.assert(Array.isArray(response.body));
   });
 %}
