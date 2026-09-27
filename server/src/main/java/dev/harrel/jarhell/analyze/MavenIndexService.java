@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -66,7 +67,7 @@ public class MavenIndexService {
         }
 
         WritableResourceHandler local = new PathWritableResourceHandler(indexPath);
-        ResourceHandler remote = new UriResourceHandler(Config.getURI("maven.repo-url").resolve("/maven2/.index/"));
+        ResourceHandler remote = new UriResourceHandler(indexUri());
         try (IndexReader indexReader = new IndexReader(local, remote)) {
             logger.info("Starting index scanning... indexId={}, incremental={}", indexReader.getIndexId(), indexReader.isIncremental());
             List<Gav> batch = new ArrayList<>(BATCH_SIZE);
@@ -108,6 +109,11 @@ public class MavenIndexService {
         }
     }
 
+    private static URI indexUri() {
+        return Config.getAsOptional("maven.index.url", URI::create)
+                .orElseGet(() -> Config.getURI("maven.repo-url").resolve("/maven2/.index/"));
+    }
+
     private static byte[] readPropertiesBackup(Path indexPath) throws IOException {
         Path properties = indexPath.resolve(INDEX_PROPERTIES);
         return Files.exists(properties) ? Files.readAllBytes(properties) : null;
@@ -126,32 +132,26 @@ public class MavenIndexService {
         }
     }
 
-    private static Gav rowToGav(Map<String, String> row) {
+    static Gav rowToGav(Map<String, String> row) {
         String data = row.get("u");
         if (data == null) {
             return null;
         }
         String[] split = data.split("\\|");
-        if (split.length < 4 || isChecksumOrSignature(row)) {
+        if (split.length < 4) {
             return null;
         }
         String classifier = split[3];
         if ("NA".equals(classifier)) {
             return new Gav(split[0], split[1], split[2]);
-        } else if (IGNORED_CLASSIFIERS.contains(classifier)) {
-            return null;
-        } else {
-            return new Gav(split[0], split[1], split[2], classifier);
         }
+        if (IGNORED_CLASSIFIERS.contains(classifier) || (split.length > 4 && isChecksumOrSignature(split[4]))) {
+            return null;
+        }
+        return new Gav(split[0], split[1], split[2], classifier);
     }
 
-    private static boolean isChecksumOrSignature(Map<String, String> row) {
-        String info = row.get("i");
-        if (info == null) {
-            return false;
-        }
-        int separator = info.indexOf('|');
-        String extension = separator < 0 ? info : info.substring(0, separator);
+    private static boolean isChecksumOrSignature(String extension) {
         return Arrays.stream(extension.split("\\.")).anyMatch(CHECKSUM_EXTENSIONS::contains);
     }
 }
