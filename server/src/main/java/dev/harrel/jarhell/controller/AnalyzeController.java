@@ -6,8 +6,12 @@ import io.avaje.http.api.Controller;
 import io.avaje.http.api.Post;
 import io.avaje.jex.http.Context;
 
+import java.util.Set;
+
 @Controller("/api/v1")
 class AnalyzeController {
+    private static final Set<String> CRAWLERS = Set.of("googlebot", "storebot", "googleother", "google-inspectiontool", "cloudvertexbot", "google-extended");
+
     private final AnalyzeEngine analyzeEngine;
 
     AnalyzeController(AnalyzeEngine analyzeEngine) {
@@ -24,8 +28,8 @@ class AnalyzeController {
     @Post("/analyze-and-wait")
     void analyzeAndWait(Gav gav, Context ctx) {
         if (!isWebCrawler(ctx)) {
-        analyzeEngine.analyze(gav).join();
-        ctx.redirect("/api/v1/packages/%s?depth=1".formatted(gav));
+            analyzeEngine.analyze(gav).join();
+            ctx.redirect("/api/v1/packages/%s?depth=1".formatted(gav));
         }
     }
 
@@ -33,6 +37,6 @@ class AnalyzeController {
         if (ctx.userAgent() == null) {
             return false;
         }
-        return ctx.userAgent().toLowerCase().contains("googlebot");
+        return CRAWLERS.contains(ctx.userAgent().toLowerCase());
     }
 }
