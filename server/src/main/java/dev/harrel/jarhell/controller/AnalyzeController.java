@@ -16,12 +16,23 @@ class AnalyzeController {
 
     @Post("/analyze")
     void analyze(Gav gav, Context ctx) {
-        analyzeEngine.analyze(gav);
+        if (!isWebCrawler(ctx)) {
+            analyzeEngine.analyze(gav);
+        }
     }
 
     @Post("/analyze-and-wait")
     void analyzeAndWait(Gav gav, Context ctx) {
+        if (!isWebCrawler(ctx)) {
         analyzeEngine.analyze(gav).join();
         ctx.redirect("/api/v1/packages/%s?depth=1".formatted(gav));
+        }
+    }
+
+    private static boolean isWebCrawler(Context ctx) {
+        if (ctx.userAgent() == null) {
+            return false;
+        }
+        return ctx.userAgent().toLowerCase().contains("googlebot");
     }
 }

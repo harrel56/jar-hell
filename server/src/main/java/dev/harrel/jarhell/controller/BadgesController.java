@@ -62,7 +62,8 @@ class BadgesController {
         ArtifactTree at = repo.find(gav, 0).orElse(null);
         if (at == null) {
             if (mavenApiClient.checkIfArtifactExists(gav)) {
-                engine.analyze(gav);
+                // todo don't trigger analysis from badges for now (webcrawlers trigger it)
+//                engine.analyze(gav);
                 toBadge(ctx, metric.getName(), "not analyzed", Color.yellow, Duration.ofMinutes(5));
             } else {
                 toBadge(ctx, metric.getName(), "not found", Color.red, Duration.ofDays(7));
