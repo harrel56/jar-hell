@@ -60,6 +60,10 @@ public class Configuration {
 
     @Bean
     Jex javalinServer(List<Routing.HttpService> routes) {
+        StaticContent robots =
+                StaticContent.ofClassPath("/robots/robots.txt")
+                        .route("/robots.txt")
+                        .build();
         StaticContent webBundle =
                 StaticContent.ofClassPath("/web")
                         .route("/*")
@@ -70,6 +74,7 @@ public class Configuration {
 
         final String apiToken = Config.get("API_TOKEN");
         return Jex.create()
+                .plugin(robots)
                 .plugin(webBundle)
                 .routing(routes)
                 .before(ctx -> {

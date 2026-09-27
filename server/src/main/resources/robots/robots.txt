@@ -1,0 +1,3 @@
+User-agent: *
+Disallow: /api/v1/analyze
+Disallow: /api/v1/badges/
