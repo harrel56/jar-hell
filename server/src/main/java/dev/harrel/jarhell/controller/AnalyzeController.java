@@ -6,11 +6,11 @@ import io.avaje.http.api.Controller;
 import io.avaje.http.api.Post;
 import io.avaje.jex.http.Context;
 
-import java.util.Set;
+import java.util.List;
 
 @Controller("/api/v1")
 class AnalyzeController {
-    private static final Set<String> CRAWLERS = Set.of("googlebot", "storebot", "googleother", "google-inspectiontool", "cloudvertexbot", "google-extended");
+    private static final List<String> CRAWLERS = List.of("googlebot", "storebot", "googleother", "google-inspectiontool", "cloudvertexbot", "google-extended");
 
     private final AnalyzeEngine analyzeEngine;
 
@@ -37,6 +37,11 @@ class AnalyzeController {
         if (ctx.userAgent() == null) {
             return false;
         }
-        return CRAWLERS.contains(ctx.userAgent().toLowerCase());
+        for (String crawler : CRAWLERS) {
+            if (ctx.userAgent().toLowerCase().contains(crawler)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
