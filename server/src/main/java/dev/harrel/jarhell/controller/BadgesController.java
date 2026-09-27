@@ -61,16 +61,21 @@ class BadgesController {
         Gav gav = new Gav(split[0], split[1], version);
         ArtifactTree at = repo.find(gav, 0).orElse(null);
         if (at == null) {
-            if (mavenApiClient.checkIfArtifactExists(gav)) {
-                // todo don't trigger analysis from badges for now (webcrawlers trigger it)
-//                engine.analyze(gav);
-                toBadge(ctx, metric.getName(), "not analyzed", Color.yellow, Duration.ofMinutes(5));
-            } else {
-                toBadge(ctx, metric.getName(), "not found", Color.red, Duration.ofDays(7));
-            }
+            toBadge(ctx, metric.getName(), "not found", Color.red, Duration.ofDays(1));
+//            if (mavenApiClient.checkIfArtifactExists(gav)) {
+//                // todo don't trigger analysis from badges for now (webcrawlers trigger it)
+////                engine.analyze(gav);
+//                toBadge(ctx, metric.getName(), "not analyzed", Color.yellow, Duration.ofMinutes(5));
+//            } else {
+//                toBadge(ctx, metric.getName(), "not found", Color.red, Duration.ofDays(7));
+//            }
         } else {
             if (Boolean.TRUE.equals(at.artifactInfo().unresolved())) {
-                toBadge(ctx, metric.getName(), "analysis failed", Color.red, Duration.ofDays(1));
+                if ("initial_indexing".equals(at.artifactInfo().unresolvedReason())) {
+                    toBadge(ctx, metric.getName(), "not analyzed", Color.yellow, Duration.ofDays(1));
+                } else {
+                    toBadge(ctx, metric.getName(), "analysis failed", Color.red, Duration.ofDays(7));
+                }
             } else {
                 toBadge(ctx, metric.getName(), metric.getValue(at.artifactInfo()), metric.getColor(at.artifactInfo()), Duration.ofDays(7), true);
             }
