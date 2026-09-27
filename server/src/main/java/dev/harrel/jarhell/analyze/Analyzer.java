@@ -27,10 +27,6 @@ class Analyzer {
         this.packageAnalyzer = packageAnalyzer;
     }
 
-    public boolean checkIfArtifactExists(Gav gav) {
-        return mavenApiClient.checkIfArtifactExists(gav);
-    }
-
     public CollectedDependencies analyzeDeps(Gav gav) {
         return mavenRunner.collectDependencies(gav);
     }
@@ -87,17 +83,6 @@ class Analyzer {
                 effectiveLicense, effectiveLicenses);
     }
 
-    // todo: maybe actually save excluded and conflicted deps
-    public TraversalOutput adjustArtifactTree(ArtifactTree artifactTree, List<ArtifactTree> allDependenciesList) {
-        Map<Ga, ArtifactTree> allDeps = allDependenciesList.stream()
-                .collect(Collectors.toMap(at -> new Ga(at.artifactInfo().groupId(), at.artifactInfo().artifactId()), Function.identity()));
-
-        Set<Ga> excluded = new HashSet<>();
-        Set<Gav> conflicted = new HashSet<>();
-        traverseDeps(artifactTree, allDeps, excluded, conflicted, new HashSet<>());
-        return new TraversalOutput(artifactTree, excluded, conflicted);
-    }
-
     private ArtifactInfo createArtifactInfo(Gav gav, FilesInfo filesInfo, PackageInfo packageInfo, DescriptorInfo descriptorInfo) {
         return new ArtifactInfo(gav.groupId(), gav.artifactId(), gav.version(), gav.classifier(), null, null, null, null,
                 packageInfo.created(), packageInfo.size(), descriptorInfo.packaging(),
@@ -106,56 +91,5 @@ class Analyzer {
                 descriptorInfo.licenses(), descriptorInfo.licenseTypes(), List.copyOf(filesInfo.classifiers()), List.copyOf(filesInfo.extensions()),
                 packageInfo.jarInfo(), null, null);
     }
-
-    private void traverseDeps(ArtifactTree at,
-                              Map<Ga, ArtifactTree> allDeps,
-                              Set<Ga> excluded,
-                              Set<Gav> conflicted,
-                              Set<Gav> visited) {
-        Gav gav = treeToGav(at);
-        if (visited.contains(gav)) {
-            return;
-        }
-
-        visited.add(gav);
-
-        // handle excluded deps
-        at.dependencies().stream()
-                .map(di -> treeToGa(di.artifact()))
-                .filter(ga -> !allDeps.containsKey(ga))
-                .forEach(excluded::add);
-        at.dependencies().removeIf(di -> excluded.contains(treeToGa(di.artifact())));
-
-        // handle conflicted deps
-        at.dependencies().stream()
-                .filter(di -> {
-                    Ga ga = treeToGa(di.artifact());
-                    var depAt = allDeps.get(ga);
-                    return !di.artifact().artifactInfo().version().equals(depAt.artifactInfo().version());
-                })
-                .map(di -> treeToGav(di.artifact()))
-                .forEach(conflicted::add);
-        for (int i = 0; i < at.dependencies().size(); i++) {
-            DependencyInfo di = at.dependencies().get(i);
-            Ga ga = treeToGa(di.artifact());
-            var depAt = allDeps.get(ga);
-            if (!di.artifact().artifactInfo().version().equals(depAt.artifactInfo().version())) {
-                at.dependencies().set(i, new DependencyInfo(depAt, di.optional(), di.scope()));
-            }
-        }
-    }
-
-    private static Gav treeToGav(ArtifactTree at) {
-        ArtifactInfo info = at.artifactInfo();
-        return new Gav(info.groupId(), info.artifactId(), info.version(), info.classifier());
-    }
-
-    private static Ga treeToGa(ArtifactTree at) {
-        return new Ga(at.artifactInfo().groupId(), at.artifactInfo().artifactId());
-    }
-
-    public record TraversalOutput(ArtifactTree artifactTree, Set<Ga> excluded, Set<Gav> conflicted) {}
-
-    private record Ga(String groupId, String artifactId) {}
 }
 
